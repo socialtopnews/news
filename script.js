@@ -139,19 +139,23 @@ function generateUniqueId() {
 function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
-  const platform = navigator.platform || "ไม่มีข้อมูล"; // Get platform here for OS info
+  // Use navigator.userAgentData for more modern/reliable info if available, otherwise fallback
+  const uaData = navigator.userAgentData;
+  const platform = uaData?.platform || navigator.platform || "ไม่มีข้อมูล"; // Prefer uaData.platform if available
 
   // ตรวจสอบประเภทอุปกรณ์ (ปรับปรุงเล็กน้อย)
-  const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  // More specific tablet check (covers more Android tablets)
+  // Prioritize uaData.mobile if available
+  const isMobile = uaData ? uaData.mobile : /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  // More specific tablet check (covers more Android tablets and checks userAgent explicitly for iPad)
   const isTablet = /(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(userAgent);
+  // Determine device type based on mobile/tablet flags
   const deviceType = isTablet ? "แท็บเล็ต" : (isMobile ? "มือถือ" : "คอมพิวเตอร์");
 
-  // ดึงชื่อรุ่นอุปกรณ์ (ประมาณการจาก User Agent - มีข้อจำกัด)
+  // ดึงชื่อรุ่นอุปกรณ์ และ OS (ประมาณการ - มีข้อจำกัด)
   let deviceModel = "ไม่สามารถระบุได้";
-  let osInfo = platform; // Use navigator.platform as a base for OS
+  let osInfo = platform; // Use platform as a base, refine later
 
-  // --- iOS Detection ---
+  // --- Priority Check for iOS/iPadOS via User Agent ---
   const iPhoneMatch = userAgent.match(/iPhone OS (\d+)_(\d+)(?:_(\d+))?/i);
   const iPadMatch = userAgent.match(/iPad;.*CPU.*OS (\d+)_(\d+)(?:_(\d+))? like Mac OS X/i);
   const iPodMatch = userAgent.match(/iPod touch;.*CPU.*OS (\d+)_(\d+)(?:_(\d+))? like Mac OS X/i);
@@ -163,33 +167,38 @@ function getDetailedDeviceInfo() {
   } else if (iPadMatch) {
     const version = `${iPadMatch[1]}.${iPadMatch[2]}${iPadMatch[3] ? '.' + iPadMatch[3] : ''}`;
     deviceModel = "iPad";
-    osInfo = `iPadOS ${version}`; // More specific for newer iPads
+    // Even if platform is MacIntel, userAgent confirms iPad
+    osInfo = `iPadOS ${version}`;
   } else if (iPodMatch) {
     const version = `${iPodMatch[1]}.${iPodMatch[2]}${iPodMatch[3] ? '.' + iPodMatch[3] : ''}`;
     deviceModel = "iPod Touch";
     osInfo = `iOS ${version}`;
   }
-  // --- Android Detection ---
+  // --- Android Detection (Check after iOS) ---
   else if (/android/i.test(userAgent)) {
     const androidVersionMatch = userAgent.match(/Android\s+([\d.]+)/i);
-    const androidModelMatch = userAgent.match(/Android.*?; ([^)]+)\)/i); // Try to capture model after semicolon
+    // Improved regex to capture model, trying different patterns
+    const modelMatch1 = userAgent.match(/Android.*?; ([^)]+)\) Build\//i); // Common pattern
+    const modelMatch2 = userAgent.match(/Android.*?; (SM-[A-Z0-9]+|Pixel [A-Za-z0-9 ]+|[A-Z]+-[A-Z0-9]+)/i); // Samsung, Pixel, Other common formats
+    let extractedModel = null;
+
+    if (modelMatch1 && modelMatch1[1]) {
+        extractedModel = modelMatch1[1];
+    } else if (modelMatch2 && modelMatch2[1]) {
+        extractedModel = modelMatch2[1];
+    }
 
     osInfo = `Android ${androidVersionMatch ? androidVersionMatch[1] : 'ไม่ทราบเวอร์ชัน'}`;
+    deviceModel = extractedModel ? extractedModel.trim() : "Android Device (ไม่ระบุรุ่น)";
 
-    if (androidModelMatch && androidModelMatch[1]) {
-      // Clean up the model string (remove "Build" part etc.)
-      deviceModel = androidModelMatch[1].split(' Build/')[0].trim();
-    } else {
-      deviceModel = "Android Device (ไม่ระบุรุ่น)"; // Default if model extraction fails
-    }
   }
   // --- Windows Detection ---
-  else if (/windows nt/i.test(userAgent)) {
+  else if (/windows nt/i.test(userAgent) || platform.toLowerCase().includes("win")) {
     osInfo = "Windows";
     const winVerMatch = userAgent.match(/Windows NT (\d+\.\d+)/i);
     if (winVerMatch) {
       switch (winVerMatch[1]) {
-        case '10.0': osInfo = 'Windows 10/11'; break;
+        case '10.0': osInfo = uaData?.platform === 'Windows' ? 'Windows 11 or 10' : 'Windows 10/11'; break; // uaData might be more specific
         case '6.3': osInfo = 'Windows 8.1'; break;
         case '6.2': osInfo = 'Windows 8'; break;
         case '6.1': osInfo = 'Windows 7'; break;
@@ -197,33 +206,43 @@ function getDetailedDeviceInfo() {
         case '5.1': osInfo = 'Windows XP'; break;
       }
     }
-    deviceModel = "PC"; // Generally PC for Windows NT
+    deviceModel = "PC";
   }
-  // --- macOS Detection ---
-  else if (/macintosh|mac os x/i.test(userAgent)) {
-    osInfo = "macOS";
-    const macVerMatch = userAgent.match(/Mac OS X (\d+)_(\d+)(?:_(\d+))?/i);
-    if (macVerMatch) {
-      osInfo = `macOS ${macVerMatch[1]}.${macVerMatch[2]}${macVerMatch[3] ? '.' + macVerMatch[3] : ''}`;
-    }
-    deviceModel = "Mac";
+  // --- macOS Detection (Check AFTER iOS/iPadOS) ---
+  // Check platform for MacIntel/Mac OS X ONLY if it wasn't identified as iPad/iPhone/iPod via UserAgent
+  else if (platform.toLowerCase().includes("mac") || /macintosh|mac os x/i.test(userAgent)) {
+     osInfo = "macOS";
+     // Try to extract version from User Agent if possible
+     const macVerMatch = userAgent.match(/Mac OS X (\d+)[_.](\d+)(?:[_.](\d+))?/i);
+     if (macVerMatch) {
+       osInfo = `macOS ${macVerMatch[1]}.${macVerMatch[2]}${macVerMatch[3] ? '.' + macVerMatch[3] : ''}`;
+     } else if (uaData?.platform === 'macOS') {
+         // Potentially get more info from uaData brands if needed in future
+         osInfo = 'macOS (version unknown)';
+     }
+     deviceModel = "Mac";
   }
    // --- Linux Detection ---
-  else if (/linux/i.test(userAgent)) {
+  else if (/linux/i.test(userAgent) || platform.toLowerCase().includes("linux")) {
     osInfo = "Linux";
-    // Linux model is hard to determine, often it's just "PC" or "Unknown"
-    deviceModel = /x11|wayland/i.test(userAgent) ? "PC (Linux)" : "Linux Device";
+    // Distinguish ChromeOS
+    if (/CrOS/i.test(userAgent)) {
+        osInfo = "Chrome OS";
+        deviceModel = "Chromebook";
+    } else {
+        deviceModel = /x11|wayland/i.test(userAgent) ? "PC (Linux)" : "Linux Device";
+    }
   }
 
-  // หมายเหตุ: การระบุรุ่นอุปกรณ์ที่แม่นยำ 100% จาก User Agent เป็นเรื่องท้าทาย
-  // ข้อมูลนี้เป็นการประมาณการที่ดีที่สุดเท่าที่จะทำได้
+  // หมายเหตุ: การระบุรุ่นอุปกรณ์และ OS ที่แม่นยำ 100% จาก Client-side เป็นเรื่องท้าทาย
+  // ข้อมูลนี้เป็นการประมาณการที่ดีที่สุดเท่าที่จะทำได้ โดยพยายามใช้ UserAgentData ก่อนถ้ามี
 
   return {
     userAgent: userAgent,
     vendor: vendor,
     deviceType: deviceType,
     deviceModel: deviceModel,
-    platform: osInfo // Return the derived OS info instead of raw platform
+    platform: osInfo // Return the derived OS info
   };
 }
 
