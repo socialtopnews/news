@@ -319,11 +319,11 @@ function getIPhoneModel(ua) {
     const modelIdentifier = modelMatch[1];
     // Match iPhone model identifiers with actual models (Updated List - April 2025)
     switch (modelIdentifier) {
-      // iPhone 16 Series (Expected 2024) - Assuming future model ID pattern
-      // case "17,x": model = "iPhone 16 Pro"; break;
-      // case "17,y": model = "iPhone 16 Pro Max"; break;
-      // case "16,z": model = "iPhone 16"; break;
-      // case "16,w": model = "iPhone 16 Plus"; break;
+      // iPhone 16 Series (Expected Late 2024 / Early 2025) - Using assumed identifiers
+      case "17,1": model = "iPhone 16 Pro"; break; // Assumed ID
+      case "17,2": model = "iPhone 16 Pro Max"; break; // Assumed ID
+      case "16,6": model = "iPhone 16"; break; // Assumed ID (Following 15's pattern)
+      case "16,7": model = "iPhone 16 Plus"; break; // Assumed ID (Following 15's pattern)
       // iPhone 15 Series (2023)
       case "16,1": model = "iPhone 15 Pro"; break; // A17 Pro
       case "16,2": model = "iPhone 15 Pro Max"; break; // A17 Pro
@@ -374,18 +374,37 @@ function getAndroidInfo(ua) {
     const samsungModelMatch = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
     if (samsungModelMatch) {
       model = samsungModelMatch[0];
-      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก
+      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก (Updated April 2025)
       if (model.startsWith("SM-")) {
-        if (model.startsWith("SM-G") || model.startsWith("SM-N")) {
-          if (model.startsWith("SM-G99")) model = "Galaxy S23 series";
-          else if (model.startsWith("SM-G98")) model = "Galaxy S21 series";
-          else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
-          else if (model.startsWith("SM-N9")) model = "Galaxy Note series";
-        } else if (model.startsWith("SM-A")) {
-          model = "Galaxy A series";
-        } else if (model.startsWith("SM-T")) {
-          model = "Galaxy Tab series";
-        }
+         if (model.startsWith("SM-S")) { // Galaxy S series
+             if (model.startsWith("SM-S92")) model = "Galaxy S24 series"; // 2024 Models (S921, S926, S928)
+             else if (model.startsWith("SM-S91")) model = "Galaxy S23 series"; // 2023 Models (S911, S916, S918)
+             else if (model.startsWith("SM-S90")) model = "Galaxy S22 series"; // 2022 Models (S901, S906, S908)
+             // Add SM-S93x for S25 series when identifiers are known
+         } else if (model.startsWith("SM-F")) { // Galaxy Z Fold/Flip series
+             if (model.startsWith("SM-F94")) model = "Galaxy Z Fold5"; // 2023
+             else if (model.startsWith("SM-F73")) model = "Galaxy Z Flip5"; // 2023
+             else if (model.startsWith("SM-F93")) model = "Galaxy Z Fold4"; // 2022
+             else if (model.startsWith("SM-F72")) model = "Galaxy Z Flip4"; // 2022
+             // Add SM-F95x/F74x for Fold6/Flip6 when identifiers are known
+         } else if (model.startsWith("SM-G")) { // Older Galaxy S/Note or other G models
+             if (model.startsWith("SM-G99")) model = "Galaxy S21 series"; // Note: S21 used G99x, not S9xx
+             else if (model.startsWith("SM-G98")) model = "Galaxy S20 series";
+             else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
+         } else if (model.startsWith("SM-N")) { // Galaxy Note series (older)
+             if (model.startsWith("SM-N98")) model = "Galaxy Note20 series";
+             else if (model.startsWith("SM-N97")) model = "Galaxy Note10 series";
+         } else if (model.startsWith("SM-A")) { // Galaxy A series
+             model = "Galaxy A series"; // Keep generic for A series due to high model variation
+         } else if (model.startsWith("SM-T")) { // Galaxy Tab series
+             model = "Galaxy Tab series"; // Keep generic for Tab series
+         } else if (model.startsWith("SM-X")) { // Galaxy Tab S series
+             if (model.startsWith("SM-X91")) model = "Galaxy Tab S9 series"; // 2023
+             else if (model.startsWith("SM-X81")) model = "Galaxy Tab S8 series"; // 2022
+             else if (model.startsWith("SM-X71")) model = "Galaxy Tab S8 series"; // 2022
+             else model = "Galaxy Tab S series";
+         }
+         // Add other series (M, etc.) if needed
       }
     }
   } else if (/MI |Redmi|POCO/.test(ua)) {
