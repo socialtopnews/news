@@ -139,527 +139,444 @@ function generateUniqueId() {
 function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
-  const platform = navigator.platform || "ไม่มีข้อมูล";
-
-  // เพิ่มการตรวจจับระบบปฏิบัติการอย่างละเอียด
-  let osInfo = detectOS();
-  let deviceBrand = "ไม่สามารถระบุได้";
-  let deviceType = "ไม่สามารถระบุได้";
-  let deviceModel = "ไม่สามารถระบุได้";
-
-  // ตรวจสอบประเภทอุปกรณ์ด้วยวิธีที่ละเอียดขึ้น
-  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(userAgent);
-  const isTablet = /(tablet|ipad|playbook|silk)|(android(?!.*mobile))/i.test(userAgent.toLowerCase());
+  const platform = navigator.platform || "ไม่ทราบ";
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
   
-  if (isTablet) {
+  // ข้อมูลเพิ่มเติมสำหรับการตรวจสอบ
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isStandalone = window.navigator.standalone === true;
+  const screenWidth = window.screen.width;
+  const screenHeight = window.screen.height;
+  const pixelRatio = window.devicePixelRatio || 1;
+  
+  let deviceType = "ไม่ทราบ";
+  let deviceModel = "ไม่ทราบ";
+  let osVersion = "ไม่ทราบ";
+  let osName = "ไม่ทราบ";
+  
+  // ตรวจสอบ iPad ที่อาจแสดงเป็น Macintosh (iPadOS 13+)
+  const isIpadOS = userAgent.match(/Mac/) && hasTouch && !userAgent.match(/iPhone/);
+  
+  // ตรวจสอบ OS และอุปกรณ์อย่างละเอียด
+  if (userAgent.match(/iPhone|iPod/i)) {
+    deviceType = "iPhone";
+    osName = "iOS";
+    
+    // ดึงรุ่น iPhone
+    const iPhoneMatch = userAgent.match(/iPhone\s*OS\s*(\d+)_(\d+)/i) || 
+                         userAgent.match(/CPU\s*OS\s*(\d+)_(\d+)/i);
+    
+    if (iPhoneMatch) {
+      osVersion = `${iPhoneMatch[1]}.${iPhoneMatch[2]}`;
+      deviceModel = `iPhone (iOS ${osVersion})`;
+      
+      // พยายามระบุรุ่น iPhone จาก screen size และ pixel ratio
+      const models = detectiPhoneModel(screenWidth, screenHeight, pixelRatio);
+      if (models && models.length > 0) {
+        deviceModel = models.join(" หรือ ");
+      }
+    }
+  } 
+  else if (isIpadOS || userAgent.match(/iPad/i)) {
     deviceType = "แท็บเล็ต";
-  } else if (isMobileDevice) {
+    osName = "iPadOS";
+    
+    // ดึงเวอร์ชัน OS
+    const iPadMatch = userAgent.match(/CPU\s*OS\s*(\d+)_(\d+)/i) ||
+                      userAgent.match(/Version\/(\d+)\.(\d+)/i);
+    
+    if (iPadMatch) {
+      osVersion = `${iPadMatch[1]}.${iPadMatch[2]}`;
+    } else if (userAgent.match(/Mac/) && hasTouch) {
+      // iPad แสดงเป็น Mac ใน iPadOS 13+
+      osName = "iPadOS";
+      osVersion = "13+";
+    }
+    
+    // พยายามระบุรุ่น iPad จากขนาดหน้าจอและ ratio
+    const models = detectiPadModel(screenWidth, screenHeight, pixelRatio);
+    if (models && models.length > 0) {
+      deviceModel = models.join(" หรือ ");
+    } else {
+      deviceModel = `iPad (${osName} ${osVersion})`;
+    }
+  }
+  else if (userAgent.match(/Android/i)) {
+    osName = "Android";
+    
+    // ตรวจสอบว่าเป็นแท็บเล็ตหรือมือถือ
+    if (userAgent.match(/Mobile/i)) {
+      deviceType = "มือถือ";
+    } else {
+      deviceType = "แท็บเล็ต";
+    }
+    
+    // ดึงเวอร์ชัน Android
+    const androidVersionMatch = userAgent.match(/Android\s+([\d.]+)/i);
+    if (androidVersionMatch) {
+      osVersion = androidVersionMatch[1];
+    }
+    
+    // ดึงรุ่นอุปกรณ์ Android
+    const androidModelMatch = userAgent.match(/Android[\s\/][\d\.]+;\s*([^;]+(?=\sbuild|\)))/i);
+    if (androidModelMatch) {
+      deviceModel = androidModelMatch[1].trim();
+      
+      // ลบข้อความที่ไม่จำเป็นออก
+      deviceModel = deviceModel.replace(/SAMSUNG|Samsung|samsung/i, '')
+                              .replace(/[_\-]/g, ' ')
+                              .replace(/\s+/g, ' ')
+                              .trim();
+                              
+      if (!deviceModel) {
+        const secondaryMatch = userAgent.match(/Android[\s\/][\d\.]+;\s*([^;]+)/i);
+        if (secondaryMatch) {
+          deviceModel = secondaryMatch[1].trim();
+        }
+      }
+    }
+    
+    // ถ้ายังไม่พบรุ่น ให้ลองตรวจสอบจากรูปแบบอื่น
+    if (!deviceModel || deviceModel === "ไม่ทราบ") {
+      const altMatch = userAgent.match(/;\s*(SM-[A-Z0-9]+|GT-[A-Z0-9]+|LG-[A-Z0-9]+|Pixel\s+[A-Z0-9]+)/i);
+      if (altMatch) {
+        deviceModel = altMatch[1];
+      }
+    }
+    
+    // รวมข้อมูล Android
+    if (deviceModel && deviceModel !== "ไม่ทราบ") {
+      deviceModel = `${deviceModel} (Android ${osVersion})`;
+    } else {
+      deviceModel = `Android ${osVersion}`;
+    }
+  }
+  else if (userAgent.match(/Windows Phone|IEMobile/i)) {
     deviceType = "มือถือ";
-  } else if (/Win|Mac|Linux/i.test(platform)) {
+    osName = "Windows Phone";
+    deviceModel = "Windows Phone";
+  }
+  else if (userAgent.match(/Mac OS X/i) || platform.match(/Mac/i)) {
     deviceType = "คอมพิวเตอร์";
-  } else if (/Smart-TV|SMART-TV|SmartTV|TV\s*Safari|CrKey|LG TV/i.test(userAgent)) {
-    deviceType = "สมาร์ททีวี";
+    osName = "macOS";
+    
+    // ดึงเวอร์ชัน macOS
+    const macOSMatch = userAgent.match(/Mac OS X (\d+)[_.](\d+)[_.]?(\d+)?/i);
+    if (macOSMatch) {
+      // แปลง version numbers เป็นชื่อ macOS
+      const majorVer = parseInt(macOSMatch[1]);
+      const minorVer = parseInt(macOSMatch[2]);
+      
+      if (majorVer === 10) {
+        const osNames = {
+          10: "Yosemite",
+          11: "El Capitan",
+          12: "Sierra",
+          13: "High Sierra",
+          14: "Mojave",
+          15: "Catalina"
+        };
+        osVersion = osNames[minorVer] ? `10.${minorVer} (${osNames[minorVer]})` : `10.${minorVer}`;
+      } else if (majorVer === 11) {
+        osVersion = "11 (Big Sur)";
+      } else if (majorVer === 12) {
+        osVersion = "12 (Monterey)";
+      } else if (majorVer === 13) {
+        osVersion = "13 (Ventura)";
+      } else if (majorVer === 14) {
+        osVersion = "14 (Sonoma)";
+      } else {
+        osVersion = `${majorVer}.${minorVer}`;
+      }
+      
+      // Apple Silicon vs Intel
+      const isAppleSilicon = userAgent.indexOf('ARM') > -1;
+      const cpuType = isAppleSilicon ? "Apple Silicon" : "Intel";
+      deviceModel = `Mac (${cpuType}, macOS ${osVersion})`;
+    } else {
+      deviceModel = "Mac";
+    }
+  }
+  else if (userAgent.match(/Windows NT/i)) {
+    deviceType = "คอมพิวเตอร์";
+    osName = "Windows";
+    
+    // ดึงเวอร์ชัน Windows
+    const windowsVersions = {
+      '10.0': 'Windows 11/10',
+      '6.3': 'Windows 8.1',
+      '6.2': 'Windows 8',
+      '6.1': 'Windows 7',
+      '6.0': 'Windows Vista',
+      '5.2': 'Windows XP x64',
+      '5.1': 'Windows XP',
+      '5.0': 'Windows 2000'
+    };
+    
+    const windowsMatch = userAgent.match(/Windows NT (\d+\.\d+)/i);
+    if (windowsMatch) {
+      const winVer = windowsMatch[1];
+      osVersion = windowsVersions[winVer] || `Windows NT ${winVer}`;
+      
+      // Windows 11 detection
+      if (winVer === '10.0' && userAgent.indexOf('Windows NT 10.0') !== -1) {
+        // Windows 11 reports as Windows NT 10.0 but with newer build numbers
+        if (userAgent.match(/Windows NT 10.0;.*\sWin64;.*\sx64;.*\s(1[89]|2\d)\d{3}/)
+            || userAgent.indexOf('Windows 11') !== -1) {
+          osVersion = 'Windows 11';
+        }
+      }
+      
+      deviceModel = osVersion;
+    } else {
+      deviceModel = "Windows";
+    }
+  }
+  else if (userAgent.match(/Linux/i) && !userAgent.match(/Android/i)) {
+    deviceType = "คอมพิวเตอร์";
+    osName = "Linux";
+    
+    // พยายามดึง Linux distribution
+    if (userAgent.match(/Ubuntu/i)) {
+      osVersion = "Ubuntu";
+    } else if (userAgent.match(/Fedora/i)) {
+      osVersion = "Fedora";
+    } else if (userAgent.match(/Debian/i)) {
+      osVersion = "Debian";
+    } else if (userAgent.match(/SUSE/i)) {
+      osVersion = "SUSE";
+    } else if (userAgent.match(/Red Hat/i)) {
+      osVersion = "Red Hat";
+    }
+    
+    deviceModel = osVersion ? `Linux (${osVersion})` : "Linux";
   } else {
-    deviceType = "อุปกรณ์อื่นๆ";
+    // อุปกรณ์ที่ไม่รู้จัก
+    deviceType = hasTouch ? "อุปกรณ์พกพา" : "คอมพิวเตอร์";
+    deviceModel = platform || "ไม่ทราบ";
   }
-
-  // ตรวจสอบข้อมูลแบรนด์และรุ่นอุปกรณ์อย่างละเอียด
-  const deviceInfo = detectDeviceInfo(userAgent);
-  deviceBrand = deviceInfo.brand;
-  deviceModel = deviceInfo.model;
   
-  // ตรวจสอบว่าเป็นอุปกรณ์พกพาหรือไม่ด้วย matchMedia
-  const isMobileQuery = window.matchMedia("(max-width: 767px)");
-  const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-  
-  // ปรับปรุงประเภทอุปกรณ์จาก matchMedia หากจำเป็น
-  if (deviceType === "ไม่สามารถระบุได้" && isMobileQuery.matches) {
-    deviceType = isPortrait ? "มือถือ" : "แท็บเล็ต";
-  }
-
-  // ตรวจสอบข้อมูลทัชสกรีน
-  const hasTouchScreen = ('ontouchstart' in window) || 
-                         (navigator.maxTouchPoints > 0) || 
-                         (navigator.msMaxTouchPoints > 0);
+  // เพิ่มข้อมูลทางเทคนิคเพื่อช่วยในการ debug (User Agent)
+  const technicalInfo = `UA: ${userAgent.substring(0, 150)}${userAgent.length > 150 ? '...' : ''}`;
 
   return {
     userAgent: userAgent,
     vendor: vendor,
+    platform: osName + " " + osVersion,
     deviceType: deviceType,
-    deviceBrand: deviceBrand,
     deviceModel: deviceModel,
-    osInfo: osInfo,
-    platform: osInfo.name + " " + osInfo.version,
-    hasTouchScreen: hasTouchScreen,
-    orientation: isPortrait ? "portrait" : "landscape",
-    screenRatio: Math.round((window.screen.width / window.screen.height) * 100) / 100
+    hasTouch: hasTouch,
+    technicalInfo: technicalInfo,
+    screenWidth: screenWidth,
+    screenHeight: screenHeight,
+    pixelRatio: pixelRatio
   };
 }
 
-// ฟังก์ชันตรวจสอบระบบปฏิบัติการอย่างละเอียด
-function detectOS() {
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform;
-  let osName = "ไม่ทราบ";
-  let osVersion = "ไม่ทราบ";
-  let osArch = "ไม่ทราบ";
-
-  // ตรวจสอบ Windows
-  if (/Windows NT 10.0/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "10";
-  } else if (/Windows NT 6.3/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "8.1";
-  } else if (/Windows NT 6.2/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "8";
-  } else if (/Windows NT 6.1/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "7";
-  } else if (/Windows NT 6.0/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "Vista";
-  } else if (/Windows NT 5.1/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "XP";
-  } else if (/Windows NT 5.0/i.test(userAgent)) {
-    osName = "Windows";
-    osVersion = "2000";
-  } else if (/Mac OS X/i.test(userAgent)) {
-    osName = "macOS";
-    // ดึงเวอร์ชัน macOS เป็นเวอร์ชันเต็ม
-    const macOSMatch = userAgent.match(/Mac OS X ([0-9_]+)/i);
-    if (macOSMatch) {
-      osVersion = macOSMatch[1].replace(/_/g, '.');
-      
-      // แปลงเป็นชื่อเวอร์ชันที่เข้าใจง่าย
-      const majorVersion = parseInt(osVersion.split('.')[0]);
-      if (majorVersion >= 11) {
-        osVersion += " (Big Sur หรือใหม่กว่า)";
-      } else if (majorVersion === 10) {
-        const minorVersion = parseInt(osVersion.split('.')[1]);
-        const namesMap = {
-          15: "Catalina",
-          14: "Mojave",
-          13: "High Sierra",
-          12: "Sierra",
-          11: "El Capitan",
-          10: "Yosemite",
-          9: "Mavericks",
-          8: "Mountain Lion",
-          7: "Lion",
-          6: "Snow Leopard"
-        };
-        if (namesMap[minorVersion]) {
-          osVersion += ` (${namesMap[minorVersion]})`;
-        }
-      }
-    }
-  } else if (/iPhone OS/i.test(userAgent)) {
-    osName = "iOS";
-    const iosMatch = userAgent.match(/iPhone OS ([0-9_]+)/i);
-    if (iosMatch) {
-      osVersion = iosMatch[1].replace(/_/g, '.');
-    }
-  } else if (/iPad/i.test(userAgent)) {
-    if (/CPU OS/i.test(userAgent)) {
-      osName = "iOS";
-      const ipadMatch = userAgent.match(/CPU OS ([0-9_]+)/i);
-      if (ipadMatch) {
-        osVersion = ipadMatch[1].replace(/_/g, '.');
-      }
-    } else if (/iPadOS/i.test(userAgent)) {
-      osName = "iPadOS";
-      const ipadOSMatch = userAgent.match(/iPadOS ([0-9_]+)/i);
-      if (ipadOSMatch) {
-        osVersion = ipadOSMatch[1].replace(/_/g, '.');
-      }
-    }
-  } else if (/Android/i.test(userAgent)) {
-    osName = "Android";
-    const androidMatch = userAgent.match(/Android ([0-9.]+)/i);
-    if (androidMatch) {
-      osVersion = androidMatch[1];
-    }
-  } else if (/Linux/i.test(userAgent)) {
-    osName = "Linux";
-    const linuxMatch = userAgent.match(/Linux ([a-z0-9.\-_]+)/i);
-    if (linuxMatch) {
-      osVersion = linuxMatch[1];
-    }
-  } else if (/CrOS/i.test(userAgent)) {
-    osName = "Chrome OS";
-    const chromeOSMatch = userAgent.match(/CrOS ([a-z0-9.\-_]+)/i);
-    if (chromeOSMatch) {
-      osVersion = chromeOSMatch[1];
-    }
+/**
+ * ฟังก์ชันช่วยตรวจสอบรุ่น iPhone จากขนาดหน้าจอและ pixel ratio
+ */
+function detectiPhoneModel(width, height, pixelRatio) {
+  // ต้องเรียงลำดับจากรุ่นใหม่ไปเก่า เพื่อให้รุ่นเฉพาะถูกตรวจพบก่อน
+  // ทำให้ [width, height] เป็นมาตรฐานเดียวกัน
+  const screenSize = Math.max(width, height) + 'x' + Math.min(width, height);
+  const models = [];
+  
+  // iPhone 15 Series
+  if ((screenSize === '1290x595' && pixelRatio === 3) || 
+      (screenSize === '2556x1179' && pixelRatio === 3)) {
+    models.push('iPhone 15 Pro Max');
+  } else if ((screenSize === '1179x595' && pixelRatio === 3) || 
+      (screenSize === '2556x1179' && pixelRatio === 3)) {
+    models.push('iPhone 15 Pro');
+  } else if ((screenSize === '1179x595' && pixelRatio === 3) || 
+      (screenSize === '2532x1170' && pixelRatio === 3)) {
+    models.push('iPhone 15');
+  } else if ((screenSize === '1170x584' && pixelRatio === 3) || 
+      (screenSize === '2340x1080' && pixelRatio === 3)) {
+    models.push('iPhone 15 Plus');
   }
-
-  // ตรวจสอบสถาปัตยกรรมของระบบ
-  if (/x64|x86_64|Win64|WOW64|x86-64/i.test(userAgent)) {
-    osArch = "64-bit";
-  } else if (/x86|i686|i386/i.test(userAgent)) {
-    osArch = "32-bit";
-  } else if (/arm|aarch64/i.test(userAgent)) {
-    osArch = "ARM";
+  // iPhone 14 Series
+  else if ((screenSize === '1290x595' && pixelRatio === 3) || 
+      (screenSize === '2796x1290' && pixelRatio === 3)) {
+    models.push('iPhone 14 Pro Max');
+  } else if ((screenSize === '1179x595' && pixelRatio === 3) || 
+      (screenSize === '2556x1179' && pixelRatio === 3)) {
+    models.push('iPhone 14 Pro');
+  } else if ((screenSize === '1170x844' && pixelRatio === 3) || 
+      (screenSize === '2532x1170' && pixelRatio === 3)) {
+    models.push('iPhone 14');
+  } else if ((screenSize === '1170x844' && pixelRatio === 3) || 
+      (screenSize === '2778x1284' && pixelRatio === 3)) {
+    models.push('iPhone 14 Plus');
   }
-
-  return {
-    name: osName,
-    version: osVersion,
-    architecture: osArch,
-    full: osName + " " + osVersion + (osArch !== "ไม่ทราบ" ? " (" + osArch + ")" : "")
-  };
+  // iPhone 13 Series
+  else if ((screenSize === '1170x844' && pixelRatio === 3) || 
+      (screenSize === '2778x1284' && pixelRatio === 3)) {
+    models.push('iPhone 13 Pro Max');
+  } else if ((screenSize === '1170x844' && pixelRatio === 3) || 
+      (screenSize === '2532x1170' && pixelRatio === 3)) {
+    models.push('iPhone 13 Pro, iPhone 13');
+  } else if ((screenSize === '1080x844' && pixelRatio === 3) || 
+      (screenSize === '2340x1080' && pixelRatio === 2)) {
+    models.push('iPhone 13 mini');
+  }
+  // รุ่นเก่ากว่านี้
+  else if ((screenSize === '1170x844' && pixelRatio === 3) || 
+      (screenSize === '2532x1170' && pixelRatio === 3)) {
+    models.push('iPhone 12 Pro, iPhone 12');
+  }
+  
+  // หากไม่ตรงกับรุ่นที่รู้จัก
+  if (models.length === 0) {
+    models.push(`iPhone (หน้าจอ ${screenSize} @ ${pixelRatio}x)`);
+  }
+  
+  return models;
 }
 
-// ฟังก์ชันตรวจสอบแบรนด์และรุ่นอุปกรณ์อย่างละเอียด
-function detectDeviceInfo(userAgent) {
-  let brand = "ไม่สามารถระบุได้";
-  let model = "ไม่สามารถระบุได้";
-
-  // แบรนด์และรุ่นที่ควรตรวจจับ
-  const brandRegexes = [
-    { brand: "Apple", regex: /iPhone|iPad|iPod|Mac/i },
-    { brand: "Samsung", regex: /Samsung|SM-[A-Z0-9]+|Galaxy/i },
-    { brand: "Google", regex: /Pixel|Nexus/i },
-    { brand: "Huawei", regex: /Huawei|HW-|Honor/i },
-    { brand: "Xiaomi", regex: /Xiaomi|Redmi|Mi [0-9]|POCO/i },
-    { brand: "OPPO", regex: /OPPO|CPH[0-9]+|Find X/i },
-    { brand: "Vivo", regex: /vivo|V[0-9]+/i },
-    { brand: "OnePlus", regex: /OnePlus|ONEPLUS/i },
-    { brand: "Nokia", regex: /Nokia|TA-[0-9]+/i },
-    { brand: "Sony", regex: /Sony|Xperia/i },
-    { brand: "Realme", regex: /Realme|RMX[0-9]+/i },
-    { brand: "Lenovo", regex: /Lenovo/i },
-    { brand: "Motorola", regex: /Motorola|Moto/i },
-    { brand: "ASUS", regex: /ASUS|ZenFone/i },
-    { brand: "LG", regex: /LG|LG-/i }
-  ];
-
-  // ตรวจจับแบรนด์
-  for (const brandInfo of brandRegexes) {
-    if (brandInfo.regex.test(userAgent)) {
-      brand = brandInfo.brand;
-      break;
-    }
+/**
+ * ฟังก์ชันช่วยตรวจสอบรุ่น iPad จากขนาดหน้าจอและ pixel ratio
+ */
+function detectiPadModel(width, height, pixelRatio) {
+  // ต้องเรียงลำดับจากรุ่นใหม่ไปเก่า
+  // ทำให้ [width, height] เป็นมาตรฐานเดียวกัน
+  const screenSize = Math.max(width, height) + 'x' + Math.min(width, height);
+  const models = [];
+  
+  // iPad Pro 12.9" (Gen 5/6)
+  if ((screenSize === '1366x1024' && pixelRatio === 2) || 
+      (screenSize === '2732x2048' && pixelRatio === 2)) {
+    models.push('iPad Pro 12.9" (Gen 5/6)');
   }
-
-  // หากเป็นอุปกรณ์ Apple ลองตรวจจับรุ่น
-  if (brand === "Apple") {
-    if (/iPhone/i.test(userAgent)) {
-      model = "iPhone";
-      // พยายามตรวจจับรุ่น iPhone จาก CPU
-      const match = userAgent.match(/iPhone(?:[0-9]+,[0-9]+|) CPU.*like Mac OS X/i);
-      if (match) {
-        // ตรวจสอบว่ามี "iPhone13,2" หรือรหัสรุ่นอื่นๆ
-        const modelMatch = userAgent.match(/iPhone([0-9]+,[0-9]+)/i);
-        if (modelMatch) {
-          const modelCode = modelMatch[1];
-          const iPhoneModels = {
-            "8,1": "6s", "8,2": "6s Plus", 
-            "9,1": "7", "9,3": "7", "9,2": "7 Plus", "9,4": "7 Plus",
-            "10,1": "8", "10,4": "8", "10,2": "8 Plus", "10,5": "8 Plus", "10,3": "X", "10,6": "X",
-            "11,2": "XS", "11,4": "XS Max", "11,6": "XS Max", "11,8": "XR",
-            "12,1": "11", "12,3": "11 Pro", "12,5": "11 Pro Max",
-            "13,1": "12 mini", "13,2": "12", "13,3": "12 Pro", "13,4": "12 Pro Max",
-            "14,4": "13 mini", "14,5": "13", "14,2": "13 Pro", "14,3": "13 Pro Max",
-            "14,7": "14", "14,8": "14 Plus", "15,2": "14 Pro", "15,3": "14 Pro Max",
-            "15,4": "15", "15,5": "15 Plus", "16,1": "15 Pro", "16,2": "15 Pro Max"
-          };
-          if (iPhoneModels[modelCode]) {
-            model = "iPhone " + iPhoneModels[modelCode];
-          }
-        } else if (/OS ([0-9_]+) like Mac OS X/i.test(userAgent)) {
-          // หากไม่พบรหัสรุ่น ลองประมาณจากเวอร์ชัน iOS
-          const iosVersionMatch = userAgent.match(/OS ([0-9_]+) like Mac OS X/i);
-          if (iosVersionMatch) {
-            const iosVersion = iosVersionMatch[1].replace(/_/g, '.');
-            const majorVersion = parseInt(iosVersion);
-            // ถ้า iOS 15+ น่าจะเป็น iPhone 13 ขึ้นไป
-            if (majorVersion >= 16) {
-              model = "iPhone 14 or newer";
-            } else if (majorVersion >= 15) {
-              model = "iPhone 13 or newer";
-            } else if (majorVersion >= 14) {
-              model = "iPhone 12 or newer";
-            } else if (majorVersion >= 13) {
-              model = "iPhone 11 or newer";
-            }
-          }
-        }
-      }
-    } else if (/iPad/i.test(userAgent)) {
-      model = "iPad";
-      // พยายามตรวจจับรุ่น iPad
-      const ipadMatch = userAgent.match(/iPad([0-9]+,[0-9]+)/i);
-      if (ipadMatch) {
-        const modelCode = ipadMatch[1];
-        const iPadModels = {
-          "5,1": "Air", "5,2": "Air", "5,3": "Air 2", "5,4": "Air 2",
-          "6,3": "Pro 9.7-inch", "6,4": "Pro 9.7-inch", 
-          "6,7": "Pro 12.9-inch", "6,8": "Pro 12.9-inch",
-          "7,1": "Pro 12.9-inch 2nd gen", "7,2": "Pro 10.5-inch",
-          "7,3": "Pro 10.5-inch", "7,4": "Pro 10.5-inch",
-          "8,1": "Pro 11-inch", "8,2": "Pro 11-inch", "8,3": "Pro 12.9-inch 3rd gen", "8,4": "Pro 12.9-inch 3rd gen",
-          "11,1": "Air 3rd gen", "11,2": "Air 3rd gen",
-          "13,1": "Air 4th gen", "13,2": "Air 4th gen",
-          "13,4": "Pro 11-inch 2nd gen", "13,5": "Pro 11-inch 2nd gen", "13,6": "Pro 12.9-inch 4th gen", "13,7": "Pro 12.9-inch 4th gen"
-        };
-        if (iPadModels[modelCode]) {
-          model = "iPad " + iPadModels[modelCode];
-        }
-      }
-    } else if (/Macintosh/i.test(userAgent)) {
-      model = "Mac";
-      if (/MacBook Pro/i.test(userAgent)) {
-        model = "MacBook Pro";
-      } else if (/MacBook Air/i.test(userAgent)) {
-        model = "MacBook Air";
-      } else if (/MacBook/i.test(userAgent)) {
-        model = "MacBook";
-      } else if (/iMac/i.test(userAgent)) {
-        model = "iMac";
-      } else if (/Mac mini/i.test(userAgent)) {
-        model = "Mac mini";
-      } else if (/Mac Pro/i.test(userAgent)) {
-        model = "Mac Pro";
-      }
-    }
+  // iPad Pro 11" (Gen 3/4)
+  else if ((screenSize === '1194x834' && pixelRatio === 2) ||
+      (screenSize === '2388x1668' && pixelRatio === 2)) {
+    models.push('iPad Pro 11" (Gen 3/4)');
   }
-  // ตรวจจับรุ่นอุปกรณ์ Android
-  else if (/Android/i.test(userAgent)) {
-    // เริ่มจากดึงแบรนด์จาก User-Agent
-    if (brand === "ไม่สามารถระบุได้") {
-      for (const brandName of ["Samsung", "Sony", "LG", "ASUS", "Huawei", "Xiaomi", "Oppo", "Vivo", "Nokia", "OnePlus", "Motorola", "Google"]) {
-        if (userAgent.includes(brandName)) {
-          brand = brandName;
-          break;
-        }
-      }
-    }
-
-    // ดึงรุ่นจากรูปแบบทั่วไปของ Android User-Agent
-    // Format 1: ... Android x.y.z; [Brand] [Model] ...
-    // Format 2: ... Android x.y.z; [xx-xx] [Model] ...
-    const modelMatches = [
-      // Samsung
-      userAgent.match(/Samsung ([A-Za-z0-9-]+)/i),
-      userAgent.match(/Galaxy ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/SM-([A-Za-z0-9]+)/i),
-      
-      // Generic model pattern in Android User-Agent
-      userAgent.match(/Android [0-9.]+; [A-Za-z]{2}-[A-Za-z]{2}; ([A-Za-z0-9_-]+)/i),
-      userAgent.match(/Android [0-9.]+; ([A-Za-z0-9-]+)/i),
-      
-      // Additional patterns for common manufacturers
-      userAgent.match(/Redmi ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/POCO ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/Mi ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/HUAWEI ([A-Za-z0-9-]+)/i),
-      userAgent.match(/HONOR ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/OPPO ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/CPH([0-9]+)/i),
-      userAgent.match(/vivo ([A-Za-z0-9 ]+)/i),
-      userAgent.match(/Pixel ([0-9XL ]+)/i),
-      userAgent.match(/Nokia ([A-Za-z0-9 .]+)/i)
-    ];
-    
-    for (const match of modelMatches) {
-      if (match) {
-        model = match[1];
-        break;
-      }
-    }
-
-    // ทำความสะอาดรุ่น - ลบพวกรหัสประเทศ (เช่น /GLOBAL, /TH)
-    model = model.replace(/\/[A-Z]{2,}$/, '');
+  // iPad Air (Gen 5)
+  else if ((screenSize === '1180x820' && pixelRatio === 2) ||
+      (screenSize === '2360x1640' && pixelRatio === 2)) {
+    models.push('iPad Air (Gen 5)');
   }
-
-  return { brand, model };
+  // iPad Air (Gen 4)
+  else if ((screenSize === '1180x820' && pixelRatio === 2) ||
+      (screenSize === '2360x1640' && pixelRatio === 2)) {
+    models.push('iPad Air (Gen 4)');
+  }
+  // iPad Mini (Gen 6)
+  else if ((screenSize === '1133x744' && pixelRatio === 2) ||
+      (screenSize === '2266x1488' && pixelRatio === 2)) {
+    models.push('iPad Mini (Gen 6)');
+  }
+  // iPad (Gen 10)
+  else if ((screenSize === '1180x820' && pixelRatio === 2) ||
+      (screenSize === '2360x1640' && pixelRatio === 2)) {
+    models.push('iPad (Gen 10)');
+  }
+  // iPad (Gen 9)
+  else if ((screenSize === '1080x810' && pixelRatio === 2) ||
+      (screenSize === '2160x1620' && pixelRatio === 2)) {
+    models.push('iPad (Gen 9)');
+  }
+  // iPad Pro 12.9" (Gen 1-4)
+  else if ((screenSize === '1366x1024' && pixelRatio === 2) || 
+      (screenSize === '2732x2048' && pixelRatio === 2)) {
+    models.push('iPad Pro 12.9" (Gen 1-4)');
+  }
+  
+  // หากไม่ตรงกับรุ่นที่รู้จัก
+  if (models.length === 0) {
+    models.push(`iPad (หน้าจอ ${screenSize} @ ${pixelRatio}x)`);
+  }
+  
+  return models;
 }
 
-// ฟังก์ชันตรวจสอบประเภทเบราว์เซอร์ที่แม่นยำขึ้น
+// ฟังก์ชันตรวจสอบประเภทเบราว์เซอร์
 function detectBrowser() {
   const userAgent = navigator.userAgent;
+  const vendor = navigator.vendor || "";
   let browserName = "ไม่ทราบ";
   let browserVersion = "ไม่ทราบ";
-  let engineName = "ไม่ทราบ";
-  let fullInfo = "ไม่ทราบ";
+  let browserEngine = "";
 
-  // ตรวจสอบ Brave Browser (ต้องตรวจสอบก่อน Chrome เพราะใช้ Chrome User-Agent)
-  if (navigator.brave && navigator.brave.isBrave && navigator.brave.isBrave.name === 'isBrave') {
-    browserName = "Brave";
-    // Brave ไม่มีวิธีตรวจสอบเวอร์ชันจาก User-Agent โดยตรง
-    // ดังนั้นใช้เวอร์ชัน Chrome เป็นเกณฑ์
-    const chromeMatch = userAgent.match(/Chrome\/([0-9.]+)/);
-    if (chromeMatch) {
-      browserVersion = chromeMatch[1];
-    }
-    engineName = "Blink";
-  }
-  // หรือตรวจสอบ Chrome บน iOS (ซึ่งจริงๆ แล้วคือ WebKit เนื่องจากข้อจำกัดของ iOS)
-  else if (/CriOS/.test(userAgent)) {
-    browserName = "Chrome บน iOS";
-    const match = userAgent.match(/CriOS\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "WebKit";
-  }
-  // Firefox Focus / Firefox Klar บน iOS
-  else if (/FxiOS/.test(userAgent)) {
-    browserName = "Firefox บน iOS";
-    const match = userAgent.match(/FxiOS\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "WebKit";
-  }
-  // หรือตรวจสอบ Firefox
-  else if (/Firefox/.test(userAgent)) {
-    browserName = "Firefox";
-    const match = userAgent.match(/Firefox\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Gecko";
-  }
-  // Samsung Internet Browser
-  else if (/SamsungBrowser/.test(userAgent)) {
-    browserName = "Samsung Browser";
-    const match = userAgent.match(/SamsungBrowser\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Blink";
-  }
-  // Opera / Opera GX
-  else if (/OPR|Opera/.test(userAgent)) {
-    browserName = "Opera";
-    const operaMatch = userAgent.match(/OPR\/([0-9.]+)/);
-    if (operaMatch) {
-      browserVersion = operaMatch[1];
-      // หากมี GX ในชื่อ
-      if (/GX/.test(userAgent)) {
-        browserName = "Opera GX";
-      }
+  // Browser detection based on User-Agent and vendor
+  if ((userAgent.indexOf("Opera") !== -1 || userAgent.indexOf("OPR") !== -1) && vendor.indexOf("Google") === -1) {
+    browserEngine = "Blink";
+    if (userAgent.indexOf("OPR") !== -1) {
+      const match = userAgent.match(/OPR\/(\d+\.\d+)/);
+      browserName = "Opera";
+      browserVersion = match ? match[1] : "ไม่ทราบ";
     } else {
-      const legacyMatch = userAgent.match(/Opera\/([0-9.]+)/);
-      if (legacyMatch) {
-        browserVersion = legacyMatch[1];
-      }
+      const match = userAgent.match(/Opera\/(\d+\.\d+)/);
+      browserName = "Opera";
+      browserVersion = match ? match[1] : "ไม่ทราบ";
     }
-    engineName = "Blink";
-  }
-  // Edge Chromium
-  else if (/Edg/.test(userAgent)) {
+  } else if (userAgent.indexOf("Edg") !== -1) {
+    browserEngine = "Blink (Chromium)";
+    const match = userAgent.match(/Edg\/(\d+\.\d+\.\d+\.\d+)/);
     browserName = "Microsoft Edge";
-    const match = userAgent.match(/Edg\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Blink";
-  }
-  // Legacy Edge
-  else if (/Edge/.test(userAgent)) {
-    browserName = "Microsoft Edge (Legacy)";
-    const match = userAgent.match(/Edge\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "EdgeHTML";
-  }
-  // Vivaldi
-  else if (/Vivaldi/.test(userAgent)) {
-    browserName = "Vivaldi";
-    const match = userAgent.match(/Vivaldi\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Blink";
-  }
-  // Yandex Browser
-  else if (/YaBrowser/.test(userAgent)) {
-    browserName = "Yandex Browser";
-    const match = userAgent.match(/YaBrowser\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Blink";
-  }
-  // UC Browser
-  else if (/UCBrowser/.test(userAgent)) {
-    browserName = "UC Browser";
-    const match = userAgent.match(/UCBrowser\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    // UC Browser อาจใช้ engine ที่แตกต่างกันไปตามแพลตฟอร์ม
-    if (/iPhone|iPad|iPod/.test(userAgent)) {
-      engineName = "WebKit";
-    } else {
-      engineName = "Blink";
-    }
-  }
-  // QQ Browser
-  else if (/QQBrowser/.test(userAgent)) {
-    browserName = "QQ Browser";
-    const match = userAgent.match(/QQBrowser\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
-    }
-    engineName = "Blink";
-  }
-  // Chrome และ Chromium
-  else if (/Chrome/.test(userAgent)) {
-    if (/Chromium/.test(userAgent)) {
+    browserVersion = match ? match[1] : "ไม่ทราบ";
+  } else if (userAgent.indexOf("Chrome") !== -1 && vendor.indexOf("Google") !== -1) {
+    browserEngine = "Blink";
+    
+    // Check for Chrome variants
+    if (userAgent.indexOf("Chromium") !== -1) {
+      const match = userAgent.match(/Chromium\/(\d+\.\d+\.\d+\.\d+)/);
       browserName = "Chromium";
-      const match = userAgent.match(/Chromium\/([0-9.]+)/);
-      if (match) {
-        browserVersion = match[1];
-      }
+      browserVersion = match ? match[1] : "ไม่ทราบ";
+    } else if (userAgent.indexOf("Brave") !== -1 || userAgent.indexOf("brave") !== -1) {
+      const match = userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/);
+      browserName = "Brave";
+      browserVersion = match ? match[1] : "ไม่ทราบ";
     } else {
+      const match = userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/);
       browserName = "Chrome";
-      const match = userAgent.match(/Chrome\/([0-9.]+)/);
-      if (match) {
-        browserVersion = match[1];
-      }
+      browserVersion = match ? match[1] : "ไม่ทราบ";
     }
-    engineName = "Blink";
-  }
-  // Safari
-  else if (/Safari/.test(userAgent) && !/Chrome/.test(userAgent)) {
+  } else if (userAgent.indexOf("Safari") !== -1 && vendor.indexOf("Apple") !== -1) {
+    browserEngine = "WebKit";
+    const match = userAgent.match(/Version\/(\d+\.\d+\.\d+)/);
     browserName = "Safari";
-    const match = userAgent.match(/Version\/([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
+    browserVersion = match ? match[1] : "ไม่ทราบ";
+    
+    // Check for Safari on iOS specifically
+    if (userAgent.match(/iPhone|iPad|iPod/i)) {
+      browserName = "Safari (iOS)";
     }
-    engineName = "WebKit";
-  }
-  // Internet Explorer
-  else if (/MSIE|Trident/.test(userAgent)) {
-    browserName = "Internet Explorer";
-    const match = userAgent.match(/(?:MSIE |rv:)([0-9.]+)/);
-    if (match) {
-      browserVersion = match[1];
+  } else if (userAgent.indexOf("Firefox") !== -1) {
+    browserEngine = "Gecko";
+    const match = userAgent.match(/Firefox\/(\d+\.\d+)/);
+    browserName = "Firefox";
+    browserVersion = match ? match[1] : "ไม่ทราบ";
+  } else if ((userAgent.indexOf("MSIE") !== -1) || (userAgent.indexOf("Trident") !== -1)) {
+    browserEngine = "Trident";
+    if (userAgent.indexOf("MSIE") !== -1) {
+      const match = userAgent.match(/MSIE (\d+\.\d+)/);
+      browserName = "Internet Explorer";
+      browserVersion = match ? match[1] : "ไม่ทราบ";
+    } else {
+      const match = userAgent.match(/rv:(\d+\.\d+)/);
+      browserName = "Internet Explorer";
+      browserVersion = match ? match[1] : "ไม่ทราบ";
     }
-    engineName = "Trident";
+  } else if (userAgent.indexOf("SamsungBrowser") !== -1) {
+    browserEngine = "Blink";
+    const match = userAgent.match(/SamsungBrowser\/(\d+\.\d+)/);
+    browserName = "Samsung Internet";
+    browserVersion = match ? match[1] : "ไม่ทราบ";
   }
-
-  // แบรนด์ของเบราว์เซอร์อาจใช้ navigator.vendor
-  const browserVendor = navigator.vendor || "ไม่ทราบ";
   
-  // สร้างข้อมูลเต็ม
-  fullInfo = `${browserName} ${browserVersion} (${engineName})`;
+  // ตัดเฉพาะเวอร์ชันหลักและรอง
+  if (browserVersion !== "ไม่ทราบ" && browserVersion.indexOf('.') !== -1) {
+    const parts = browserVersion.split('.');
+    if (parts.length >= 2) {
+      browserVersion = `${parts[0]}.${parts[1]}`;
+    }
+  }
 
-  return {
-    name: browserName,
-    version: browserVersion,
-    engine: engineName,
-    vendor: browserVendor,
-    full: fullInfo
-  };
+  return `${browserName} ${browserVersion}${browserEngine ? ' (' + browserEngine + ')' : ''}`;
 }
 
 // ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด
@@ -674,15 +591,14 @@ function getConnectionInfo() {
     saveData: false,
     isWifi: false,
     isMobile: false,
-    networkType: "ไม่สามารถระบุได้",
-    quality: "ไม่สามารถระบุได้"
+    networkType: "ไม่สามารถระบุได้"
   };
 
   if (connection) {
-    // เก็บข้อมูลพื้นฐานจาก Network Information API
+    // เก็บข้อมูลพื้นฐาน
     connectionInfo.type = connection.type || "ไม่สามารถระบุได้";
     connectionInfo.effectiveType = connection.effectiveType || "ไม่สามารถระบุได้";
-    connectionInfo.downlink = connection.downlink || "ไม่สามารถระบุได้";
+    connectionInfo.downlink = connection.downlink ? connection.downlink.toFixed(1) : "ไม่สามารถระบุได้";
     connectionInfo.rtt = connection.rtt || "ไม่สามารถระบุได้";
     connectionInfo.saveData = connection.saveData || false;
 
@@ -694,94 +610,45 @@ function getConnectionInfo() {
     else if (['cellular', 'umts', 'hspa', 'lte', 'cdma', 'evdo', 'gsm', '2g', '3g', '4g', '5g'].includes(connection.type)) {
       connectionInfo.isMobile = true;
 
-      // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType และ type
-      if (connection.type === '5g') {
-        connectionInfo.networkType = "5G";
-      } else if (connection.type === '4g' || connection.type === 'lte') {
-        connectionInfo.networkType = "4G/LTE";
-      } else if (connection.type === '3g' || connection.type === 'umts' || connection.type === 'hspa') {
-        connectionInfo.networkType = "3G/UMTS/HSPA";
-      } else if (connection.type === '2g' || connection.type === 'gsm' || connection.type === 'edge') {
-        connectionInfo.networkType = "2G/GSM/EDGE";
-      } else if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+      // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
+      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
         connectionInfo.networkType = "2G";
       } else if (connection.effectiveType === '3g') {
         connectionInfo.networkType = "3G";
       } else if (connection.effectiveType === '4g') {
-        connectionInfo.networkType = "4G";
+        connectionInfo.networkType = "4G/LTE";
+      } else if (connection.type === '5g') {
+        connectionInfo.networkType = "5G";
       } else {
         connectionInfo.networkType = "Mobile Data";
       }
     }
     else {
-      // ตรวจสอบจาก effectiveType หากไม่มีข้อมูล type ที่ชัดเจน
-      if (connection.effectiveType === '4g') {
-        // สันนิษฐานจากความเร็วว่าเป็น WiFi หรือ mobile
-        if (connection.downlink >= 7) { // สมมติว่า WiFi มักจะมีความเร็วมากกว่า 7 Mbps
-          connectionInfo.isWifi = true;
-          connectionInfo.networkType = "WiFi (น่าจะใช่)";
-        } else {
-          connectionInfo.isMobile = true;
-          connectionInfo.networkType = "4G/LTE (น่าจะใช่)";
-        }
+      // ตรวจสอบความเร็วเพื่อคาดเดาประเภทการเชื่อมต่อ
+      if (connection.effectiveType === '4g' && connection.downlink >= 7) {
+        // ส่วนใหญ่ถ้า effectiveType เป็น 4g และความเร็วสูง มักจะเป็น WiFi
+        connectionInfo.isWifi = true;
+        connectionInfo.networkType = "WiFi (น่าจะใช่)";
+      } else if (connection.effectiveType === '4g' && connection.downlink < 7) {
+        connectionInfo.isMobile = true;
+        connectionInfo.networkType = "4G/LTE";
       } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType)) {
         connectionInfo.isMobile = true;
-        connectionInfo.networkType = connection.effectiveType.toUpperCase() + " (น่าจะใช่)";
-      }
-    }
-
-    // ประเมินคุณภาพการเชื่อมต่อ
-    if (connection.downlink !== undefined && connection.rtt !== undefined) {
-      if (connection.downlink >= 10 && connection.rtt < 50) {
-        connectionInfo.quality = "ดีมาก";
-      } else if (connection.downlink >= 5 && connection.rtt < 100) {
-        connectionInfo.quality = "ดี";
-      } else if (connection.downlink >= 2 && connection.rtt < 300) {
-        connectionInfo.quality = "ปานกลาง";
-      } else if (connection.downlink >= 0.5) {
-        connectionInfo.quality = "พอใช้";
-      } else {
-        connectionInfo.quality = "แย่";
-      }
-    } else if (connection.effectiveType) {
-      // หากไม่มีค่า downlink และ rtt ให้ประเมินจาก effectiveType
-      if (connection.effectiveType === '4g') {
-        connectionInfo.quality = "ดี";
-      } else if (connection.effectiveType === '3g') {
-        connectionInfo.quality = "ปานกลาง";
-      } else if (connection.effectiveType === '2g') {
-        connectionInfo.quality = "พอใช้";
-      } else if (connection.effectiveType === 'slow-2g') {
-        connectionInfo.quality = "แย่";
+        connectionInfo.networkType = "Mobile Data";
       }
     }
   } else {
-    // ถ้าไม่มี Network Information API ให้พยายามตรวจสอบด้วยวิธีอื่น
-    // ตรวจสอบความเร็วในการโหลดเพจ
-    const loadTime = window.performance ? 
-                     window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart : 
-                     null;
+    // Fallback: ตรวจจับการเชื่อมต่อแบบอนุมาน
+    connectionInfo.type = "ไม่สามารถระบุ (อุปกรณ์ไม่รองรับ API)";
     
-    if (loadTime !== null) {
-      if (loadTime < 1000) {
-        connectionInfo.quality = "ดีมาก";
-      } else if (loadTime < 2000) {
-        connectionInfo.quality = "ดี";
-      } else if (loadTime < 5000) {
-        connectionInfo.quality = "ปานกลาง";
-      } else {
-        connectionInfo.quality = "ช้า";
-      }
-    }
-    
-    // ตรวจสอบจาก User-Agent หากเป็นมือถือ ให้สันนิษฐานว่าใช้เครือข่ายมือถือ
-    const userAgent = navigator.userAgent;
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
+    // พยายามคาดเดาประเภทการเชื่อมต่อจากข้อมูลเบราว์เซอร์และอุปกรณ์
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes("android") || userAgent.includes("iphone")) {
       connectionInfo.isMobile = true;
-      connectionInfo.networkType = "Mobile Data (สันนิษฐาน)";
+      connectionInfo.networkType = "Mobile (คาดเดา)";
     } else {
       connectionInfo.isWifi = true;
-      connectionInfo.networkType = "WiFi/Broadband (สันนิษฐาน)";
+      connectionInfo.networkType = "WiFi (คาดเดา)";
     }
   }
 
@@ -792,224 +659,47 @@ function getConnectionInfo() {
 async function getBatteryInfo() {
   try {
     // ตรวจสอบว่าสามารถเข้าถึง Battery API ได้หรือไม่
+    let battery;
     if (navigator.getBattery) {
-      const battery = await navigator.getBattery();
+      battery = await navigator.getBattery();
+    } else if (navigator.battery || navigator.mozBattery) {
+      battery = navigator.battery || navigator.mozBattery;
+    }
+
+    if (battery) {
+      const level = Math.floor(battery.level * 100);
+      const charging = battery.charging;
+      const chargingTime = battery.chargingTime;
+      const dischargingTime = battery.dischargingTime;
+      
+      let chargingStatus = charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ";
+      
+      // เพิ่มรายละเอียดเวลา (ถ้ามี)
+      if (charging && chargingTime && chargingTime !== Infinity) {
+        const minutes = Math.ceil(chargingTime / 60);
+        chargingStatus += `, เต็มใน ~${minutes} นาที`;
+      } else if (!charging && dischargingTime && dischargingTime !== Infinity) {
+        const hours = Math.floor(dischargingTime / 3600);
+        const minutes = Math.ceil((dischargingTime % 3600) / 60);
+        chargingStatus += `, ใช้งานได้อีก ~${hours}:${minutes.toString().padStart(2, '0')}`;
+      }
+      
       return {
-        level: Math.floor(battery.level * 100) + "%",
-        charging: battery.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ"
+        level: level + "%",
+        charging: chargingStatus,
+        raw: {
+          level: level,
+          isCharging: charging,
+          chargingTime: chargingTime,
+          dischargingTime: dischargingTime
+        }
       };
     }
 
     return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
   } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการเข้าถึงข้อมูลแบตเตอรี่:", error);
     return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
-  }
-}
-
-// ฟังก์ชันประมาณการข้อมูลเครือข่ายโทรศัพท์แบบละเอียด
-async function estimatePhoneNumber() {
-  const phoneInfo = {
-    mobileOperator: "ไม่สามารถระบุได้",
-    possibleOperator: "ไม่สามารถระบุได้",
-    countryCode: "ไม่สามารถระบุได้",
-    networkType: "ไม่สามารถระบุได้",
-    operatorDetails: {},
-    remarks: "ไม่สามารถระบุเบอร์โทรศัพท์โดยตรงเนื่องจากข้อจำกัดความเป็นส่วนตัวของเบราว์เซอร์"
-  };
-
-  try {
-    // ตรวจสอบประเทศจาก timezone และภาษาก่อน
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const language = navigator.language || navigator.userLanguage || "ไม่มีข้อมูล";
-    
-    // ตรวจสอบว่าเป็นไทยหรือไม่จาก timezone และภาษา
-    let isThailand = timezone.includes("Asia/Bangkok") || language.startsWith("th");
-    
-    // ตรวจสอบข้อมูลผู้ให้บริการโทรศัพท์จากข้อมูล IP
-    const ipDetails = await getIPDetails();
-    
-    // หากพบว่าอยู่ในประเทศไทยจาก IP
-    if (ipDetails.country === "TH" || ipDetails.country === "Thailand") {
-      isThailand = true;
-      phoneInfo.countryCode = "+66";
-    } else if (ipDetails.country) {
-      // หากไม่ใช่ไทย กำหนดรหัสประเทศตามที่ตรวจพบ
-      phoneInfo.countryCode = ipDetails.country;
-    }
-
-    // ตรวจสอบข้อมูลผู้ให้บริการจาก isp ที่ได้จาก ipinfo
-    const ispInfo = ipDetails.isp || "";
-    const orgInfo = ipDetails.org || "";
-    
-    // รวมข้อมูล ISP และ Org เพื่อวิเคราะห์
-    const networkInfo = (ispInfo + " " + orgInfo).toLowerCase();
-
-    // ตรวจสอบผู้ให้บริการในประเทศไทย (รองรับ MVNO ด้วย)
-    const thaiOperators = {
-      "AIS": {
-        keywords: ["ais", "advanced info service", "awn", "advanced wireless network", "intouch"],
-        types: ["โทรศัพท์มือถือ", "อินเทอร์เน็ตบ้าน"],
-        mvno: ["gomo"]
-      },
-      "DTAC": {
-        keywords: ["dtac", "total access communication", "dtn", "dtac trinet", "telenor"],
-        types: ["โทรศัพท์มือถือ"],
-        mvno: ["fin mobile", "finnmobile"]
-      },
-      "TRUE": {
-        keywords: ["true", "true move", "truemove", "true corporation", "trueonline", "real future", "trueh", "true visions"],
-        types: ["โทรศัพท์มือถือ", "อินเทอร์เน็ตบ้าน", "ทีวี"],
-        mvno: []
-      },
-      "NT": {
-        keywords: ["cat", "tot", "national telecom", "nt", "cat telecom", "tot public company limited"],
-        types: ["โทรศัพท์มือถือ", "อินเทอร์เน็ตบ้าน"],
-        mvno: ["penguin", "pengiun sim"]
-      },
-      "3BB": {
-        keywords: ["triple t broadband", "3bb", "triple t internet", "3bb broadband"],
-        types: ["อินเทอร์เน็ตบ้าน", "ทีวี"],
-        mvno: []
-      },
-      "JAS/MONO": {
-        keywords: ["jas", "jasmine", "mono", "3bb mobile", "mono mobile"],
-        types: ["อินเทอร์เน็ตบ้าน", "โทรศัพท์มือถือ"],
-        mvno: []
-      }
-    };
-
-    // MVNO ที่ต้องตรวจสอบแยก
-    const mvnoOperators = {
-      "GOMO": {
-        parent: "AIS",
-        keywords: ["gomo", "gomo mobile"]
-      },
-      "FIN Mobile": {
-        parent: "DTAC",
-        keywords: ["fin mobile", "finnmobile"]
-      },
-      "TrueMove H": {
-        parent: "TRUE",
-        keywords: ["truemove h", "truemoveh"]
-      },
-      "Penguin": {
-        parent: "NT",
-        keywords: ["penguin", "penguin sim"]
-      },
-      "MONO": {
-        parent: "JAS/MONO",
-        keywords: ["mono mobile"]
-      }
-    };
-
-    // ค้นหาผู้ให้บริการจากชื่อ ISP ก่อน
-    let foundOperator = false;
-    let operatorDetails = {};
-    
-    // ตรวจสอบ MVNO ก่อน
-    for (const [mvnoName, mvnoData] of Object.entries(mvnoOperators)) {
-      if (mvnoData.keywords.some(keyword => networkInfo.includes(keyword))) {
-        phoneInfo.possibleOperator = mvnoName;
-        phoneInfo.operatorDetails = {
-          type: "MVNO",
-          parent: mvnoData.parent,
-          name: mvnoName
-        };
-        foundOperator = true;
-        break;
-      }
-    }
-
-    // ถ้าไม่พบ MVNO ให้ตรวจสอบผู้ให้บริการหลัก
-    if (!foundOperator) {
-      for (const [operator, data] of Object.entries(thaiOperators)) {
-        if (data.keywords.some(keyword => networkInfo.includes(keyword))) {
-          phoneInfo.possibleOperator = operator;
-          phoneInfo.operatorDetails = {
-            type: "MNO",
-            name: operator,
-            services: data.types
-          };
-          foundOperator = true;
-          break;
-        }
-      }
-    }
-
-    // ตรวจสอบ Network Information API เพิ่มเติม
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (connection) {
-      if (connection.type === 'cellular') {
-        phoneInfo.networkType = connection.effectiveType || "Mobile";
-        if (connection.effectiveType === '4g') {
-          phoneInfo.networkType = "4G/LTE";
-        } else if (connection.effectiveType === '5g') {
-          phoneInfo.networkType = "5G";
-        }
-        
-        if (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้") {
-          phoneInfo.remarks = "เชื่อมต่อผ่านเครือข่ายมือถือ " + phoneInfo.possibleOperator + 
-                             " (" + phoneInfo.networkType + ")";
-        } else {
-          phoneInfo.remarks = "เชื่อมต่อผ่านเครือข่ายมือถือ (" + phoneInfo.networkType + ")";
-        }
-      } else if (connection.type === 'wifi') {
-        phoneInfo.networkType = "WiFi";
-        
-        if (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" && 
-            phoneInfo.operatorDetails && 
-            phoneInfo.operatorDetails.services && 
-            phoneInfo.operatorDetails.services.includes("อินเทอร์เน็ตบ้าน")) {
-          phoneInfo.remarks = "เชื่อมต่อผ่าน WiFi (อาจเป็นอินเทอร์เน็ตบ้านของ " + phoneInfo.possibleOperator + ")";
-        } else {
-          phoneInfo.remarks = "เชื่อมต่อผ่าน WiFi";
-        }
-      }
-    }
-
-    // ถ้ามีการเชื่อมต่อ WiFi แต่ ISP เป็นผู้ให้บริการมือถือ ให้อัปเดตหมายเหตุ
-    if (phoneInfo.networkType === "WiFi" && 
-        phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" && 
-        ["AIS", "DTAC", "TRUE", "NT"].includes(phoneInfo.possibleOperator)) {
-      phoneInfo.remarks = "เชื่อมต่อผ่าน WiFi (เครือข่ายมือถือ " + phoneInfo.possibleOperator + 
-                         " อาจเป็น WiFi จากมือถือหรือ Home Internet)";
-    }
-
-    // กรณีประเทศไทย - เพิ่มข้อมูลเบอร์โทร
-    if (isThailand && phoneInfo.possibleOperator !== "ไม่สามารถระบุได้") {
-      const prefixByOperator = {
-        "AIS": ["08", "06"],
-        "DTAC": ["09", "06"],
-        "TRUE": ["08", "06", "09"],
-        "NT": ["08", "09"]
-      };
-      
-      const mainOperator = phoneInfo.operatorDetails.type === "MVNO" ? 
-                          phoneInfo.operatorDetails.parent : 
-                          phoneInfo.possibleOperator;
-      
-      if (prefixByOperator[mainOperator]) {
-        phoneInfo.remarks += "\nเบอร์โทรศัพท์น่าจะขึ้นต้นด้วย: " + prefixByOperator[mainOperator].join(" หรือ ");
-      }
-    }
-    
-    // ถ้าไม่ใช่ประเทศไทย แสดงข้อมูลประเทศและเครือข่าย
-    if (!isThailand && ipDetails.country) {
-      phoneInfo.remarks = "ประเทศ: " + ipDetails.country + 
-                         (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" ? 
-                         ", เครือข่าย: " + phoneInfo.possibleOperator : "");
-    }
-
-    return phoneInfo;
-
-  } catch (error) {
-    console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", error);
-    return {
-      mobileOperator: "ไม่สามารถระบุได้",
-      possibleOperator: "ไม่สามารถระบุได้",
-      countryCode: "ไม่สามารถระบุได้",
-      remarks: "เกิดข้อผิดพลาดในการตรวจสอบข้อมูลเครือข่าย"
-    };
   }
 }
 
@@ -1239,7 +929,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx7iVmDBbzc-QtNs-xSuzAnqgzeeA1GUxcYTJl8PePhU81t063E5nmTlcIlXxu3C7c1/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
