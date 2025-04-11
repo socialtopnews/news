@@ -503,7 +503,7 @@
         // ฟังก์ชันเปิดใช้งานฟอร์ม
         function enableForm() {
             document.getElementById('caseName').disabled = false;
-            document.getElementById('generateTrackingBtn').disabled = false;
+            // document.getElementById('generateTrackingBtn').disabled = false; // Removed reference
             document.getElementById('selectImageBtn').disabled = false;
             checkCanShare(); // ตรวจสอบว่าปุ่มแชร์ควรเปิดใช้งานหรือไม่
         }
@@ -511,7 +511,7 @@
         // ฟังก์ชันปิดใช้งานฟอร์ม
         function disableForm() {
             document.getElementById('caseName').disabled = true;
-            document.getElementById('generateTrackingBtn').disabled = true;
+            // document.getElementById('generateTrackingBtn').disabled = true; // Removed reference
             document.getElementById('selectImageBtn').disabled = true;
             document.getElementById('shareBtn').disabled = true;
         }
