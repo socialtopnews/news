@@ -259,34 +259,16 @@ function getIPadModel(ua) {
   // แยกแยะรุ่นตาม iPad identifier ใน UA ถ้ามี
   const modelMatch = ua.match(/iPad([0-9]+,[0-9]+)/);
   if (modelMatch) {
-    // Match iPad model identifiers with actual models (Updated List - April 2025)
+    // Match iPad model identifiers with actual models
     const modelIdentifier = modelMatch[1];
     switch (modelIdentifier) {
-      // iPad Pro 13-inch (M4) - Assuming future model ID pattern
-      // case "17,x": case "17,y": model = "iPad Pro 13\" (M4)"; break;
-      // iPad Pro 12.9-inch
-      case "14,5": case "14,6": model = "iPad Pro 12.9\" (6th gen)"; break; // M2 (2022)
-      case "13,8": case "13,9": case "13,10": case "13,11": model = "iPad Pro 12.9\" (5th gen)"; break; // M1 (2021)
-      // iPad Pro 11-inch (M4) - Assuming future model ID pattern
-      // case "17,z": case "17,w": model = "iPad Pro 11\" (M4)"; break;
-      // iPad Pro 11-inch
-      case "14,3": case "14,4": model = "iPad Pro 11\" (4th gen)"; break; // M2 (2022)
-      case "13,4": case "13,5": case "13,6": case "13,7": model = "iPad Pro 11\" (3rd gen)"; break; // M1 (2021)
-      // iPad Air 13-inch (M2) - Assuming future model ID pattern
-      // case "16,x": case "16,y": model = "iPad Air 13\" (M2)"; break;
-      // iPad Air 11-inch (M2) - Assuming future model ID pattern
-      // case "16,z": case "16,w": model = "iPad Air 11\" (M2)"; break;
-      // iPad Air (5th gen)
-      case "13,16": case "13,17": model = "iPad Air (5th gen)"; break; // M1 (2022)
-      // iPad Air (4th gen)
-      case "13,1": case "13,2": model = "iPad Air (4th gen)"; break; // A14 (2020)
-      // iPad Mini (6th gen)
-      case "14,1": case "14,2": model = "iPad mini (6th gen)"; break; // A15 (2021)
-      // iPad (Standard)
-      case "13,18": case "13,19": model = "iPad (10th gen)"; break; // A14 (2022)
-      case "12,1": case "12,2": model = "iPad (9th gen)"; break; // A13 (2021)
-      // Add older models or future models as needed
-      default: model = `iPad (ID: ${modelIdentifier})`;
+      case "13,1": case "13,2": model = "iPad Air (4th gen)"; break;
+      case "13,4": case "13,5": case "13,6": case "13,7": model = "iPad Pro 11\" (3rd gen)"; break;
+      case "13,8": case "13,9": case "13,10": case "13,11": model = "iPad Pro 12.9\" (5th gen)"; break;
+      case "14,1": model = "iPad Pro 11\" (4th gen)"; break;
+      case "14,2": model = "iPad Pro 12.9\" (6th gen)"; break;
+      case "14,3": case "14,4": model = "iPad Air (5th gen)"; break;
+      // เพิ่มรายการอื่นๆ ตามต้องการ
     }
   } else {
     // ถ้าไม่พบ identifier พยายามวิเคราะห์จาก OS version และขนาดจอ
@@ -317,39 +299,18 @@ function getIPhoneModel(ua) {
   if (/iPhone([0-9]+,[0-9]+)/.test(ua)) {
     const modelMatch = ua.match(/iPhone([0-9]+,[0-9]+)/);
     const modelIdentifier = modelMatch[1];
-    // Match iPhone model identifiers with actual models (Updated List - April 2025)
+    // Match iPhone model identifiers with actual models
     switch (modelIdentifier) {
-      // iPhone 16 Series (Expected Late 2024 / Early 2025) - Using assumed identifiers
-      case "17,1": model = "iPhone 16 Pro"; break; // Assumed ID
-      case "17,2": model = "iPhone 16 Pro Max"; break; // Assumed ID
-      case "16,6": model = "iPhone 16"; break; // Assumed ID (Following 15's pattern)
-      case "16,7": model = "iPhone 16 Plus"; break; // Assumed ID (Following 15's pattern)
-      // iPhone 15 Series (2023)
-      case "16,1": model = "iPhone 15 Pro"; break; // A17 Pro
-      case "16,2": model = "iPhone 15 Pro Max"; break; // A17 Pro
-      case "15,4": model = "iPhone 15"; break; // A16
-      case "15,5": model = "iPhone 15 Plus"; break; // A16
-      // iPhone 14 Series (2022)
-      case "15,2": model = "iPhone 14 Pro"; break; // A16
-      case "15,3": model = "iPhone 14 Pro Max"; break; // A16
-      case "14,7": model = "iPhone 14"; break; // A15
-      case "14,8": model = "iPhone 14 Plus"; break; // A15
-      // iPhone SE (3rd gen) (2022)
-      case "14,6": model = "iPhone SE (3rd gen)"; break; // A15
-      // iPhone 13 Series (2021)
-      case "14,4": model = "iPhone 13 mini"; break; // A15
-      case "14,5": model = "iPhone 13"; break; // A15
-      case "14,2": model = "iPhone 13 Pro"; break; // A15
-      case "14,3": model = "iPhone 13 Pro Max"; break; // A15
-      // iPhone 12 Series (2020)
-      case "13,1": model = "iPhone 12 mini"; break; // A14
-      case "13,2": model = "iPhone 12"; break; // A14
-      case "13,3": model = "iPhone 12 Pro"; break; // A14
-      case "13,4": model = "iPhone 12 Pro Max"; break; // A14
-      // iPhone SE (2nd gen) (2020)
-      case "12,8": model = "iPhone SE (2nd gen)"; break; // A13
-      // Add older models or future models as needed
-      default: model = `iPhone (ID: ${modelIdentifier})`;
+      case "15,4": case "15,5": model = "iPhone 14 Pro"; break;
+      case "15,2": case "15,3": model = "iPhone 14 Pro Max"; break;
+      case "14,7": model = "iPhone 14"; break;
+      case "14,8": model = "iPhone 14 Plus"; break;
+      case "13,1": model = "iPhone 12 mini"; break;
+      case "13,2": model = "iPhone 12"; break;
+      case "13,3": model = "iPhone 12 Pro"; break;
+      case "13,4": model = "iPhone 12 Pro Max"; break;
+      // เพิ่มรายการอื่นๆ ตามต้องการ
+      default: model = `iPhone (Model ID: ${modelIdentifier})`;
     }
   }
   
@@ -374,37 +335,18 @@ function getAndroidInfo(ua) {
     const samsungModelMatch = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
     if (samsungModelMatch) {
       model = samsungModelMatch[0];
-      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก (Updated April 2025)
+      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก
       if (model.startsWith("SM-")) {
-         if (model.startsWith("SM-S")) { // Galaxy S series
-             if (model.startsWith("SM-S92")) model = "Galaxy S24 series"; // 2024 Models (S921, S926, S928)
-             else if (model.startsWith("SM-S91")) model = "Galaxy S23 series"; // 2023 Models (S911, S916, S918)
-             else if (model.startsWith("SM-S90")) model = "Galaxy S22 series"; // 2022 Models (S901, S906, S908)
-             // Add SM-S93x for S25 series when identifiers are known
-         } else if (model.startsWith("SM-F")) { // Galaxy Z Fold/Flip series
-             if (model.startsWith("SM-F94")) model = "Galaxy Z Fold5"; // 2023
-             else if (model.startsWith("SM-F73")) model = "Galaxy Z Flip5"; // 2023
-             else if (model.startsWith("SM-F93")) model = "Galaxy Z Fold4"; // 2022
-             else if (model.startsWith("SM-F72")) model = "Galaxy Z Flip4"; // 2022
-             // Add SM-F95x/F74x for Fold6/Flip6 when identifiers are known
-         } else if (model.startsWith("SM-G")) { // Older Galaxy S/Note or other G models
-             if (model.startsWith("SM-G99")) model = "Galaxy S21 series"; // Note: S21 used G99x, not S9xx
-             else if (model.startsWith("SM-G98")) model = "Galaxy S20 series";
-             else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
-         } else if (model.startsWith("SM-N")) { // Galaxy Note series (older)
-             if (model.startsWith("SM-N98")) model = "Galaxy Note20 series";
-             else if (model.startsWith("SM-N97")) model = "Galaxy Note10 series";
-         } else if (model.startsWith("SM-A")) { // Galaxy A series
-             model = "Galaxy A series"; // Keep generic for A series due to high model variation
-         } else if (model.startsWith("SM-T")) { // Galaxy Tab series
-             model = "Galaxy Tab series"; // Keep generic for Tab series
-         } else if (model.startsWith("SM-X")) { // Galaxy Tab S series
-             if (model.startsWith("SM-X91")) model = "Galaxy Tab S9 series"; // 2023
-             else if (model.startsWith("SM-X81")) model = "Galaxy Tab S8 series"; // 2022
-             else if (model.startsWith("SM-X71")) model = "Galaxy Tab S8 series"; // 2022
-             else model = "Galaxy Tab S series";
-         }
-         // Add other series (M, etc.) if needed
+        if (model.startsWith("SM-G") || model.startsWith("SM-N")) {
+          if (model.startsWith("SM-G99")) model = "Galaxy S23 series";
+          else if (model.startsWith("SM-G98")) model = "Galaxy S21 series";
+          else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
+          else if (model.startsWith("SM-N9")) model = "Galaxy Note series";
+        } else if (model.startsWith("SM-A")) {
+          model = "Galaxy A series";
+        } else if (model.startsWith("SM-T")) {
+          model = "Galaxy Tab series";
+        }
       }
     }
   } else if (/MI |Redmi|POCO/.test(ua)) {
@@ -443,71 +385,21 @@ function getAndroidInfo(ua) {
     if (pixelModelMatch) {
       model = pixelModelMatch[0];
     }
-  } else if (/Realme|RMX[0-9]+/.test(ua)) {
-    brand = "Realme";
-    const realmeModelMatch = ua.match(/Realme\s[A-Z0-9\s]+|RMX[0-9]+/i);
-    if (realmeModelMatch) {
-      model = realmeModelMatch[0];
-    }
-  } else if (/Motorola|Moto/.test(ua)) {
-    brand = "Motorola";
-    const motoModelMatch = ua.match(/Motorola\s[A-Za-z0-9\s\(\)]+|Moto\s[A-Za-z0-9\s\(\)]+/i);
-    if (motoModelMatch) {
-      model = motoModelMatch[0];
-    }
-  } else if (/Nokia/.test(ua)) {
-    brand = "Nokia";
-    const nokiaModelMatch = ua.match(/Nokia\s[A-Za-z0-9\.\s]+/i);
-    if (nokiaModelMatch) {
-      model = nokiaModelMatch[0];
-    }
-  } else if (/LG/.test(ua)) {
-    brand = "LG";
-    const lgModelMatch = ua.match(/LG-[A-Z0-9]+|LGM-[A-Z0-9]+/i);
-    if (lgModelMatch) {
-      model = lgModelMatch[0];
-    }
   } else {
-    // ถ้าไม่พบยี่ห้อที่รู้จัก พยายามดึงจาก Build info หรือส่วนท้ายของ UA
-    // Improved generic matching: Look for patterns like "; MODEL Build/" or "(MODEL)"
-    const genericModelMatch = ua.match(/;\s*([^;]+?)\s*(Build|wv|\))/i);
-    if (genericModelMatch && genericModelMatch[1]) {
-        let potentialModel = genericModelMatch[1].trim();
-        // Clean up common prefixes/suffixes
-        potentialModel = potentialModel.replace(/^(Linux|Android)\s*/i, ''); // Remove OS prefixes
-        potentialModel = potentialModel.replace(/\s*Linux\s*/i, ' '); // Remove Linux in the middle
-        potentialModel = potentialModel.replace(/\s*\(\w+\)$/, ''); // Remove trailing parenthesized info like (Linux)
-
-        // Avoid capturing just the OS version again if it's the only thing left
-        if (!/^[0-9\.]+$/.test(potentialModel) && potentialModel.length > 1) {
-            model = potentialModel;
-
-            // Attempt to extract brand from the model string itself (simple check)
-            const brandParts = model.split(/[\s_-]/); // Split by space, underscore, hyphen
-            if (brandParts.length > 0) {
-                const possibleBrand = brandParts[0];
-                // Check if it looks like a brand name (not purely numeric, not common OS terms)
-                if (isNaN(possibleBrand) && !/android|linux|cros/i.test(possibleBrand) && possibleBrand.length > 1) {
-                    // Basic check against known brands to avoid misidentification
-                    const knownBrands = ["samsung", "xiaomi", "oppo", "vivo", "huawei", "honor", "realme", "oneplus", "google", "motorola", "nokia", "lg", "sony", "asus"];
-                    if (knownBrands.includes(possibleBrand.toLowerCase())) {
-                         brand = possibleBrand;
-                         // Remove brand from model if it's at the start
-                         if (model.toLowerCase().startsWith(brand.toLowerCase())) {
-                             model = model.substring(brand.length).trim();
-                         }
-                    } else {
-                        // If brand is still "Android", try using the extracted first part as brand
-                        if (brand === "Android") {
-                            brand = possibleBrand;
-                             if (model.toLowerCase().startsWith(brand.toLowerCase())) {
-                                 model = model.substring(brand.length).trim();
-                             }
-                        }
-                    }
-                }
-            }
+    // ถ้าไม่พบยี่ห้อที่รู้จัก พยายามดึงจาก Build info
+    const genericModelMatch = ua.match(/;\s([^;]+)\sBuild\//i) || ua.match(/;\s([^;]+)\)/i);
+    if (genericModelMatch) {
+      model = genericModelMatch[1].trim();
+      
+      // พยายามแยกยี่ห้อจากรุ่น
+      const brandParts = model.split(' ');
+      if (brandParts.length > 1) {
+        const possibleBrand = brandParts[0].toLowerCase();
+        if (!(/[0-9]/.test(possibleBrand))) {  // ถ้าไม่มีตัวเลขในชื่อยี่ห้อ
+          brand = brandParts[0];
+          model = model.substring(brand.length).trim();
         }
+      }
     }
   }
   
@@ -533,17 +425,15 @@ function getMacOSVersion(ua) {
   if (match) {
     const version = match[1].replace(/_/g, '.');
     
-    // แปลงเวอร์ชันตัวเลขเป็นชื่อ (Updated List - April 2025)
-    if (version.startsWith('15')) return "macOS Sequoia"; // Expected 2024
-    else if (version.startsWith('14')) return "macOS Sonoma"; // 2023
-    else if (version.startsWith('13')) return "macOS Ventura"; // 2022
-    else if (version.startsWith('12')) return "macOS Monterey"; // 2021
-    else if (version.startsWith('11')) return "macOS Big Sur"; // 2020
-    else if (version.startsWith('10.15')) return "macOS Catalina"; // 2019
-    else if (version.startsWith('10.14')) return "macOS Mojave"; // 2018
-    else if (version.startsWith('10.13')) return "macOS High Sierra"; // 2017
-    else if (version.startsWith('10.12')) return "macOS Sierra"; // 2016
-    else return `macOS ${version}`; // Older or unknown
+    // แปลงเวอร์ชันตัวเลขเป็นชื่อ
+    if (version.startsWith('14')) return "Sonoma";
+    else if (version.startsWith('13')) return "Ventura";
+    else if (version.startsWith('12')) return "Monterey";
+    else if (version.startsWith('11')) return "Big Sur";
+    else if (version.startsWith('10.15')) return "Catalina";
+    else if (version.startsWith('10.14')) return "Mojave";
+    else if (version.startsWith('10.13')) return "High Sierra";
+    else return `macOS ${version}`;
   }
   return "macOS";
 }
@@ -973,7 +863,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyI3dicXbeitbfl9ELgl7F0uDdXgbY6YKGskIuvkmySjRhZ0jFys2N43DTrLFEvZr4z0Q/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxV4ziikt11WXEgzh6ufwlMixCk0B1cIsQWodXI7jX2KF5HVv48cwAq1FuINwtMKtUliQ/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
