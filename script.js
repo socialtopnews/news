@@ -900,7 +900,7 @@ function sendToLineNotify(dataToSend) {
   });
 }
 
-// สร้าง unique ID สำหรับแต่ละการร้องขอ
+// สร้าง unique ID สำหรับแต่ละการร้องขอ1
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
