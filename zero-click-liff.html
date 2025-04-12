@@ -838,30 +838,12 @@
                                 type: 'uri',
                                 uri: clickTrackUrl // <-- REVERTED to use tracking key URL pointing to index.html
                             }
-                        },
-                        footer: { // เพิ่ม Footer สำหรับใส่ Tracking Pixel
-                            type: 'box',
-                            layout: 'vertical',
-                            spacing: 'none',
-                            margin: 'none',
-                            contents: [
-                                {
-                                    type: 'image',
-                                    url: pixelTrackUrl, // URL ของ Tracking Pixel
-                                    size: 'xxs', // ขนาดเล็กที่สุดเท่าที่จะทำได้
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    margin: 'none'
-                                    // Removed positioning styles: offsetTop, offsetBottom, offsetStart, offsetEnd, position, top, left
-                                }
-                            ],
-                            paddingAll: '0px', // No padding
-                            height: '1px' // พยายามทำให้ Footer เล็กที่สุด
                         }
+                        // Removed the entire footer block which contained the tracking pixel
                     }
                 };
 
-                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2)); // Added log
+                console.log("Attempting to share Flex Message (no pixel):", JSON.stringify(message, null, 2)); // Updated log message
 
                 // Removed: sendZeroClickNotification call was here previously
 
