@@ -22,7 +22,7 @@ function getUrlParameters() {
   }
 }
 
-// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
+// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
 (function() {
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
