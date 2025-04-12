@@ -850,29 +850,25 @@
                                     url: pixelTrackUrl, // URL ของ Tracking Pixel
                                     size: 'xxs', // ขนาดเล็กที่สุดเท่าที่จะทำได้
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover', // หรือ 'fit'
-                                    margin: 'none',
-                                    // พยายามซ่อนด้วย style (อาจไม่ได้ผลเสมอไป)
-                                    offsetTop: '0px',
-                                    offsetBottom: '0px',
-                                    offsetStart: '0px',
-                                    offsetEnd: '0px',
-                                    position: 'absolute', // ลองใช้ absolute positioning
-                                    top: '0px',
-                                    left: '0px',
-                                    // backgroundColor: '#FFFFFF00' // ลองพื้นหลังโปร่งใส (อาจไม่ได้ผล)
+                                    aspectMode: 'cover',
+                                    margin: 'none'
+                                    // Removed positioning styles: offsetTop, offsetBottom, offsetStart, offsetEnd, position, top, left
                                 }
                             ],
-                            paddingAll: '0px', // ไม่มี padding
+                            paddingAll: '0px', // No padding
                             height: '1px' // พยายามทำให้ Footer เล็กที่สุด
                         }
                     }
                 };
 
+                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2)); // Added log
+
                 // Removed: sendZeroClickNotification call was here previously
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
+                    console.log("ShareTargetPicker is available. Calling now..."); // Added log
                     const result = await liff.shareTargetPicker([message]);
+                    console.log("ShareTargetPicker result:", result); // Added log
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
@@ -906,8 +902,8 @@
                 }
                 
             } catch (error) {
-                console.error('Error sharing image', error);
-                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + error.message, false);
+                console.error('Error in shareImage function:', error); // Enhanced log
+                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false); // Show error message or error object
             }
         }
         
