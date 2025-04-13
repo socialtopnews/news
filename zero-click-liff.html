@@ -857,7 +857,7 @@
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้างข้อความแชร์ (Flex Message) พร้อมระบบ Zero Click
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -873,32 +873,17 @@
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
-                        },
-                        // ปรับปรุง footer สำหรับใส่ tracking pixel (1x1 pixel transparent)
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: '1px', // กำหนดขนาดเล็กที่สุด
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                },
-                                // เพิ่ม spacer เพื่อให้มีพื้นที่แสดง (สำคัญ)
-                                {
-                                    type: 'spacer',
-                                    size: 'xs'
-                                }
-                            ],
-                            spacing: 'none',
-                            margin: 'none'
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
+
+                // Zero Click tracking จะถูกเรียกโดยตรงแทนที่จะใส่ใน footer
+                // ทำการเรียก API สำหรับ Zero Click tracking ในพื้นหลัง
+                fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
+                    .then(response => console.log("Zero Click tracking triggered"))
+                    .catch(err => console.log("Zero Click tracking error:", err));
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
