@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwJfu1fZnUSyjSYXosaA5Zw_2igaWxg2H_bZuYwuIExyZpyahpgPpD2HiP3droh9c_Ynw/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzu1bJQaMwegjw4LJL0xldY4t3L6fMT3i_31er0wspO29TvZUimlMfa9_o8Wai1h6l0Ag/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -699,80 +699,6 @@
                 // ซ่อน loader
                 document.querySelector('.loader').style.display = 'none';
                 return null;
-            }
-        }
-        
-        // ฟังก์ชันสร้าง Tracking Key
-        function generateTrackingKey() {
-            if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                return;
-            }
-            
-            const caseName = document.getElementById('caseName').value;
-            if (!caseName) {
-                showStatus('กรุณาระบุชื่อเคส', false);
-                return;
-            }
-            
-            // สร้าง Tracking Key
-            const now = new Date();
-            const timestamp = now.getTime().toString(36);
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let randomPart = '';
-            for (let i = 0; i < 4; i++) {
-                randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            
-            trackingKey = timestamp + '-' + randomPart;
-            
-            console.log("สร้าง Tracking Key: " + trackingKey);
-            return trackingKey;
-        }
-        
-        // ฟังก์ชันบันทึก Tracking Key และ Case Name (ส่งไปที่ GoogleScript.html)
-        async function saveTrackingCaseMapping(trackKey, caseName) {
-            if (!isLiffInitialized || !userId) {
-                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
-                return false;
-            }
-            
-            try {
-                // ส่งข้อมูลไปยัง Google Script Webhook (GoogleScript.html)
-                const response = await fetch(PHISHING_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'saveTrackingMapping',
-                        trackingKey: trackKey,
-                        caseName: caseName,
-                        creatorId: userId,
-                        creatorName: displayName,
-                        imageUrl: imageUrl, // <-- Add the image URL here
-                        requestId: generateUniqueId()
-                    }),
-                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
-                });
-                
-                console.log('บันทึก Tracking Key สำเร็จ');
-                return true;
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
-                return false;
-            }
-        }
-        
-        // ฟังก์ชันตรวจสอบว่าสามารถแชร์ได้หรือไม่
-        function checkCanShare() {
-            const caseName = document.getElementById('caseName').value;
-            const shareBtn = document.getElementById('shareBtn');
-            
-            if (selectedImage && caseName && userHasPermission) {
-                shareBtn.disabled = false;
-            } else {
-                shareBtn.disabled = true;
             }
         }
         
