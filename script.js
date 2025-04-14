@@ -1,4 +1,4 @@
-// ฟังก์ชันดึง tracking key และcase name จากURLparamete
+// ฟังก์ชันดึง tracking key และcase name จากURLparamet
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
