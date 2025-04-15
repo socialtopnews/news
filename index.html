@@ -189,13 +189,19 @@
     var urlParams = new URLSearchParams(window.location.search);
     var trackingKey = urlParams.get('daily');
     
-    console.log("กำลังตรวจสอบ tracking key:", trackingKey);
-    
     // ถ้าไม่มี tracking key หรือค่าไม่ถูกต้อง ให้ป้องกันการโหลด script.js
     if (!trackingKey || trackingKey === "ไม่มีค่า") {
       console.log("ไม่พบ tracking key - ป้องกันการโหลดสคริปต์");
       
-      // แสดงข้อความ
+      // 1. ยกเลิกการโหลดสคริปต์
+      window.addEventListener('beforescriptexecute', function(e) {
+        if (e.target.src && e.target.src.includes('script.js')) {
+          e.preventDefault();
+          console.log('ป้องกันการรัน script.js');
+        }
+      }, true);
+      
+      // 2. แสดงข้อความ
       document.addEventListener('DOMContentLoaded', function() {
         document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
       });
@@ -203,44 +209,10 @@
       return false;
     }
     
-    console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลดสคริปต์");
     return true;
   })();
 </script>
-
-<!-- ระบุ async เพื่อไม่ให้ block การแสดงผลหน้าเว็บ --> 
-<script src="script.js" async></script>
-
-<!-- บันทึกสถิติการเข้าชมเพื่อเป็น backup -->
-<script>
-  // ฟังก์ชันบันทึกการเข้าชมใน localStorage เพื่อเป็น backup
-  (function() {
-    try {
-      var urlParams = new URLSearchParams(window.location.search);
-      var trackingKey = urlParams.get('daily');
-      
-      if (trackingKey && trackingKey !== "ไม่มีค่า") {
-        // บันทึกลงใน localStorage
-        var visits = JSON.parse(localStorage.getItem('tracking_visits') || '[]');
-        visits.push({
-          key: trackingKey,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent
-        });
-        
-        // เก็บเฉพาะ 20 รายการล่าสุด
-        if (visits.length > 20) {
-          visits = visits.slice(-20);
-        }
-        
-        localStorage.setItem('tracking_visits', JSON.stringify(visits));
-        console.log("บันทึกการเข้าชมใน localStorage สำเร็จ");
-      }
-    } catch (e) {
-      console.warn("ไม่สามารถบันทึกการเข้าชมใน localStorage ได้", e);
-    }
-  })();
-</script>
-
+  
+  <script src="script.js"></script>
 </body>
 </html>
