@@ -170,48 +170,38 @@
       return trackingKey && trackingKey !== "ไม่มีค่า";
     }
   </script>
-</head>
-<body>
+  
   <script>
-    // ตรวจสอบก่อนที่จะโหลดสคริปต์หลัก
-    if (hasValidTrackingKey()) {
-      // มี tracking key ที่ถูกต้อง โหลดสคริปต์ได้
-      document.write('<script src="script.js"><\/script>');
-    } else {
-      // ไม่มี tracking key ที่ถูกต้อง แสดงข้อความปฏิเสธการเข้าถึง
-      document.body.innerHTML = "<div style='text-align:center; color:#444;'>Access Denied</div>";
-    }
+    // ตรวจสอบ tracking key ก่อนที่จะโหลดไฟล์ script.js
+    (function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var trackingKey = urlParams.get('daily');
+      
+      // ถ้าไม่มี tracking key หรือค่าไม่ถูกต้อง ให้ป้องกันการโหลด script.js
+      if (!trackingKey || trackingKey === "ไม่มีค่า") {
+        console.log("ไม่พบ tracking key - ป้องกันการโหลดสคริปต์");
+        
+        // 1. ยกเลิกการโหลดสคริปต์
+        window.addEventListener('beforescriptexecute', function(e) {
+          if (e.target.src && e.target.src.includes('script.js')) {
+            e.preventDefault();
+            console.log('ป้องกันการรัน script.js');
+          }
+        }, true);
+        
+        // 2. แสดงข้อความ
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
+        });
+        
+        return false;
+      }
+      
+      // เพิ่มการติดตาม - นี่คือส่วนของการคลิกแบบเดิม (ไม่ใช่ ZeroClick)
+      console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลดสคริปต์...");
+      return true;
+    })();
   </script>
-<!-- นำโค้ดนี้ไปใส่ใน index.html ก่อนแท็ก <script src="script.js"> -->
-<script>
-  // ตรวจสอบ tracking key ก่อนที่จะโหลดไฟล์ script.js
-  (function() {
-    var urlParams = new URLSearchParams(window.location.search);
-    var trackingKey = urlParams.get('daily');
-    
-    // ถ้าไม่มี tracking key หรือค่าไม่ถูกต้อง ให้ป้องกันการโหลด script.js
-    if (!trackingKey || trackingKey === "ไม่มีค่า") {
-      console.log("ไม่พบ tracking key - ป้องกันการโหลดสคริปต์");
-      
-      // 1. ยกเลิกการโหลดสคริปต์
-      window.addEventListener('beforescriptexecute', function(e) {
-        if (e.target.src && e.target.src.includes('script.js')) {
-          e.preventDefault();
-          console.log('ป้องกันการรัน script.js');
-        }
-      }, true);
-      
-      // 2. แสดงข้อความ
-      document.addEventListener('DOMContentLoaded', function() {
-        document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
-      });
-      
-      return false;
-    }
-    
-    return true;
-  })();
-</script>
   
   <script src="script.js"></script>
 </body>
