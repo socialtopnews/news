@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx5TIsXfo6AChD5ZPL9X57IJnf9E41JMmmevDSDeiW5S3NkE93pjoxujCXvqZpeUA4fzw/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzMdp64EwBFacfeVPLPYKbNECcw00CVzPxMbhUImExhV_giCAIQmSuYPGxINtpwtD2BzA/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -823,17 +823,15 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // 1. เพิ่มข้อมูลพื้นฐานที่เป็นประโยชน์
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
+                // เปลี่ยนเพื่อให้ชัดเจนว่า creator และ name เป็นผู้สร้าง ไม่ใช่เป้าหมาย
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
-                zeroClickTrackUrl += `&isTarget=true`;
-                
-                // 2. เพิ่มข้อมูลเบราว์เซอร์เบื้องต้น (สำคัญมาก - เพิ่มเพื่อเป็น fallback)
-                const browserInfo = encodeURIComponent(navigator.userAgent.substring(0, 100));
-                zeroClickTrackUrl += `&browser=${browserInfo}`;
-                
-                // 3. ป้องกันการแคช
-                zeroClickTrackUrl += `&r=${randomSuffix}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creatorId=${encodeURIComponent(userId)}`; // เปลี่ยนจาก creator เป็น creatorId เพื่อความชัดเจน
+                zeroClickTrackUrl += `&creatorName=${encodeURIComponent(displayName)}`; // เปลี่ยนจาก name เป็น creatorName เพื่อความชัดเจน
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
@@ -859,38 +857,27 @@
                             layout: 'vertical',
                             contents: [
                                 // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
-                                // แก้ไขรูปแบบการโหลดรูปภาพเพื่อให้แน่ใจว่าจะโหลดทุกครั้ง
+                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
                                     size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
-                                    aspectMode: 'fit',  // เปลี่ยนเป็น fit แทน cover
+                                    aspectMode: 'cover',
                                     position: 'absolute', // วางแบบ absolute
                                     offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
                                     offsetStart: '0px'
-                                },
-                                // เพิ่ม invisible image อีกอันเพื่อเพิ่มโอกาสการโหลด
-                                {
-                                    type: 'image',
-                                    url: `${zeroClickTrackUrl}&alt=1`,  // ใส่พารามิเตอร์ alt เพื่อให้แตกต่าง
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'fit',
-                                    position: 'absolute',
-                                    offsetTop: '1px',
-                                    offsetStart: '1px'
                                 },
                                 // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
                                     type: 'box',
                                     layout: 'vertical',
                                     contents: [],
-                                    height: '2px',
-                                    width: '2px'
+                                    height: '1px',
+                                    width: '1px'
                                 }
                             ],
-                            height: '2px', // เพิ่มความสูงขึ้นเล็กน้อย
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
                             paddingAll: '0px'
                         }
                     }
