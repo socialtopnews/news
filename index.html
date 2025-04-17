@@ -97,35 +97,6 @@
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <!-- ตรวจสอบ tracking key และโหลด script เฉพาะเมื่อถูกต้อง -->
-  <script>
-    // ฟังก์ชันตรวจสอบ tracking key
-    function hasValidTrackingKey() {
-      var urlParams = new URLSearchParams(window.location.search);
-      var trackingKey = urlParams.get('daily');
-      return trackingKey && trackingKey !== "ไม่มีค่า" && trackingKey.length > 4;
-    }
-    
-    // ฟังก์ชันโหลด script แบบไดนามิก
-    function loadTrackingScript() {
-      if (hasValidTrackingKey()) {
-        console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลด script.js");
-        var script = document.createElement('script');
-        script.src = "script.js";
-        script.async = true;
-        script.onerror = function() {
-          console.error("ไม่สามารถโหลด script.js ได้");
-        };
-        document.body.appendChild(script);
-      } else {
-        console.log("ไม่พบ tracking key ที่ถูกต้อง - ปฏิเสธการเข้าถึง");
-        document.addEventListener('DOMContentLoaded', function() {
-          document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
-        });
-      }
-    }
-  </script>
 </head>
 <body>
   <div class="container">
@@ -191,14 +162,25 @@
       </div>
     </div>
   </div>
-  
-  <!-- เรียกฟังก์ชันโหลดสคริปต์เมื่อเว็บพร้อม -->
+
   <script>
-    // ตรวจสอบและโหลด script.js เมื่อหน้าเว็บโหลดเสร็จ
-    window.addEventListener('DOMContentLoaded', function() {
-      console.log("หน้าเว็บโหลดเสร็จ - กำลังตรวจสอบ tracking key");
-      loadTrackingScript();
-    });
+    // ตรวจสอบ tracking key ก่อนที่จะโหลดไฟล์ script.js
+    (function() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var trackingKey = urlParams.get('daily');
+      var scriptElement = document.createElement('script');
+
+      if (trackingKey && trackingKey !== "ไม่มีค่า") {
+        // มี tracking key ที่ถูกต้อง โหลดสคริปต์หลัก
+        console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลด script.js");
+        scriptElement.src = 'script.js';
+        document.body.appendChild(scriptElement);
+      } else {
+        // ไม่มี tracking key หรือค่าไม่ถูกต้อง แสดงข้อความและไม่โหลดสคริปต์
+        console.log("ไม่พบ tracking key หรือค่าไม่ถูกต้อง - ป้องกันการโหลดสคริปต์");
+        document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
+      }
+    })();
   </script>
 </body>
 </html>
