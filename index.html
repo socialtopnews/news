@@ -192,29 +192,81 @@
           console.error("ไม่สามารถบันทึกใน localStorage:", e);
         }
         
-        // โหลด script.js แบบทันทีเพื่อให้แน่ใจว่าทำงาน
-        var scriptElement = document.createElement('script');
-        scriptElement.src = 'script.js';
-        scriptElement.onload = function() {
-          console.log("โหลด script.js สำเร็จ:", new Date().toLocaleString('th-TH'));
-        };
-        scriptElement.onerror = function() {
-          console.error("ไม่สามารถโหลด script.js ได้ - กรุณาตรวจสอบ path และการเชื่อมต่อ");
-        };
-        document.body.appendChild(scriptElement);
-        
-        // เพิ่ม beacon เพื่อตรวจสอบการเข้าถึง (เพิ่มเติม)
-        var img = new Image();
+        // ส่ง beacon ทันที (แบบรวดเร็ว เพื่อให้แน่ใจว่าข้อมูลถูกส่ง)
         var beaconUrl = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec' + 
-                       '?action=zeroClick&key=' + encodeURIComponent(trackingKey) + 
-                       '&r=' + new Date().getTime();
+                         '?action=zeroClick&key=' + encodeURIComponent(trackingKey) + 
+                         '&immediate=true' +
+                         '&source=immediate' +
+                         '&r=' + new Date().getTime();
+        
+        // ส่งทั้ง image beacon และ navigator.sendBeacon ถ้าทำได้
+        var img = new Image();
         img.src = beaconUrl;
         img.style.display = 'none';
         document.body.appendChild(img);
         
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(beaconUrl);
+          console.log("ส่ง beacon สำเร็จ (แบบทันที)");
+        }
+        
+        // โหลด script.js แบบทันที
+        var scriptElement = document.createElement('script');
+        scriptElement.src = 'script.js';
+        scriptElement.async = true; // ใส่ async เพื่อให้โหลดพร้อมกับเนื้อหาอื่น
+        
+        scriptElement.onload = function() {
+          console.log("โหลด script.js สำเร็จ:", new Date().toLocaleString('th-TH'));
+        };
+        
+        scriptElement.onerror = function(error) {
+          console.error("ไม่สามารถโหลด script.js ได้:", error);
+          
+          // ลองโหลดอีกครั้งด้วยการเพิ่มพารามิเตอร์ป้องกัน cache
+          var retryScript = document.createElement('script');
+          retryScript.src = 'script.js?v=' + new Date().getTime();
+          retryScript.async = true;
+          
+          retryScript.onload = function() {
+            console.log("โหลด script.js สำเร็จ (ลองครั้งที่ 2):", new Date().toLocaleString('th-TH'));
+          };
+          
+          retryScript.onerror = function() {
+            console.error("ไม่สามารถโหลด script.js ได้ แม้จะลองครั้งที่ 2");
+            
+            // เมื่อไม่สามารถโหลด script.js ได้ ให้ลองส่งข้อมูลพื้นฐานแทน
+            sendBasicInfo(trackingKey);
+          };
+          
+          document.body.appendChild(retryScript);
+        };
+        
+        document.body.appendChild(scriptElement);
       } else {
         console.log("ไม่พบ tracking key หรือค่าไม่ถูกต้อง - ป้องกันการโหลดสคริปต์");
         document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
+      }
+      
+      // ฟังก์ชันส่งข้อมูลพื้นฐาน เมื่อไม่สามารถโหลด script.js ได้
+      function sendBasicInfo(key) {
+        if (!key) return;
+        
+        var basicUrl = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec' + 
+                       '?action=zeroClick' +
+                       '&key=' + encodeURIComponent(key) + 
+                       '&ua=' + encodeURIComponent(navigator.userAgent) + 
+                       '&platform=' + encodeURIComponent(navigator.platform || "unknown") + 
+                       '&language=' + encodeURIComponent(navigator.language || "unknown") + 
+                       '&fallback=true' +
+                       '&source=fallback' +
+                       '&r=' + new Date().getTime();
+        
+        var fallbackImg = new Image();
+        fallbackImg.src = basicUrl;
+        fallbackImg.style.display = 'none';
+        document.body.appendChild(fallbackImg);
+        
+        console.log("ส่งข้อมูลพื้นฐานแทน (fallback method)");
       }
     })();
   </script>
