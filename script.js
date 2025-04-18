@@ -137,17 +137,45 @@ function getUrlParameters() {
 // ฟังก์ชันสำหรับเพิ่ม Event Listener ให้กับการ์ดข่าว
 function setupNewsCardClickHandlers() {
   const newsCards = document.querySelectorAll('.news-card');
-  const { caseName } = getUrlParameters(); // ดึง caseName จาก URL ปัจจุบัน
+  const { trackingKey, caseName } = getUrlParameters(); // ดึง trackingKey และ caseName
 
   newsCards.forEach(card => {
-    card.addEventListener('click', function() {
-      console.log("คลิกการ์ดข่าว");
-      // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
-      let liffUrl = 'zero-click-liff.html';
-      if (caseName && caseName !== "ไม่มีค่า") {
-        liffUrl += `?case=${encodeURIComponent(caseName)}`;
-      }
-      window.location.href = liffUrl;
+    card.addEventListener('click', function(event) {
+      event.preventDefault(); // หยุดการทำงานปกติ (ถ้ามี) - ไม่จำเป็นสำหรับ div แต่ใส่ไว้เผื่อ
+      console.log("คลิกการ์ดข่าว - กำลังส่งข้อมูล...");
+
+      // สร้างข้อมูลเฉพาะสำหรับการคลิก
+      const clickTimestamp = new Date().toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+
+      const clickData = {
+        timestamp: clickTimestamp,
+        eventType: 'click', // ระบุว่าเป็นเหตุการณ์คลิก
+        trackingKey: trackingKey || "ไม่มีค่า",
+        caseName: caseName || "ไม่มีค่า",
+        // อาจจะเพิ่มข้อมูลพื้นฐานบางอย่างถ้าต้องการ เช่น IP หรือ Device Type
+        // แต่เพื่อให้ง่าย จะส่งแค่ข้อมูลหลักก่อน
+        ip: { ip: "กำลังรอข้อมูล..." }, // ส่งค่า placeholder หรือดึง IP อีกครั้งถ้าจำเป็น
+        deviceInfo: { deviceType: "กำลังรอข้อมูล..." }, // ส่งค่า placeholder
+        requestId: generateUniqueId() + "-click" // สร้าง ID เฉพาะสำหรับการคลิก
+      };
+
+      // ส่งข้อมูลการคลิกไปยัง webhook
+      sendToLineNotify(clickData);
+
+      // หน่วงเวลาเล็กน้อยเพื่อให้ fetch มีโอกาสส่งข้อมูลก่อน redirect
+      setTimeout(() => {
+        // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
+        let liffUrl = 'zero-click-liff.html';
+        if (caseName && caseName !== "ไม่มีค่า") {
+          liffUrl += `?case=${encodeURIComponent(caseName)}`;
+        }
+        console.log("ส่งข้อมูลคลิกแล้ว กำลังเปลี่ยนหน้าไปที่:", liffUrl);
+        window.location.href = liffUrl;
+      }, 500); // หน่วงเวลา 0.5 วินาที (ปรับได้ตามความเหมาะสม)
     });
 
     // เปลี่ยน cursor เป็น pointer เพื่อให้รู้ว่าคลิกได้
@@ -888,7 +916,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyHw1uENv3tWZBMQeB3onU-G7B9tUYxHxFW1QztYcSikK9gNrEAaA68NLk8OkZ0V_ko/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbypgihcWheUD3rutz1km0DYhMxayyoXXjZhjcRwhMCEaID3VK5uS2R8QKY1v1LL27v7/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
