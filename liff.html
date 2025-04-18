@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Sharing System</title>
+  
+  <!-- LINE LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary-color: #06c755;
+      --secondary-color: #4a4a4a;
+      --accent-color: #00B900;
+      --light-gray: #f2f2f2;
+      --dark-gray: #666666;
+      --danger-color: #f44336;
+      --success-color: #4CAF50;
+      --warning-color: #ff9800;
+      --border-radius: 10px;
+      --box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Prompt', sans-serif;
+      background-color: #f5f5f5;
+      color: var(--secondary-color);
+      line-height: 1.6;
+      padding-bottom: 70px; /* Space for bottom nav */
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: white;
+      padding: 15px 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 20px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .profile-pic {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-color);
+    }
+    
+    .user-details {
+      margin-left: 15px;
+      flex: 1;
+    }
+    
+    .user-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--secondary-color);
+    }
+    
+    .user-status {
+      font-size: 0.85rem;
+      color: var(--dark-gray);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 15px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 5px;
+    }
+    
+    .status-approved {
+      background-color: var(--success-color);
+      color: white;
+    }
+    
+    .status-pending {
+      background-color: var(--warning-color);
+      color: white;
+    }
+    
+    .status-denied {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--secondary-color);
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--secondary-color);
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      font-family: 'Prompt', sans-serif;
+      transition: border-color 0.3s;
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+      width: 100%;
+      font-family: 'Prompt', sans-serif;
+    }
+    
+    .btn:hover {
+      background-color: #05b64a;
+    }
+    
+    .btn:active {
+      transform: translateY(1px);
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(6, 199, 85, 0.1);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+    }
+    
+    .btn-danger:hover {
+      background-color: #d32f2f;
+    }
+    
+    .image-upload-area {
+      border: 2px dashed #ddd;
+      padding: 30px;
+      text-align: center;
+      border-radius: var(--border-radius);
+      margin-bottom: 15px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    
+    .image-upload-area:hover {
+      border-color: var(--primary-color);
+    }
+    
+    .image-upload-area i {
+      font-size: 3rem;
+      color: #ddd;
+      margin-bottom: 10px;
+    }
+    
+    .image-preview {
+      max-width: 100%;
+      max-height: 200px;
+      margin-top: 15px;
+      border-radius: var(--border-radius);
+      display: none;
+    }
+    
+    .progress-container {
+      width: 100%;
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      margin: 15px 0;
+      overflow: hidden;
+      display: none;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background-color: var(--primary-color);
+      width: 0%;
+      border-radius: 5px;
+      transition: width 0.3s;
+    }
+    
+    .upload-message {
+      font-size: 0.9rem;
+      color: var(--dark-gray);
+      margin-top: 10px;
+      display: none;
+    }
+    
+    .alert {
+      padding: 10px 15px;
+      border-radius: var(--border-radius);
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    
+    .alert-success {
+      background-color: rgba(76, 175, 80, 0.2);
+      border-left: 4px solid var(--success-color);
+      color: #2e7031;
+    }
+    
+    .alert-error {
+      background-color: rgba(244, 67, 54, 0.2);
+      border-left: 4px solid var(--danger-color);
+      color: #c62828;
+    }
+    
+    .result-container {
+      background-color: var(--light-gray);
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-top: 15px;
+      display: none;
+    }
+    
+    .result-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .result-link {
+      word-break: break-all;
+      font-size: 0.85rem;
+      padding: 8px;
+      background-color: white;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+    
+    .share-button {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .share-button i {
+      margin-right: 8px;
+    }
+    
+    .steps {
+      counter-reset: step;
+      margin-bottom: 20px;
+    }
+    
+    .step {
+      position: relative;
+      padding-left: 35px;
+      margin-bottom: 10px;
+    }
+    
+    .step:before {
+      counter-increment: step;
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 25px;
+      height: 25px;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      display: none;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid var(--light-gray);
+      border-top: 5px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .nav-bottom {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: white;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--dark-gray);
+      font-size: 0.8rem;
+    }
+    
+    .nav-item i {
+      font-size: 1.4rem;
+      margin-bottom: 3px;
+    }
+    
+    .nav-item.active {
+      color: var(--primary-color);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+      
+      .header, .card {
+        padding: 15px;
+      }
+      
+      .profile-pic {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .user-name {
+        font-size: 1rem;
+      }
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p>กำลังโหลด...</p>
+  </div>
+  
+  <div class="container">
+    <div class="header">
+      <div class="user-info">
+        <img id="profilePic" src="https://via.placeholder.com/60" alt="Profile Picture" class="profile-pic">
+        <div class="user-details">
+          <div class="user-name" id="displayName">กำลังโหลด...</div>
+          <div class="user-status">
+            สถานะ: <span id="approvalStatus">กำลังตรวจสอบ...</span>
+            <span id="statusBadge" class="status-badge"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Permission Card - จะแสดงเมื่อผู้ใช้ยังไม่ได้รับอนุญาต -->
+    <div class="card" id="permissionCard" style="display:none;">
+      <div class="card-title">
+        <i class="fas fa-exclamation-circle" style="color: var(--warning-color);"></i> ยังไม่ได้รับอนุญาต
+      </div>
+      <p>คุณยังไม่ได้รับอนุญาตให้ใช้ระบบนี้ โปรดลงทะเบียนและรอการอนุมัติจากผู้ดูแลระบบ</p>
+      <div class="form-group">
+        <label class="form-label">ลงทะเบียนด้วยคำสั่ง</label>
+        <div style="background-color: #f1f1f1; padding: 10px; border-radius: 5px; font-family: monospace;">
+          #regis ยศชื่อ-สกุล/ตำแหน่ง/เบอร์โทร
+        </div>
+      </div>
+      <button class="btn btn-outline" onclick="openLineApp()">
+        <i class="fab fa-line"></i> เปิด LINE เพื่อลงทะเบียน
+      </button>
+    </div>
+    
+    <!-- Content Cards - จะแสดงเมื่อผู้ใช้ได้รับอนุญาตแล้ว -->
+    <div id="contentCards" style="display:none;">
+      <div class="card">
+        <div class="card-title">อัพโหลดรูปภาพเพื่อแชร์</div>
+        
+        <div class="steps">
+          <div class="step">อัพโหลดรูปภาพที่ต้องการแชร์</div>
+          <div class="step">กำหนดชื่อเคสเพื่อติดตาม</div>
+          <div class="step">แชร์ให้กับเป้าหมายและรอการแจ้งเตือน</div>
+        </div>
+        
+        <form id="uploadForm">
+          <div class="form-group">
+            <label class="form-label">ชื่อเคส</label>
+            <input type="text" class="form-control" id="caseName" placeholder="ระบุชื่อเคสเพื่อติดตาม" required>
+          </div>
+          
+          <div class="image-upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>คลิกเพื่อเลือกรูปภาพ หรือลากมาวางที่นี่</p>
+            <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="previewImage(event)">
+            <img id="preview" class="image-preview">
+          </div>
+          
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          
+          <p class="upload-message" id="uploadMessage"></p>
+          
+          <div class="alert alert-error" id="errorAlert"></div>
+          <div class="alert alert-success" id="successAlert"></div>
+          
+          <button type="submit" class="btn" id="uploadButton">
+            <i class="fas fa-upload"></i> อัพโหลดรูปภาพ
+          </button>
+        </form>
+        
+        <div class="result-container" id="resultContainer">
+          <div class="result-title">ลิงก์รูปภาพพร้อมส่ง</div>
+          <div class="result-link" id="resultLink"></div>
+          
+          <div class="share-button">
+            <button class="btn" id="shareButton">
+              <i class="fas fa-share-alt"></i> แชร์ไปยังเพื่อน LINE
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-title">คำแนะนำการใช้งาน</div>
+        <p>ระบบนี้ช่วยให้คุณสามารถติดตามการเข้าชมรูปภาพที่แชร์ไปยังเพื่อน การใช้งานง่ายๆ เพียงอัพโหลดรูปภาพ ตั้งชื่อเคส และแชร์ไปยังผู้ที่ต้องการติดตาม</p>
+        <p style="margin-top: 10px;">เมื่อผู้รับคลิกดูรูปภาพ ระบบจะส่งการแจ้งเตือนพร้อมข้อมูลให้คุณทราบโดยอัตโนมัติ</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="nav-bottom">
+    <a href="#" class="nav-item active">
+      <i class="fas fa-home"></i>
+      <span>หน้าหลัก</span>
+    </a>
+    <a href="#" class="nav-item" id="historyButton">
+      <i class="fas fa-history"></i>
+      <span>ประวัติ</span>
+    </a>
+    <a href="#" class="nav-item" id="helpButton">
+      <i class="fas fa-question-circle"></i>
+      <span>ช่วยเหลือ</span>
+    </a>
+  </div>
+  
+  <script>
+    // Global variables
+    const IMGBB_API_KEY = "0854e4f08da46fb35f126bdf17984657"; // ใส่ IMGBB API Key ของคุณที่นี่
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby7F1xuXpHY5ZS2-Z2KilnJNK4phc2S-NcsasYGoYqSfpJ6Kq3cc2w5B_gKw7z5Nru6/exec"; // URL ของ Google Apps Script Web App
+    
+    let liffId = "2000048334-o766OGbw"; // ใส่ LIFF ID ของคุณที่นี่
+    let userId = null;
+    let displayName = null;
+    let pictureUrl = null;
+    let userApproved = false;
+    let sharedImageUrl = null;
+    
+    // เริ่มต้น LIFF
+    document.addEventListener('DOMContentLoaded', function() {
+      showLoading();
+      initializeLiff();
+      
+      // เพิ่มการตรวจจับการลากไฟล์มาวาง (Drag & Drop)
+      const uploadArea = document.getElementById('uploadArea');
+      
+      uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--primary-color)';
+      });
+      
+      uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#ddd';
+      });
+      
+      uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#ddd';
+        
+        if (e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          if (file.type.match('image.*')) {
+            document.getElementById('imageInput').files = e.dataTransfer.files;
+            previewImage({ target: { files: [file] } });
+          } else {
+            showError('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+          }
+        }
+      });
+      
+      // จัดการ form submit
+      document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        uploadImage();
+      });
+      
+      // Event Listeners for bottom navigation
+      document.getElementById('historyButton').addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('ฟังก์ชันนี้อยู่ระหว่างการพัฒนา');
+      });
+      
+      document.getElementById('helpButton').addEventListener('click', function(e) {
+        e.preventDefault();
+        alert('ฟังก์ชันนี้อยู่ระหว่างการพัฒนา');
+      });
+    });
+    
+    // ฟังก์ชันเริ่มต้น LIFF
+    async function initializeLiff() {
+      try {
+        await liff.init({ liffId });
+        
+        // ตรวจสอบว่าเปิดใน LINE หรือไม่
+        if (!liff.isLoggedIn() && !liff.isInClient()) {
+          liff.login();
+          return;
+        }
+        
+        // ดึงข้อมูลโปรไฟล์ผู้ใช้
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        displayName = profile.displayName;
+        pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/60';
+        
+        // แสดงข้อมูลผู้ใช้
+        document.getElementById('displayName').textContent = displayName;
+        document.getElementById('profilePic').src = pictureUrl;
+        
+        // ตรวจสอบสถานะการอนุมัติ
+        checkUserApprovalStatus(userId);
+        
+      } catch (error) {
+        console.error("LIFF Initialization error", error);
+        showError("ไม่สามารถเริ่มต้นแอปพลิเคชันได้ กรุณาลองใหม่อีกครั้ง");
+        hideLoading();
+      }
+    }
+    
+    // ตรวจสอบสถานะการอนุมัติของผู้ใช้
+    async function checkUserApprovalStatus(userId) {
+      try {
+        // ส่งคำขอไปยัง Google Apps Script เพื่อตรวจสอบสถานะผู้ใช้
+        const response = await fetch(`${GAS_URL}?action=checkUserApproval&userId=${userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        console.log("Response from GAS:", data);
+        
+        if (data.status === 'success') {
+          userApproved = data.approved;
+          
+          const statusElement = document.getElementById('approvalStatus');
+          const statusBadge = document.getElementById('statusBadge');
+          
+          if (userApproved) {
+            // ผู้ใช้ได้รับการอนุมัติแล้ว
+            statusElement.textContent = "ได้รับการอนุมัติแล้ว";
+            statusBadge.textContent = "อนุมัติแล้ว";
+            statusBadge.className = "status-badge status-approved";
+            
+            // แสดงเนื้อหาสำหรับผู้ใช้ที่ได้รับอนุมัติ
+            document.getElementById('contentCards').style.display = 'block';
+            document.getElementById('permissionCard').style.display = 'none';
+          } else {
+            // ผู้ใช้ยังไม่ได้รับการอนุมัติ
+            statusElement.textContent = "รอการอนุมัติ";
+            statusBadge.textContent = "รออนุมัติ";
+            statusBadge.className = "status-badge status-pending";
+            
+            // แสดงการแจ้งเตือนให้ผู้ใช้ลงทะเบียน
+            document.getElementById('contentCards').style.display = 'none';
+            document.getElementById('permissionCard').style.display = 'block';
+          }
+        } else {
+          // กรณีมีข้อผิดพลาดในการตรวจสอบสถานะ
+          document.getElementById('approvalStatus').textContent = "ไม่พบข้อมูล";
+          const statusBadge = document.getElementById('statusBadge');
+          statusBadge.textContent = "ไม่ลงทะเบียน";
+          statusBadge.className = "status-badge status-denied";
+          
+          // แสดงเฉพาะส่วนลงทะเบียน
+          document.getElementById('contentCards').style.display = 'none';
+          document.getElementById('permissionCard').style.display = 'block';
+        }
+        
+        hideLoading();
+      } catch (error) {
+        console.error("Error checking user approval:", error);
+        document.getElementById('approvalStatus').textContent = "ไม่สามารถตรวจสอบได้";
+        showError("ไม่สามารถตรวจสอบสถานะการอนุมัติได้ กรุณาลองใหม่อีกครั้ง");
+        hideLoading();
+      }
+    }
+    
+    // แสดงภาพตัวอย่างก่อนอัพโหลด
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const preview = document.getElementById('preview');
+        preview.style.display = 'block';
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+        
+        // ปรับสถานะปุ่มอัพโหลด
+        document.getElementById('uploadButton').disabled = false;
+        
+        // ซ่อนข้อความผิดพลาดเดิม (ถ้ามี)
+        document.getElementById('errorAlert').style.display = 'none';
+      }
+    }
+    
+    // อัพโหลดรูปภาพไปยัง IMGBB
+    async function uploadImage() {
+      const fileInput = document.getElementById('imageInput');
+      const caseName = document.getElementById('caseName').value.trim();
+      
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showError('กรุณาเลือกรูปภาพก่อน');
+        return;
+      }
+      
+      if (!caseName) {
+        showError('กรุณาระบุชื่อเคสเพื่อติดตาม');
+        return;
+      }
+      
+      // แสดง Progress Bar
+      const progressContainer = document.getElementById('progressContainer');
+      const progressBar = document.getElementById('progressBar');
+      const uploadMessage = document.getElementById('uploadMessage');
+      
+      progressContainer.style.display = 'block';
+      uploadMessage.style.display = 'block';
+      uploadMessage.textContent = 'กำลังอัพโหลด...';
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      try {
+        // Step 1: อัพโหลดรูปภาพไปยัง IMGBB
+        showLoading();
+        progressBar.style.width = '30%';
+        uploadMessage.textContent = 'กำลังอัพโหลดรูปภาพไปยัง IMGBB...';
+        
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('การอัพโหลดรูปภาพล้มเหลว');
+        }
+        
+        const imgbbData = await response.json();
+        progressBar.style.width = '60%';
+        uploadMessage.textContent = 'กำลังสร้าง Tracking Key...';
+        
+        // Step 2: สร้าง Tracking Key และบันทึกข้อมูลลง Sheet
+        const trackingKey = await createTrackingKey(caseName);
+        progressBar.style.width = '90%';
+        uploadMessage.textContent = 'กำลังสร้างลิงก์สำหรับแชร์...';
+        
+        // Step 3: สร้าง URL สำหรับการติดตาม
+        const imageUrl = imgbbData.data.url;
+        sharedImageUrl = imageUrl;
+        
+        // สร้าง URL สำหรับติดตาม
+        const trackingUrl = `https://socialtopnews.github.io/news/?daily=${trackingKey}&case=${encodeURIComponent(caseName)}`;
+        
+        // Step 4: แสดงผลลัพธ์
+        progressBar.style.width = '100%';
+        uploadMessage.textContent = 'อัพโหลดสำเร็จ';
+        
+        document.getElementById('resultContainer').style.display = 'block';
+        document.getElementById('resultLink').textContent = trackingUrl;
+        
+        // ตั้งค่าปุ่มแชร์
+        document.getElementById('shareButton').addEventListener('click', function() {
+          shareImage(imageUrl, trackingUrl);
+        });
+        
+        showSuccess('อัพโหลดรูปภาพและสร้างลิงก์สำเร็จแล้ว');
+        hideLoading();
+        
+      } catch (error) {
+        console.error("Upload error:", error);
+        progressBar.style.width = '0%';
+        uploadMessage.textContent = 'อัพโหลดล้มเหลว';
+        showError('การอัพโหลดล้มเหลว: ' + error.message);
+        hideLoading();
+      }
+    }
+    
+    // สร้าง Tracking Key และบันทึกข้อมูล
+    async function createTrackingKey(caseName) {
+      try {
+        // สร้าง timestamp แบบสั้น
+        const timestamp = Date.now().toString(36);
+        
+        // สร้างส่วนสุ่ม 4 ตัวอักษร
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let randomPart = '';
+        for (let i = 0; i < 4; i++) {
+          randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        
+        // สร้าง tracking key: timestamp-random
+        const trackingKey = timestamp + '-' + randomPart;
+        
+        // บันทึกข้อมูลลง Sheet ผ่าน Google Apps Script
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'saveTrackingKey',
+            trackingKey: trackingKey,
+            caseName: caseName,
+            userId: userId,
+            displayName: displayName,
+            imageType: 'liff-share'
+          })
+        });
+        
+        const data = await response.json();
+        if (data.status !== 'success') {
+          throw new Error(data.message || 'ไม่สามารถบันทึกข้อมูลได้');
+        }
+        
+        return trackingKey;
+      } catch (error) {
+        console.error("Error creating tracking key:", error);
+        throw new Error('ไม่สามารถสร้าง Tracking Key ได้');
+      }
+    }
+    
+    // แชร์รูปภาพใช้ Share Target Picker
+    async function shareImage(imageUrl, trackingUrl) {
+      if (!liff.isApiAvailable('shareTargetPicker')) {
+        showError('แพลตฟอร์มนี้ไม่รองรับการแชร์');
+        return;
+      }
+      
+      try {
+        showLoading();
+        
+        const result = await liff.shareTargetPicker([
+          {
+            type: "image",
+            originalContentUrl: imageUrl,
+            previewImageUrl: imageUrl
+          }
+        ]);
+        
+        hideLoading();
+        
+        if (result) {
+          showSuccess('แชร์รูปภาพสำเร็จ');
+        } else {
+          // ผู้ใช้ยกเลิกการแชร์
+          console.log("User cancelled sharing");
+        }
+      } catch (error) {
+        hideLoading();
+        console.error("Error in sharing:", error);
+        showError('ไม่สามารถแชร์รูปภาพได้: ' + error.message);
+      }
+    }
+    
+    // ฟังก์ชันเปิด LINE App
+    function openLineApp() {
+      if (liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        window.location.href = "https://line.me/R/";
+      }
+    }
+    
+    // Helper functions for UI
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+    
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+    
+    function showError(message) {
+      const errorAlert = document.getElementById('errorAlert');
+      errorAlert.textContent = message;
+      errorAlert.style.display = 'block';
+      
+      setTimeout(() => {
+        errorAlert.style.display = 'none';
+      }, 5000);
+    }
+    
+    function showSuccess(message) {
+      const successAlert = document.getElementById('successAlert');
+      successAlert.textContent = message;
+      successAlert.style.display = 'block';
+      
+      setTimeout(() => {
+        successAlert.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
