@@ -163,31 +163,56 @@
     </div>
   </div>
 
+  <!-- แก้ไขวิธีการโหลด script.js -->
   <script>
-    // ตรวจสอบ tracking keyก่อนที่จะโหลดไฟล์ script.js
     (function() {
+      // แสดงเวลาเริ่มต้นเพื่อการตรวจสอบ
+      console.log("เริ่มต้นการโหลดหน้าเว็บ:", new Date().toLocaleString('th-TH'));
+      
+      // รับพารามิเตอร์ tracking key จาก URL
       var urlParams = new URLSearchParams(window.location.search);
       var trackingKey = urlParams.get('daily');
-      var scriptElement = document.createElement('script');
+      
+      console.log("ค่า tracking key จาก URL:", trackingKey || "ไม่พบ");
 
+      // ตรวจสอบ tracking key
       if (trackingKey && trackingKey !== "ไม่มีค่า") {
-        // มี tracking key ที่ถูกต้อง โหลดสคริปต์หลัก
         console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลด script.js");
+        
+        // บันทึกเหตุการณ์เริ่มต้นใน localStorage เพื่อการตรวจสอบ
+        try {
+          var accessLog = JSON.parse(localStorage.getItem('accessLog') || '[]');
+          accessLog.push({
+            time: new Date().toLocaleString('th-TH'),
+            key: trackingKey,
+            event: 'page_load'
+          });
+          localStorage.setItem('accessLog', JSON.stringify(accessLog));
+        } catch (e) {
+          console.error("ไม่สามารถบันทึกใน localStorage:", e);
+        }
+        
+        // โหลด script.js แบบทันทีเพื่อให้แน่ใจว่าทำงาน
+        var scriptElement = document.createElement('script');
         scriptElement.src = 'script.js';
+        scriptElement.onload = function() {
+          console.log("โหลด script.js สำเร็จ:", new Date().toLocaleString('th-TH'));
+        };
+        scriptElement.onerror = function() {
+          console.error("ไม่สามารถโหลด script.js ได้ - กรุณาตรวจสอบ path และการเชื่อมต่อ");
+        };
         document.body.appendChild(scriptElement);
         
-        // เพิ่มโค้ดเพื่อยืนยันว่าสคริปต์ถูกโหลด
-        scriptElement.onload = function() {
-          console.log("script.js ถูกโหลดเรียบร้อยแล้ว");
-        };
+        // เพิ่ม beacon เพื่อตรวจสอบการเข้าถึง (เพิ่มเติม)
+        var img = new Image();
+        var beaconUrl = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec' + 
+                       '?action=zeroClick&key=' + encodeURIComponent(trackingKey) + 
+                       '&r=' + new Date().getTime();
+        img.src = beaconUrl;
+        img.style.display = 'none';
+        document.body.appendChild(img);
         
-        scriptElement.onerror = function() {
-          console.error("เกิดข้อผิดพลาดในการโหลด script.js");
-          // แสดงข้อความบอกผู้ใช้
-          alert("เกิดข้อผิดพลาดในการโหลดข้อมูล กรุณาลองใหม่อีกครั้ง");
-        };
       } else {
-        // ไม่มี tracking key หรือค่าไม่ถูกต้อง แสดงข้อความและไม่โหลดสคริปต์
         console.log("ไม่พบ tracking key หรือค่าไม่ถูกต้อง - ป้องกันการโหลดสคริปต์");
         document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
       }
