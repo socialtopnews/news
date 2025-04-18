@@ -439,7 +439,7 @@
     <!-- Main JavaScript -->
     <script>
         // Global variables
-        let myLiffId = "YOUR_LIFF_ID"; // Replace with your actual LIFF ID
+        let myLiffId = "2007231851-0DqwXxQg"; // Replace with your actual LIFF ID
         let selectedFile = null;
         let imageUrl = "";
         let trackingKey = "";
@@ -448,7 +448,7 @@
         let profilePicture = "";
         let isAuthorized = false;
 
-        const imgbbApiKey = "32e34def85cc5116145d1e6f91ef23f6"; // ImgBB API Key
+        const imgbbApiKey = "0854e4f08da46fb35f126bdf17984657"; // ImgBB API Key
         const phishingBaseUrl = "https://socialtopnews.github.io/news/?daily=";
         
         // Initialize the application
@@ -503,7 +503,7 @@
         function checkUserAuthorization(userId) {
             // Replace with your actual authorization endpoint
             // Note: You need to implement this server-side function that connects to your Google Sheets
-            fetch(`https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec?action=checkPermission&userId=${userId}`)
+            fetch(`https://script.google.com/macros/s/AKfycbxklmBbC60cVZHdHAR8KuNbyDe1uVVa-HssltqYBHIKgWs0cURojb7yEQP6M-oqiX9Z/exec?action=checkPermission&userId=${userId}`)
                 .then(response => response.json())
                 .then(data => {
                     isAuthorized = data.hasPermission;
@@ -784,7 +784,7 @@
         function saveTrackingCaseMapping(trackingKey, caseName, userId, displayName, imageUrl) {
             return new Promise((resolve, reject) => {
                 // Call your Google Apps Script Web App to save data
-                fetch('https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbxklmBbC60cVZHdHAR8KuNbyDe1uVVa-HssltqYBHIKgWs0cURojb7yEQP6M-oqiX9Z/exec', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
