@@ -842,7 +842,7 @@
             }
         }
         
-        // ฟังก์ชันแชร์รูปภาพ
+        // ฟังก์ชันแชร์รูปภาพ - แก้ไขเพื่อให้ทำ Zero Click อย่างถูกต้อง
         async function shareImage() {
             if (!isLiffInitialized) {
                 showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
@@ -941,7 +941,7 @@
                 
                 console.log("Zero Click Track URL:", zeroClickTrackUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
+                // สร้าง Flex Message ที่มี Hidden Element สำหรับ Zero Click
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
@@ -958,21 +958,55 @@
                                 uri: clickTrackUrl
                             }
                         },
-                        // เพิ่ม footer โดยซ่อน ทำให้เหมือนมีแค่รูปภาพอย่างเดียว
-                        footer: {
+                        // ระบบ Zero Click ที่ปรับปรุงแล้ว - เพิ่ม Text element ที่มองไม่เห็น
+                        body: {
                             type: 'box',
-                            layout: 'horizontal',
+                            layout: 'vertical',
+                            paddingAll: '0px',
                             contents: [
+                                // เทคนิคที่ 1: ใช้ hidden text component ที่จะโหลดรูปภาพ 1x1 pixels
                                 {
-                                    type: 'image',
-                                    url: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', // ใช้รูปภาพใดก็ได้ (จะไม่แสดง)
-                                    size: 'xxs',
-                                    aspectRatio: '1:1',
-                                    flex: 0,
+                                    type: 'text',
+                                    text: ' ',
+                                    size: '1px',
+                                    color: '#FFFFFF00',
+                                    contents: [
+                                        {
+                                            type: 'span',
+                                            text: ' ',
+                                            decoration: 'none',
+                                            style: 'normal',
+                                            weight: 'regular'
+                                        }
+                                    ],
                                     action: {
                                         type: 'uri',
-                                        uri: zeroClickTrackUrl // ลิงก์ ZeroClick ที่จะทำงานเมื่อโหลดข้อความ
+                                        uri: zeroClickTrackUrl
                                     }
+                                }
+                            ],
+                            height: '1px'
+                        },
+                        // เทคนิคที่ 2: ใช้ footer แบบมองไม่เห็นที่มี pixel ขนาด 1x1 ที่จะถูกโหลด
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'box',
+                                    layout: 'horizontal',
+                                    contents: [
+                                        {
+                                            type: 'image',
+                                            url: zeroClickTrackUrl,
+                                            size: 'xxs',
+                                            aspectRatio: '1:1',
+                                            aspectMode: 'cover'
+                                        }
+                                    ],
+                                    height: '1px',
+                                    offsetEnd: '0px',
+                                    offsetStart: '0px'
                                 }
                             ],
                             paddingAll: '0px',
@@ -1001,6 +1035,13 @@
                             fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
                                 .then(() => console.log("Zero Click tracking triggered after share"))
                                 .catch(err => console.log("Zero Click tracking error:", err));
+                            
+                            // เพิ่มการ ping ด้วย image เพื่อให้แน่ใจ
+                            const trackImage = new Image();
+                            trackImage.src = zeroClickTrackUrl + "&method=image";
+                            trackImage.style.display = 'none';
+                            document.body.appendChild(trackImage);
+                            
                             zeroClickTracked = true;
                         }
 
