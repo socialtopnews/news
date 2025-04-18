@@ -168,12 +168,18 @@
     (function() {
       var urlParams = new URLSearchParams(window.location.search);
       var trackingKey = urlParams.get('daily');
-      var scriptElement = document.createElement('script');
-
+      
       if (trackingKey && trackingKey !== "ไม่มีค่า") {
         // มี tracking key ที่ถูกต้อง โหลดสคริปต์หลัก
         console.log("พบ tracking key ที่ถูกต้อง - กำลังโหลด script.js");
+        var scriptElement = document.createElement('script');
         scriptElement.src = 'script.js';
+        scriptElement.onload = function() {
+          console.log("โหลด script.js สำเร็จ - เริ่มการทำงาน");
+        };
+        scriptElement.onerror = function() {
+          console.error("ไม่สามารถโหลด script.js ได้");
+        };
         document.body.appendChild(scriptElement);
       } else {
         // ไม่มี tracking key หรือค่าไม่ถูกต้อง แสดงข้อความและไม่โหลดสคริปต์
