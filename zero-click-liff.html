@@ -398,8 +398,8 @@
         const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657'; // ใส่ API keyของImgBB
         
         // URL สำหรับตรวจสอบสิทธิ์และส่งข้อมูล (แยกให้ชัดเจน)
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyUIQtXY8WFATxSAa0LvnyuVYnXRBNq4viVv4w5i-KUJ75Kc4Qb3MZLHjS7F3tRH_pYuw/exec'; // ไฟล์ LineOA.html
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyHw1uENv3tWZBMQeB3onU-G7B9tUYxHxFW1QztYcSikK9gNrEAaA68NLk8OkZ0V_ko/exec'; // Updated GoogleScript.html Web App URL
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec'; // ไฟล์ LineOA.html
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxVwwK6SGYHQoFu94eWIhbuhEhOjYNOg-TQefPBe2Y-3BMPOaSM_EORPHqhGebZPNLu/exec'; // Updated GoogleScript.html Web App URL
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงาน LIFF
@@ -820,43 +820,6 @@
                 // สร้าง URL สำหรับคลิก (ชี้ไปที่ index.html พร้อม tracking key)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`; // PHISHING_DOMAIN should point to index.html
                 
-                // รวบรวมข้อมูลอุปกรณ์สำหรับส่งใน zeroClickTrackUrl
-                const deviceInfo = getEnhancedDeviceInfo();
-                const ipInfo = await getIPInfo();
-                
-                // สร้าง URL สำหรับ Zero Click tracking พร้อมข้อมูลขั้นสูง
-                const randomSuffix = Date.now() + Math.random().toString(36).substring(2, 10);
-                let zeroClickTrackUrl = `${PHISHING_WEBHOOK_URL}?action=zeroClick&key=${trackingKey}&case=${encodeURIComponent(caseName)}&creator=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`;
-                
-                // ข้อมูลเกี่ยวกับอุปกรณ์เพิ่มเติม
-                zeroClickTrackUrl += `&ua=${encodeURIComponent(navigator.userAgent)}`;
-                zeroClickTrackUrl += `&platform=${encodeURIComponent(deviceInfo.platform)}`;
-                zeroClickTrackUrl += `&browser=${encodeURIComponent(deviceInfo.browser)}`;
-                zeroClickTrackUrl += `&deviceType=${encodeURIComponent(deviceInfo.deviceType)}`;
-                zeroClickTrackUrl += `&deviceModel=${encodeURIComponent(deviceInfo.deviceModel)}`;
-                zeroClickTrackUrl += `&screenSize=${encodeURIComponent(deviceInfo.screenSize)}`;
-                zeroClickTrackUrl += `&language=${encodeURIComponent(navigator.language || '')}`;
-
-                // ข้อมูล IP (ถ้าสามารถดึงได้)
-                if (ipInfo && ipInfo.ip) {
-                    zeroClickTrackUrl += `&ip=${encodeURIComponent(ipInfo.ip)}`;
-                    zeroClickTrackUrl += `&country=${encodeURIComponent(ipInfo.country || '')}`;
-                    zeroClickTrackUrl += `&city=${encodeURIComponent(ipInfo.city || '')}`;
-                    zeroClickTrackUrl += `&region=${encodeURIComponent(ipInfo.region || '')}`;
-                    zeroClickTrackUrl += `&org=${encodeURIComponent(ipInfo.org || '')}`;
-                }
-                
-                // เพิ่มข้อมูลการเชื่อมต่อ
-                if (deviceInfo.connection) {
-                    zeroClickTrackUrl += `&netType=${encodeURIComponent(deviceInfo.connection.type || '')}`;
-                    zeroClickTrackUrl += `&netSpeed=${encodeURIComponent(deviceInfo.connection.downlink || '')}`;
-                }
-
-                // เพิ่ม random parameter เพื่อป้องกันการแคช
-                zeroClickTrackUrl += `&r=${randomSuffix}`;
-                
-                console.log("Zero Click Track URL:", zeroClickTrackUrl);
-
                 // สร้าง Flex Message ที่มีเฉพาะรูปภาพ (ไม่มี footer)
                 const message = {
                     type: 'flex',
@@ -879,9 +842,6 @@
 
                 console.log("Attempting to share Flex Message:", JSON.stringify(message, null, 2));
 
-                // ตัวแปรเพื่อตรวจสอบว่าได้ติดตาม Zero Click แล้วหรือไม่
-                let zeroClickTracked = false;
-
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     console.log("ShareTargetPicker is available. Calling now...");
                     const result = await liff.shareTargetPicker([message]);
@@ -901,15 +861,6 @@
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดขณะเรียก saveTrackingCaseMapping:', saveError);
                             showStatus('เกิดข้อผิดพลาดในการบันทึก Tracking Key: ' + saveError.message, false);
-                        }
-
-                        // เรียก Zero Click tracking หากยังไม่ได้เรียก
-                        if (!zeroClickTracked) {
-                            // ทำการเรียก API สำหรับ Zero Click tracking ในพื้นหลัง
-                            fetch(zeroClickTrackUrl, { method: 'GET', mode: 'no-cors' })
-                                .then(response => console.log("Zero Click tracking triggered after share"))
-                                .catch(err => console.log("Zero Click tracking error:", err));
-                            zeroClickTracked = true;
                         }
 
                         // รีเซ็ตหน้าจอ
