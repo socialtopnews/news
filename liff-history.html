@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzYmO9TMcmrD4IlAm7CRVNaU1FYlVpo80DdlcDLl7dkJCFjshCtTjpornCPaLMvpeAS/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxXC4cyloVHvvaZkh03UbT8JzDiwMG7-1LgkOw_mZMcmkhDcLsQtDAaYlCRxkfZKJv9/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -954,46 +954,31 @@
                     body: JSON.stringify({
                         action: 'getUserHistory',
                         userId: userId
-                    }),
-                    // เพิ่มการรองรับ CORS
-                    mode: 'cors'
+                    })
                 });
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // ตรวจสอบการตอบกลับ
-                console.log("ได้รับการตอบกลับจาก webhook:", response);
-                console.log("สถานะการตอบกลับ:", response.status);
-                console.log("Content-Type:", response.headers.get("content-type"));
+                // ตรวจสอบสถานะการตอบกลับ
+                if (!response.ok) {
+                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
+                }
                 
+                // ตรวจสอบการตอบกลับ
                 let data;
-                try {
-                    // ทดลองแปลงเป็น JSON โดยตรง ไม่ต้องตรวจสอบ Content-Type ก่อน
-                    const responseText = await response.text();
-                    console.log("Response text:", responseText);
-                    
-                    if (responseText) {
-                        try {
-                            data = JSON.parse(responseText);
-                            console.log("แปลง JSON สำเร็จ:", data);
-                        } catch (jsonError) {
-                            console.error("ไม่สามารถแปลงเป็น JSON ได้:", jsonError);
-                            // ใช้ข้อมูลทดสอบเมื่อแปลง JSON ไม่ได้
-                            data = generateSampleData();
-                        }
-                    } else {
-                        console.warn("ได้รับข้อมูลว่างเปล่า");
-                        data = generateSampleData();
-                    }
-                } catch (error) {
-                    // ถ้าไม่สามารถแปลงข้อมูลเป็น JSON ได้ ใช้ข้อมูลทดสอบ
-                    console.error("เกิดข้อผิดพลาดในการอ่านข้อมูลจาก response:", error);
-                    data = generateSampleData();
+                const contentType = response.headers.get("content-type");
+                
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                    console.log("ได้รับข้อมูล JSON จาก server:", data);
+                } else {
+                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                 }
                 
                 if (data && data.history && data.history.length > 0) {
-                    console.log("พบข้อมูลประวัติ:", data.history.length, "รายการ");
+                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1001,58 +986,24 @@
                     displayHistoryData();
                     document.getElementById('historyList').style.display = 'block';
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติ");
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'none';
                 }
                 
             } catch (error) {
-                console.error('Error fetching history:', error);
+                console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
-                showErrorMessage('ไม่สามารถโหลดข้อมูลประวัติได้ กรุณาลองใหม่อีกครั้ง');
                 
-                // แสดงข้อมูลตัวอย่างในกรณีที่เกิดข้อผิดพลาด
-                currentHistoryData = generateSampleData().history;
-                filteredData = [...currentHistoryData];
-                totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
+                showErrorMessage(`ไม่สามารถโหลดข้อมูลประวัติได้: ${error.message}`);
                 
-                displayHistoryData();
-                document.getElementById('historyList').style.display = 'block';
+                // แสดงข้อความว่าไม่มีข้อมูล
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
             }
-        }
-        
-        // สร้างข้อมูลตัวอย่างสำหรับทดสอบ
-        function generateSampleData() {
-            return {
-                history: [
-                    {
-                        timestamp: '25/06/2024, 14:32:45',
-                        trackingKey: '1m9fvx2-j4x5',
-                        caseName: 'ทดสอบเป้าหมาย Facebook',
-                        ip: '8.8.8.8',
-                        deviceInfo: { deviceType: 'มือถือ', deviceModel: 'iPhone 14 Pro Max (iOS 16.5)' },
-                        location: { lat: '13.7563', long: '100.5018', accuracy: '15' },
-                        hits: 3
-                    },
-                    {
-                        timestamp: '24/06/2024, 09:15:22',
-                        trackingKey: '1m9fd32-kl9s',
-                        caseName: 'ทดสอบเป้าหมาย Instagram',
-                        ip: '1.1.1.1',
-                        deviceInfo: { deviceType: 'คอมพิวเตอร์', deviceModel: 'Windows 11' },
-                        location: { lat: '13.7650', long: '100.5380', accuracy: '22' },
-                        hits: 1
-                    },
-                    {
-                        timestamp: '23/06/2024, 18:05:33',
-                        trackingKey: '1m9e5g2-p7r2',
-                        caseName: 'ทดสอบเป้าหมาย LINE',
-                        ip: '203.151.xxx.xxx',
-                        deviceInfo: { deviceType: 'มือถือ', deviceModel: 'Samsung Galaxy S21 (Android 13)' },
-                        location: { lat: '13.8531', long: '100.5856', accuracy: '8' },
-                        hits: 5
-                    }
-                ]
-            };
         }
         
         // กรองข้อมูลตามการค้นหา
@@ -1081,6 +1032,7 @@
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
             if (filteredData.length === 0) {
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
                 return;
