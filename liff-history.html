@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby-ymumZTHF9JHFLKBrraYXLubGryUc1esECFa6ZwKGdsm296oKfvVM_KTfBWuOyyCU/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxjhB8DyIdkH_zOKt2zzX5GOiTeP2VjXdtht2QcnpY4Xdwbx_jvNT3KgYFqmiw9iAGx/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -978,10 +978,11 @@
                         throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
                     }
                 } else {
-                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    // Server didn't return JSON. Log the full text response for debugging.
                     const textResponse = await response.text();
-                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
-                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                    console.error("Server did not return JSON. Content-Type:", contentType);
+                    console.error("Full text response from server:", textResponse); 
+                    throw new Error(`Server returned non-JSON response. Status: ${response.status}`);
                 }
                 
                 if (data && data.history && data.history.length > 0) {
@@ -1001,20 +1002,26 @@
                 }
                 
             } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
+                console.error('Error fetching user history:', error); // Log the full error object
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                // Provide more specific error messages
+                let userMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
                 if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
-                } else if (error.message.includes("status code")) {
-                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
+                    userMessage += ": ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต";
+                } else if (error.message.includes("status code:")) {
+                    // Extract status code if possible
+                    const match = error.message.match(/status code: (\d+)/);
+                    const status = match ? ` (Status ${match[1]})` : '';
+                    userMessage += `: เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด${status}`;
+                } else if (error.message.includes("non-JSON response")) {
+                     userMessage += ": ได้รับข้อมูลที่ไม่ถูกต้องจากเซิร์ฟเวอร์";
                 } else {
-                    errorMessage += ": " + error.message;
+                    // General error from the script or JSON parsing
+                    userMessage += `: เกิดข้อผิดพลาดภายใน (${error.message})`;
                 }
                 
-                showErrorMessage(errorMessage);
+                showErrorMessage(userMessage); // Show the refined message to the user
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
