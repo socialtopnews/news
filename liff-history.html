@@ -818,6 +818,12 @@
                 document.getElementById('profileImage').src = pictureUrl;
                 document.getElementById('userInfoSection').style.display = 'block';
                 
+                // ตรวจสอบสถานะเซิร์ฟเวอร์ก่อน
+                const serverOnline = await checkServerStatus();
+                if (!serverOnline) {
+                    showErrorMessage('เซิร์ฟเวอร์อาจไม่พร้อมใช้งานในขณะนี้ ข้อมูลอาจไม่สมบูรณ์', true);
+                }
+                
                 // ตรวจสอบสิทธิ์ผู้ใช้
                 userHasPermission = await checkUserPermission(userId);
                 
@@ -846,7 +852,7 @@
             } catch (error) {
                 console.error('LIFF initialization failed', error);
                 document.getElementById('loadingScreen').style.display = 'none';
-                showErrorMessage('เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message);
+                showErrorMessage('เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message, true);
             }
         }
         
@@ -934,6 +940,42 @@
                     closeModal();
                 }
             });
+            
+            // เพิ่มปุ่มรีเฟรชในส่วนของ Header
+            const header = document.querySelector('.header');
+            const refreshButton = document.createElement('button');
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            refreshButton.className = 'refresh-button';
+            refreshButton.title = 'รีเฟรชข้อมูล';
+            refreshButton.style.position = 'absolute';
+            refreshButton.style.right = '15px';
+            refreshButton.style.background = 'rgba(255,255,255,0.2)';
+            refreshButton.style.border = 'none';
+            refreshButton.style.borderRadius = '50%';
+            refreshButton.style.width = '36px';
+            refreshButton.style.height = '36px';
+            refreshButton.style.color = 'white';
+            refreshButton.style.cursor = 'pointer';
+            refreshButton.style.display = 'flex';
+            refreshButton.style.alignItems = 'center';
+            refreshButton.style.justifyContent = 'center';
+            
+            refreshButton.addEventListener('click', function() {
+                console.log("คำสั่งรีเฟรชข้อมูล");
+                if (userHasPermission) {
+                    fetchUserHistory();
+                }
+            });
+            
+            refreshButton.addEventListener('mouseover', function() {
+                this.style.background = 'rgba(255,255,255,0.3)';
+            });
+            
+            refreshButton.addEventListener('mouseout', function() {
+                this.style.background = 'rgba(255,255,255,0.2)';
+            });
+            
+            header.appendChild(refreshButton);
         }
         
         // ดึงข้อมูลประวัติของผู้ใช้
@@ -946,24 +988,57 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'getUserHistory',
-                        userId: userId
-                    })
-                });
+                // เพิ่มการสร้าง timestamp เพื่อหลีกเลี่ยงการแคช
+                const timestamp = new Date().getTime();
+                
+                // ระบบการลองใหม่ (Retry mechanism)
+                let attempts = 0;
+                const maxAttempts = 2;
+                let success = false;
+                let response;
+                let error;
+                
+                while (attempts < maxAttempts && !success) {
+                    attempts++;
+                    try {
+                        console.log(`พยายามดึงข้อมูล (ครั้งที่ ${attempts}/${maxAttempts})...`);
+                        
+                        response = await fetch(`${HISTORY_WEBHOOK_URL}?t=${timestamp}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                action: 'getUserHistory',
+                                userId: userId
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
+                        }
+                        
+                        success = true;
+                        console.log("ได้รับการตอบกลับจาก server สำเร็จ");
+                    } catch (err) {
+                        error = err;
+                        console.error(`เกิดข้อผิดพลาดในการดึงข้อมูล (ครั้งที่ ${attempts}): ${err.message}`);
+                        
+                        if (attempts < maxAttempts) {
+                            // รอ 1 วินาทีก่อนลองใหม่
+                            console.log("กำลังรอก่อนลองใหม่...");
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                }
+                
+                // ถ้าไม่สำเร็จหลังจากลองหลายครั้งแล้ว
+                if (!success) {
+                    throw error || new Error("ไม่สามารถเชื่อมต่อกับ server ได้หลังจากลองหลายครั้ง");
+                }
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
-                
-                // ตรวจสอบสถานะการตอบกลับ
-                if (!response.ok) {
-                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
-                }
                 
                 // ตรวจสอบการตอบกลับ
                 let data;
@@ -974,35 +1049,66 @@
                     console.log("ได้รับข้อมูล JSON จาก server:", data);
                 } else {
                     console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    const responseText = await response.text();
+                    console.log("เนื้อหาการตอบกลับ:", responseText.substring(0, 200) + (responseText.length > 200 ? "...": ""));
                     throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                 }
                 
-                if (data && data.history && data.history.length > 0) {
-                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    currentHistoryData = data.history;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                // ตรวจสอบข้อมูลที่ได้รับ
+                if (data && typeof data === 'object') {
+                    if (data.error) {
+                        throw new Error(`Server แจ้งข้อผิดพลาด: ${data.error}`);
+                    }
                     
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
+                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
+                        console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        currentHistoryData = data.history;
+                        filteredData = [...currentHistoryData];
+                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                        
+                        displayHistoryData();
+                        document.getElementById('historyList').style.display = 'block';
+                    } else {
+                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                        document.getElementById('noDataMessage').style.display = 'block';
+                        document.getElementById('pagination').style.display = 'none';
+                    }
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'none';
+                    throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้อง");
                 }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
-                showErrorMessage(`ไม่สามารถโหลดข้อมูลประวัติได้: ${error.message}`);
+                // แสดงรายละเอียดข้อผิดพลาดเพิ่มเติมเพื่อดีบัก
+                const errorDetails = error.stack || error.message || "ไม่มีรายละเอียดเพิ่มเติม";
+                console.error('รายละเอียดข้อผิดพลาด:', errorDetails);
                 
-                // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนขึ้น
+                showErrorMessage(`ไม่สามารถโหลดข้อมูลประวัติได้: ${error.message}`, true);
+                
+                // แสดงข้อความว่าไม่มีข้อมูล พร้อมปุ่มลองใหม่
+                document.getElementById('noDataMessage').innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>${error.message}</p>
+                    <button id="retryBtn" class="view-details-btn" style="margin-top: 15px;">
+                        <i class="fas fa-sync-alt"></i> ลองอีกครั้ง
+                    </button>`;
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // เพิ่มการทำงานให้ปุ่มลองใหม่
+                setTimeout(() => {
+                    const retryBtn = document.getElementById('retryBtn');
+                    if (retryBtn) {
+                        retryBtn.addEventListener('click', function() {
+                            console.log('กำลังลองโหลดข้อมูลใหม่อีกครั้ง...');
+                            fetchUserHistory();
+                        });
+                    }
+                }, 100);
             }
         }
         
@@ -1208,18 +1314,57 @@
         }
         
         // แสดงข้อความผิดพลาด
-        function showErrorMessage(message) {
+        function showErrorMessage(message, isImportant = false) {
             const errorMessage = document.createElement('div');
             errorMessage.className = 'message-box error';
+            
+            // ถ้าเป็นข้อผิดพลาดสำคัญ เพิ่ม style เพื่อให้เด่นชัดขึ้น
+            if (isImportant) {
+                errorMessage.style.border = '2px solid var(--error-color)';
+                errorMessage.style.backgroundColor = 'rgba(255, 82, 82, 0.15)';
+            }
+            
             errorMessage.innerHTML = `<p>${message}</p>`;
             
             const content = document.querySelector('.content');
+            
+            // ตรวจสอบข้อความผิดพลาดที่มีอยู่แล้ว และลบออก
+            const existingErrors = content.querySelectorAll('.message-box.error');
+            existingErrors.forEach(el => el.remove());
+            
+            // แทรกข้อความใหม่
             content.insertBefore(errorMessage, content.firstChild);
             
-            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
+            // ซ่อนข้อความหลังจากผ่านไป 15 วินาที (เพิ่มเวลาให้ผู้ใช้อ่าน)
             setTimeout(() => {
                 errorMessage.remove();
-            }, 5000);
+            }, isImportant ? 15000 : 5000);
+        }
+        
+        // เพิ่มฟังก์ชันตรวจสอบสถานะเซิร์ฟเวอร์
+        async function checkServerStatus() {
+            try {
+                console.log("กำลังตรวจสอบสถานะเซิร์ฟเวอร์...");
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${HISTORY_WEBHOOK_URL}?t=${timestamp}&action=ping`, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (response.ok) {
+                    console.log("เซิร์ฟเวอร์ทำงานปกติ");
+                    return true;
+                } else {
+                    console.error("เซิร์ฟเวอร์มีปัญหา:", response.status, response.statusText);
+                    return false;
+                }
+            } catch (error) {
+                console.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์:", error);
+                return false;
+            }
         }
     </script>
 </body>
