@@ -614,7 +614,7 @@
             border-top: 1px solid #E9ECEF;
             margin-top: 30px;
             font-size: 14px;
-            color: var(--text-light);
+            color: var (--text-light);
         }
 
         /* Loading Screen */
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwL7iarSMyoF7APQviOoJyJ-Hc47krpyG4UMWERqxzo-vGstD5DDrli8lxi5Uq9dKrA/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxBAzOW9VV0wuXm8qMvXen0cR5IS92MY9yhmfxFiFCbzEdA-WkkPHYKNomCl8xFTwjx/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -946,130 +946,53 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // สร้างเอกสารข้อมูลที่จะส่งไป
-                const requestData = {
-                    action: 'getUserHistory',   // ระบุ action ที่ชัดเจน
-                    userId: userId,
-                    requestId: generateUniqueId() // เพิ่ม requestId เพื่อป้องกันการซ้ำ
-                };
-                
-                console.log("ส่งข้อมูลไปยัง webhook:", requestData);
-                
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
-                    method: 'POST',
+                // การส่ง request ชนิด GET เพื่อให้เข้ากับการทำงานของ Google Script
+                const response = await fetch(`${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}`, {
+                    method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
+                    }
                 });
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
                 // ตรวจสอบสถานะการตอบกลับ
-                console.log("สถานะการตอบกลับ:", response.status);
-                
                 if (!response.ok) {
                     throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
                 }
                 
                 // ตรวจสอบการตอบกลับ
-                let data;
-                const contentType = response.headers.get("content-type");
-                console.log("Content-Type ของการตอบกลับ:", contentType);
+                const responseText = await response.text();
+                console.log("ข้อมูลการตอบกลับ:", responseText.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
                 
-                if (contentType && contentType.includes("application/json")) {
-                    data = await response.json();
+                let data;
+                try {
+                    // พยายามแปลงข้อความเป็น JSON
+                    data = JSON.parse(responseText);
                     console.log("ได้รับข้อมูล JSON จาก server:", data);
+                } catch (e) {
+                    console.error("การตอบกลับไม่ใช่ JSON ที่ถูกต้อง:", e);
                     
-                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
-                    if (data.status === "error") {
-                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
-                    }
-                } else {
-                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    // แสดงข้อความผิดพลาดที่เฉพาะเจาะจง
+                    showErrorMessage(`ไม่สามารถประมวลผลข้อมูลที่ได้รับ: ${e.message}`);
                     
-                    try {
-                        // พยายามแปลงข้อมูลที่ได้รับเป็น JSON โดยตรง แม้ว่า Content-Type จะไม่ใช่ JSON
-                        const textResponse = await response.text();
-                        console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200));
-                        
-                        // พยายามแปลง JSON จากข้อความ
-                        try {
-                            data = JSON.parse(textResponse);
-                            console.log("แปลงข้อความเป็น JSON สำเร็จ:", data);
-                        } catch (jsonError) {
-                            console.error("ไม่สามารถแปลงข้อความเป็น JSON:", jsonError);
-                            throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
-                        }
-                    } catch (textError) {
-                        console.error("ไม่สามารถอ่านข้อมูลการตอบกลับเป็นข้อความ:", textError);
-                        throw new Error("ไม่สามารถอ่านข้อมูลการตอบกลับ");
-                    }
+                    // สร้างข้อมูลเริ่มต้นว่างเปล่า
+                    data = { status: "error", message: "รูปแบบข้อมูลไม่ถูกต้อง", history: [] };
                 }
                 
-                // ตรวจสอบข้อมูลที่ได้รับ
-                if (data) {
-                    console.log("ประเภทข้อมูล history:", Array.isArray(data.history) ? "Array" : typeof data.history);
+                if (data && data.status === "success" && data.history && data.history.length > 0) {
+                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                    currentHistoryData = data.history;
+                    filteredData = [...currentHistoryData];
+                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
-                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
-                        console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        currentHistoryData = data.history;
-                        filteredData = [...currentHistoryData];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
-                    } else if (data.history && Array.isArray(data.history) && data.history.length === 0) {
-                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้ (array ว่าง)");
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                        document.getElementById('noDataMessage').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'none';
-                    } else if (data.phishingData && Array.isArray(data.phishingData)) {
-                        // กรณีที่ API ส่งข้อมูลกลับมาในชื่อฟิลด์ที่ต่างกัน
-                        console.log(`พบข้อมูลประวัติใน phishingData จำนวน ${data.phishingData.length} รายการ`);
-                        currentHistoryData = data.phishingData;
-                        filteredData = [...currentHistoryData];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
-                    } else {
-                        // ตรวจสอบว่ามี Property อื่นที่อาจเก็บข้อมูลประวัติหรือไม่
-                        console.log("สำรวจข้อมูลที่ได้รับทั้งหมด:", Object.keys(data));
-                        
-                        // พยายามค้นหา array ใน data ที่อาจเป็นข้อมูลประวัติ
-                        let foundHistoryArray = null;
-                        
-                        for (const key in data) {
-                            if (Array.isArray(data[key]) && data[key].length > 0) {
-                                console.log(`พบข้อมูล array ใน key: ${key} จำนวน ${data[key].length} รายการ`);
-                                foundHistoryArray = data[key];
-                                break;
-                            }
-                        }
-                        
-                        if (foundHistoryArray) {
-                            console.log(`ใช้ข้อมูล array ที่พบ จำนวน ${foundHistoryArray.length} รายการ`);
-                            currentHistoryData = foundHistoryArray;
-                            filteredData = [...currentHistoryData];
-                            totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                            
-                            displayHistoryData();
-                            document.getElementById('historyList').style.display = 'block';
-                            document.getElementById('pagination').style.display = 'flex';
-                        } else {
-                            console.log("ไม่พบข้อมูลประวัติในรูปแบบ array");
-                            document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                            document.getElementById('noDataMessage').style.display = 'block';
-                            document.getElementById('pagination').style.display = 'none';
-                        }
-                    }
+                    displayHistoryData();
+                    document.getElementById('historyList').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'flex';
                 } else {
-                    console.log("ไม่พบข้อมูลในการตอบกลับ");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ไม่พบข้อมูลประวัติการใช้งาน</p>';
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
                 }
@@ -1089,9 +1012,6 @@
                 }
                 
                 showErrorMessage(errorMessage);
-                
-                // ลองใช้ข้อมูลสำรองจาก Local Fallback
-                tryUseLocalFallback();
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
@@ -1124,11 +1044,6 @@
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = '';
             
-            // บันทึกข้อมูลประวัติลง localStorage เพื่อใช้เป็น fallback
-            if (filteredData && filteredData.length > 0) {
-                saveHistoryToLocalStorage(filteredData);
-            }
-            
             // ตรวจสอบว่ามีข้อมูลหรือไม่
             if (filteredData.length === 0) {
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
@@ -1150,42 +1065,32 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบโครงสร้างข้อมูลและปรับการแสดงผลตามที่มี
+                // ตรวจสอบและจัดการข้อมูลที่อาจไม่มี
+                const timestamp = item.timestamp || "ไม่ระบุเวลา";
+                const trackingKey = item.trackingKey || "ไม่ระบุ";
+                const caseName = item.caseName || "ไม่ระบุชื่อเคส";
+                
+                // สร้างข้อความแสดงพิกัด
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location) {
-                    if (typeof item.location === "object" && item.location.lat && item.location.long) {
-                        locationText = `${item.location.lat}, ${item.location.long}`;
-                    } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล") {
-                        locationText = item.location;
-                    }
-                } else if (item.gpsLocationText) {
-                    // กรณีที่ข้อมูลมาจาก PhisingLog
-                    locationText = item.gpsLocationText;
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
+                } else if (item.พิกัดGPS) {
+                    // กรณีข้อมูลมาจาก PhisingLog
+                    locationText = item.พิกัดGPS;
                 }
                 
-                const deviceInfo = item.deviceInfo || {};
+                // ข้อมูลอุปกรณ์
                 let deviceType = "ไม่ทราบ";
                 let deviceModel = "ไม่ทราบ";
                 
-                // ตรวจสอบและดึงข้อมูลอุปกรณ์ตามโครงสร้างที่มี
-                if (deviceInfo.deviceType) {
-                    deviceType = deviceInfo.deviceType;
-                } else if (item.deviceType) {
-                    deviceType = item.deviceType;
+                if (item.deviceInfo) {
+                    deviceType = item.deviceInfo.deviceType || "ไม่ทราบ";
+                    deviceModel = item.deviceInfo.deviceModel || "ไม่ทราบ";
+                } else if (item.ประเภทอุปกรณ์) {
+                    // กรณีข้อมูลมาจาก PhisingLog
+                    deviceType = item.ประเภทอุปกรณ์;
+                    deviceModel = item.รุ่นอุปกรณ์ || "ไม่ทราบ";
                 }
-                
-                if (deviceInfo.deviceModel) {
-                    deviceModel = deviceInfo.deviceModel;
-                } else if (item.deviceModel) {
-                    deviceModel = item.deviceModel;
-                }
-                
-                // ดึงข้อมูล timestamp - มีหลายรูปแบบที่อาจเก็บ
-                let timestamp = item.timestamp || item.วันเวลา || "ไม่ระบุเวลา";
-                
-                // ดึงข้อมูล tracking key และ case name
-                let trackingKey = item.trackingKey || item['Tracking Key'] || "ไม่ระบุ";
-                let caseName = item.caseName || item['ชื่อเคส'] || "ไม่ระบุชื่อเคส";
                 
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${timestamp}</div>
@@ -1226,35 +1131,62 @@
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
+            
+            // ตรวจสอบรูปแบบข้อมูลหลากหลาย (รองรับทั้งข้อมูลจาก API และจาก Sheet)
             if (item.location && typeof item.location === "object") {
                 if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                } else {
-                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
-            } else {
-                console.log("Location ไม่ใช่ object:", typeof item.location);
+            } else if (item.พิกัดGPS) {
+                // กรณีข้อมูลมาจาก PhisingLog
+                locationText = item.พิกัดGPS;
+                mapLink = item.แผนที่GPS || "";
             }
             
-            const deviceInfo = item.deviceInfo || {};
-            const connectionInfo = deviceInfo.connection || {};
-            const batteryInfo = deviceInfo.battery || {};
+            // ข้อมูล IP และอุปกรณ์
+            const ipInfo = item.ip || {};
+            const ip = typeof ipInfo === 'object' ? (ipInfo.ip || "ไม่ระบุ") : (item.IP || "ไม่ระบุ");
+            
+            // เตรียมข้อมูลอุปกรณ์
+            let deviceInfo = {};
+            let connectionInfo = {};
+            let batteryInfo = {};
+            
+            if (item.deviceInfo) {
+                deviceInfo = item.deviceInfo;
+                connectionInfo = deviceInfo.connection || {};
+                batteryInfo = deviceInfo.battery || {};
+            } else {
+                // กรณีข้อมูลมาจาก PhisingLog
+                deviceInfo = {
+                    deviceType: item.ประเภทอุปกรณ์ || "ไม่ระบุ",
+                    deviceModel: item.รุ่นอุปกรณ์ || "ไม่ระบุ", 
+                    platform: item.ระบบปฏิบัติการ || "ไม่ระบุ",
+                    browser: item.เบราว์เซอร์ || "ไม่ระบุ"
+                };
+                connectionInfo = { networkType: item.การเชื่อมต่อ || "ไม่ระบุ" };
+                batteryInfo = { level: item.แบตเตอรี่ || "ไม่ระบุ" };
+            }
             
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.timestamp || item.วันเวลา || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.trackingKey || item.TrackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.caseName || item.ชื่อเคส || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-value">${item.creatorFullName || item.ผู้สร้าง || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
@@ -1262,16 +1194,16 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP</div>
-                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${ip}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${item.location && item.location.accuracy ? `
+                    ${item.location && item.location.accuracy || item['ความแม่นยำGPS(m)'] ? `
                     <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
+                        <div class="detail-value">±${item.location && item.location.accuracy || item['ความแม่นยำGPS(m)']} เมตร</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
@@ -1292,42 +1224,66 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.platform || item.ระบบปฏิบัติการ || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.browser || item.เบราว์เซอร์ || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ขนาดหน้าจอ</div>
+                        <div class="detail-value">${deviceInfo.screenSize || item.ขนาดหน้าจอ || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
+                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType || item.การเชื่อมต่อ) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${connectionInfo.networkType || item.การเชื่อมต่อ || "ไม่ระบุ"}</div>
                     </div>
+                    ${connectionInfo.effectiveType ? `
                     <div class="detail-item">
                         <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
-                    </div>
-                    ${connectionInfo.downlink ? `
+                        <div class="detail-value">${connectionInfo.effectiveType}</div>
+                    </div>` : ''}
+                    ${connectionInfo.downlink || item.ความเร็วเน็ต ? `
                     <div class="detail-item">
                         <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
+                        <div class="detail-value">${connectionInfo.downlink || item.ความเร็วเน็ต} Mbps</div>
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
+                ${batteryInfo && (batteryInfo.level || item.แบตเตอรี่) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.level || item.แบตเตอรี่}</div>
                     </div>
+                    ${batteryInfo.charging ? `
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.charging}</div>
+                    </div>` : ''}
+                </div>` : ''}
+                
+                ${item.ที่มา && item.ที่มา !== "ไม่มีข้อมูล" ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-link"></i> แหล่งที่มา</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">Referrer</div>
+                        <div class="detail-value">${item.ที่มา}</div>
+                    </div>
+                </div>` : ''}
+                
+                ${item.แหล่งที่มา ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-sign-in-alt"></i> ช่องทางการเข้าถึง</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">เข้าถึงผ่าน</div>
+                        <div class="detail-value">${item.แหล่งที่มา}</div>
                     </div>
                 </div>` : ''}
             `;
@@ -1353,74 +1309,6 @@
             setTimeout(() => {
                 errorMessage.remove();
             }, 5000);
-        }
-        
-        // เพิ่มฟังก์ชัน fallback เมื่อไม่สามารถเชื่อมต่อกับ webhook ได้
-        function tryUseLocalFallback() {
-            console.log("กำลังพยายามใช้ข้อมูลสำรอง (Local Fallback)");
-            
-            // ตรวจสอบข้อมูลที่เคยบันทึกไว้ใน localStorage
-            const cachedHistory = localStorage.getItem('historyData_' + userId);
-            
-            if (cachedHistory) {
-                try {
-                    const historyData = JSON.parse(cachedHistory);
-                    console.log(`พบข้อมูลสำรองใน localStorage จำนวน ${historyData.length} รายการ`);
-                    
-                    // ใช้ข้อมูลสำรอง
-                    currentHistoryData = historyData;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                    
-                    // แสดงข้อมูลสำรอง
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
-                    
-                    // แสดงข้อความแจ้งเตือนว่ากำลังใช้ข้อมูลสำรอง
-                    showWarningMessage("กำลังแสดงข้อมูลสำรองที่บันทึกไว้ล่าสุด อาจไม่ใช่ข้อมูลล่าสุด");
-                    
-                    return true;
-                } catch (error) {
-                    console.error("ไม่สามารถใช้ข้อมูลสำรองได้:", error);
-                }
-            } else {
-                console.log("ไม่พบข้อมูลสำรองใน localStorage");
-            }
-            
-            return false;
-        }
-        
-        // เพิ่มฟังก์ชันบันทึกข้อมูลประวัติลง localStorage เพื่อใช้เป็นข้อมูลสำรอง
-        function saveHistoryToLocalStorage(historyData) {
-            try {
-                localStorage.setItem('historyData_' + userId, JSON.stringify(historyData));
-                localStorage.setItem('historyData_timestamp', new Date().toISOString());
-                console.log("บันทึกข้อมูลประวัติลง localStorage สำเร็จ");
-            } catch (error) {
-                console.error("ไม่สามารถบันทึกข้อมูลลง localStorage:", error);
-            }
-        }
-        
-        // เพิ่มฟังก์ชันแสดงข้อความแจ้งเตือน
-        function showWarningMessage(message) {
-            const messageBox = document.createElement('div');
-            messageBox.className = 'message-box';
-            messageBox.innerHTML = `<p>${message}</p>`;
-            
-            // แทรกที่ด้านบนของ content
-            const content = document.querySelector('.content');
-            content.insertBefore(messageBox, content.firstChild);
-            
-            // ซ่อนข้อความหลังจาก 8 วินาที
-            setTimeout(() => {
-                messageBox.remove();
-            }, 8000);
-        }
-        
-        // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
-        function generateUniqueId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
     </script>
 </body>
