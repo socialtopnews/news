@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbygN8AkSIR453d3zyWlQ1EHhzI37xi9ZCs9O-4lqJPvFCShqDzkYKE6-WhnDdLxPSKU/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -936,7 +936,7 @@
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้
+        // ดึงข้อมูลประวัติของผู้ใช้ (แก้ไขใหม่ให้เรียบง่าย)
         async function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -946,97 +946,53 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // ตรวจสอบว่ามีการกำหนด URL สำหรับ webhook หรือไม่
-                if (!HISTORY_WEBHOOK_URL) {
-                    throw new Error("ไม่ได้กำหนด URL สำหรับดึงข้อมูลประวัติ");
+                if (!userId) {
+                    throw new Error("ไม่พบ userId ซึ่งจำเป็นต้องใช้");
                 }
                 
-                // กำหนด timeout สำหรับการเชื่อมต่อ
-                const timeoutDuration = 30000; // 30 วินาที
+                // URL ที่สามารถเข้าถึงได้แน่นอน
+                // ใช้ Webhook URL ที่แก้ไขใหม่
+                const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzrlliUlVOlJxTT5pxAqKEZaxaqLFpj1paBXmepNipyu0Lmo3LQJCVfhW7kjnxYL3n2/exec';
                 
-                // สร้าง AbortController สำหรับยกเลิกการเชื่อมต่อเมื่อถึงเวลา timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+                console.log("เริ่มส่งคำขอไปยัง URL:", WEBHOOK_URL);
                 
-                console.log("เริ่มส่งคำขอไปยัง URL:", HISTORY_WEBHOOK_URL);
-                
-                // ข้อมูลที่ส่งไปยัง API
-                const requestData = {
-                    action: 'getUserHistory',
-                    userId: userId
-                };
-                
-                console.log("ข้อมูลที่กำลังส่ง:", JSON.stringify(requestData));
-                
-                // ใช้ fetch API พร้อม signal สำหรับ timeout
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                // ใช้วิธีการส่ง request ที่เรียบง่ายที่สุด
+                const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify(requestData),
-                    signal: controller.signal
+                    body: JSON.stringify({
+                        action: 'getUserHistory',
+                        userId: userId
+                    })
                 });
-                
-                // ยกเลิก timeout ถ้าได้รับการตอบกลับ
-                clearTimeout(timeoutId);
                 
                 console.log("ได้รับการตอบกลับ - Status:", response.status);
                 console.log("Content-Type:", response.headers.get("content-type"));
                 
-                // ตรวจสอบสถานะการตอบกลับ
-                if (!response.ok) {
-                    console.error("Server ตอบกลับแล้วแต่สถานะไม่สมบูรณ์", response.status);
-                    
-                    // พยายามดูข้อความผิดพลาด
-                    let errorText = "";
-                    try {
-                        errorText = await response.text();
-                        console.error("ข้อความผิดพลาด:", errorText);
-                    } catch (textError) {
-                        console.error("ไม่สามารถอ่านข้อความผิดพลาดได้", textError);
-                    }
-                    
-                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}. ${errorText}`);
-                }
+                // อ่านข้อมูลเป็นข้อความก่อน
+                const responseText = await response.text();
+                console.log("Response text (ตัวอย่าง):", responseText.substring(0, 500));
                 
-                // ตรวจสอบการตอบกลับ
-                let data = null;
-                const contentType = response.headers.get("content-type") || "";
-                let responseText = "";
-                
+                // แปลงเป็น JSON
+                let data;
                 try {
-                    // อ่าน response text ไม่ว่าจะเป็น content-type อะไร
-                    responseText = await response.text();
-                    console.log("ข้อมูลการตอบกลับ (บางส่วน):", responseText.substring(0, 200));
-                    
-                    // ตรวจสอบว่า responseText เป็น JSON หรือไม่
-                    try {
-                        data = JSON.parse(responseText);
-                        console.log("สามารถแปลงข้อความเป็น JSON ได้:", data);
-                        
-                        // ตรวจสอบว่าสถานะเป็น error หรือไม่
-                        if (data && data.status === "error") {
-                            throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
-                        }
-                    } catch (jsonError) {
-                        console.error("ไม่สามารถแปลง responseText เป็น JSON ได้:", jsonError);
-                        console.log("responseText ที่ได้รับ:", responseText);
-                        throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบ JSON ที่ถูกต้อง");
-                    }
-                } catch (textError) {
-                    console.error("ไม่สามารถอ่าน response text ได้:", textError);
-                    throw new Error("ไม่สามารถอ่านข้อมูลการตอบกลับจาก server ได้");
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error("ไม่สามารถแปลงเป็น JSON ได้:", jsonError);
+                    throw new Error("ข้อมูลที่ได้รับจาก server ไม่ใช่ format JSON ที่ถูกต้อง");
                 }
+                
+                console.log("ข้อมูลที่ได้รับหลังแปลง JSON:", data);
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
+                // ตรวจสอบว่ามีข้อมูลประวัติหรือไม่
                 if (data && data.history && Array.isArray(data.history) && data.history.length > 0) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    
-                    // ดีบักข้อมูลรายการแรก
-                    console.log("ตัวอย่างข้อมูลรายการแรก:", JSON.stringify(data.history[0]));
                     
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
@@ -1046,9 +1002,7 @@
                     document.getElementById('historyList').style.display = 'block';
                     document.getElementById('pagination').style.display = 'flex';
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                    if (data) console.log("ข้อมูลที่ได้รับ:", data);
-                    
+                    console.log("ไม่พบข้อมูลประวัติหรือข้อมูลว่าง");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
@@ -1058,36 +1012,17 @@
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                
-                if (error.name === 'AbortError') {
-                    errorMessage += ": การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
-                } else if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
-                } else if (error.message.includes("status code")) {
-                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
-                } else {
-                    errorMessage += ": " + error.message;
-                }
-                
-                showErrorMessage(errorMessage);
-                
-                // แสดงข้อความว่าไม่มีข้อมูล
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
                 document.getElementById('noDataMessage').innerHTML = `
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>${error.message}<br>กรุณาลองใหม่อีกครั้ง</p>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล:<br>${error.message}<br>กรุณาลองใหม่อีกครั้ง</p>
+                    <button id="retryButton" style="margin-top:15px;padding:8px 15px;background:#3876BF;color:white;border:none;border-radius:4px;cursor:pointer;">ลองใหม่อีกครั้ง</button>
                 `;
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
                 
-                // เพิ่มปุ่มลองใหม่
-                const retryButton = document.createElement('button');
-                retryButton.className = 'btn';
-                retryButton.style.marginTop = '15px';
-                retryButton.innerText = 'ลองใหม่อีกครั้ง';
-                retryButton.onclick = fetchUserHistory;
-                document.getElementById('noDataMessage').appendChild(retryButton);
+                // เพิ่ม event listener สำหรับปุ่มลองใหม่
+                document.getElementById('retryButton').addEventListener('click', fetchUserHistory);
             }
         }
         
@@ -1312,6 +1247,114 @@
                 errorMessage.remove();
             }, 5000);
         }
+
+        // เพิ่มฟังก์ชันทดสอบเชื่อมต่อ API สำหรับการ debug
+        function testApiConnection() {
+            console.log("กำลังทดสอบการเชื่อมต่อกับ API...");
+            
+            const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+            
+            fetch(WEBHOOK_URL)
+                .then(response => {
+                    console.log("API Response Status:", response.status);
+                    console.log("Content-Type:", response.headers.get("content-type"));
+                    return response.text();
+                })
+                .then(text => {
+                    console.log("API Response Text:", text.substring(0, 500));
+                    try {
+                        const data = JSON.parse(text);
+                        console.log("API Response Parsed:", data);
+                        showErrorMessage("การทดสอบเชื่อมต่อ API สำเร็จ!");
+                    } catch (e) {
+                        console.error("ไม่สามารถแปลง response เป็น JSON ได้:", e);
+                        showErrorMessage("การทดสอบเชื่อมต่อ API สำเร็จ แต่ข้อมูลไม่ใช่ JSON");
+                    }
+                })
+                .catch(error => {
+                    console.error("การเชื่อมต่อ API ล้มเหลว:", error);
+                    showErrorMessage("การทดสอบเชื่อมต่อ API ล้มเหลว: " + error.message);
+                });
+        }
+
+        // เพิ่ม function สำหรับ debug แบบเร่งด่วน
+        function emergencyDebug() {
+            // แสดงข้อมูล mock เพื่อทดสอบการแสดงผล
+            const mockData = [
+                {
+                    timestamp: new Date().toLocaleString('th-TH'),
+                    trackingKey: "debug-key-1",
+                    caseName: "ทดสอบระบบ 1",
+                    ip: "192.168.1.1",
+                    location: {
+                        lat: "13.7563",
+                        long: "100.5018"
+                    },
+                    deviceInfo: {
+                        deviceType: "Smartphone",
+                        deviceModel: "iPhone"
+                    }
+                },
+                {
+                    timestamp: new Date(Date.now() - 86400000).toLocaleString('th-TH'),
+                    trackingKey: "debug-key-2",
+                    caseName: "ทดสอบระบบ 2",
+                    ip: "192.168.1.2",
+                    location: {
+                        lat: "13.8000",
+                        long: "100.5500"
+                    },
+                    deviceInfo: {
+                        deviceType: "Desktop",
+                        deviceModel: "Windows PC"
+                    }
+                }
+            ];
+            
+            currentHistoryData = mockData;
+            filteredData = [...currentHistoryData];
+            totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('noDataMessage').style.display = 'none';
+            
+            displayHistoryData();
+            document.getElementById('historyList').style.display = 'block';
+            document.getElementById('pagination').style.display = 'flex';
+            
+            showErrorMessage("โหมด Debug: แสดงข้อมูลจำลอง");
+        }
+
+        // เพิ่ม event listener สำหรับปุ่มทดสอบ
+        document.addEventListener('DOMContentLoaded', function() {
+            // เพิ่มปุ่มทดสอบเชื่อมต่อ API
+            const footer = document.querySelector('.footer');
+            const testApiButton = document.createElement('button');
+            testApiButton.textContent = 'ทดสอบเชื่อมต่อ API';
+            testApiButton.style.marginTop = '10px';
+            testApiButton.style.padding = '5px 10px';
+            testApiButton.style.backgroundColor = '#3876BF';
+            testApiButton.style.color = 'white';
+            testApiButton.style.border = 'none';
+            testApiButton.style.borderRadius = '4px';
+            testApiButton.style.cursor = 'pointer';
+            testApiButton.addEventListener('click', testApiConnection);
+            footer.appendChild(testApiButton);
+            
+            // เพิ่มปุ่ม Emergency Debug
+            const debugButton = document.createElement('button');
+            debugButton.textContent = 'แสดงข้อมูลจำลอง';
+            debugButton.style.marginTop = '10px';
+            debugButton.style.marginLeft = '10px';
+            debugButton.style.padding = '5px 10px';
+            debugButton.style.backgroundColor = '#FF5252';
+            debugButton.style.color = 'white';
+            debugButton.style.border = 'none';
+            debugButton.style.borderRadius = '4px';
+            debugButton.style.cursor = 'pointer';
+            debugButton.addEventListener('click', emergencyDebug);
+            footer.appendChild(debugButton);
+        });
     </script>
 </body>
 </html>
