@@ -569,7 +569,7 @@
 
         .no-data i {
             font-size: 40px;
-            color: var(--secondary-color);
+            color: var (--secondary-color);
             margin-bottom: 15px;
         }
 
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzLgbi6oZSi1dYkoyHcPPwdNnKvPomFHeOKNooEV1oe5cKtMhsMqQRDvhi6zG5UlWTF/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbygN8AkSIR453d3zyWlQ1EHhzI37xi9ZCs9O-4lqJPvFCShqDzkYKE6-WhnDdLxPSKU/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -951,53 +951,93 @@
                     throw new Error("ไม่ได้กำหนด URL สำหรับดึงข้อมูลประวัติ");
                 }
                 
+                // กำหนด timeout สำหรับการเชื่อมต่อ
+                const timeoutDuration = 30000; // 30 วินาที
+                
+                // สร้าง AbortController สำหรับยกเลิกการเชื่อมต่อเมื่อถึงเวลา timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+                
+                console.log("เริ่มส่งคำขอไปยัง URL:", HISTORY_WEBHOOK_URL);
+                
+                // ข้อมูลที่ส่งไปยัง API
+                const requestData = {
+                    action: 'getUserHistory',
+                    userId: userId
+                };
+                
+                console.log("ข้อมูลที่กำลังส่ง:", JSON.stringify(requestData));
+                
+                // ใช้ fetch API พร้อม signal สำหรับ timeout
                 const response = await fetch(HISTORY_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
-                        userId: userId
-                    })
+                    body: JSON.stringify(requestData),
+                    signal: controller.signal
                 });
+                
+                // ยกเลิก timeout ถ้าได้รับการตอบกลับ
+                clearTimeout(timeoutId);
+                
+                console.log("ได้รับการตอบกลับ - Status:", response.status);
+                console.log("Content-Type:", response.headers.get("content-type"));
+                
+                // ตรวจสอบสถานะการตอบกลับ
+                if (!response.ok) {
+                    console.error("Server ตอบกลับแล้วแต่สถานะไม่สมบูรณ์", response.status);
+                    
+                    // พยายามดูข้อความผิดพลาด
+                    let errorText = "";
+                    try {
+                        errorText = await response.text();
+                        console.error("ข้อความผิดพลาด:", errorText);
+                    } catch (textError) {
+                        console.error("ไม่สามารถอ่านข้อความผิดพลาดได้", textError);
+                    }
+                    
+                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}. ${errorText}`);
+                }
+                
+                // ตรวจสอบการตอบกลับ
+                let data = null;
+                const contentType = response.headers.get("content-type") || "";
+                let responseText = "";
+                
+                try {
+                    // อ่าน response text ไม่ว่าจะเป็น content-type อะไร
+                    responseText = await response.text();
+                    console.log("ข้อมูลการตอบกลับ (บางส่วน):", responseText.substring(0, 200));
+                    
+                    // ตรวจสอบว่า responseText เป็น JSON หรือไม่
+                    try {
+                        data = JSON.parse(responseText);
+                        console.log("สามารถแปลงข้อความเป็น JSON ได้:", data);
+                        
+                        // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                        if (data && data.status === "error") {
+                            throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                        }
+                    } catch (jsonError) {
+                        console.error("ไม่สามารถแปลง responseText เป็น JSON ได้:", jsonError);
+                        console.log("responseText ที่ได้รับ:", responseText);
+                        throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบ JSON ที่ถูกต้อง");
+                    }
+                } catch (textError) {
+                    console.error("ไม่สามารถอ่าน response text ได้:", textError);
+                    throw new Error("ไม่สามารถอ่านข้อมูลการตอบกลับจาก server ได้");
+                }
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // ตรวจสอบสถานะการตอบกลับ
-                if (!response.ok) {
-                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
-                }
-                
-                // ตรวจสอบการตอบกลับ
-                let data;
-                const contentType = response.headers.get("content-type");
-                
-                if (contentType && contentType.includes("application/json")) {
-                    data = await response.json();
-                    console.log("ได้รับข้อมูล JSON จาก server:", data);
-                    
-                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
-                    if (data.status === "error") {
-                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
-                    }
-                } else {
-                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
-                    const textResponse = await response.text();
-                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
-                    
-                    // พยายามแปลง response เป็น JSON
-                    try {
-                        data = JSON.parse(textResponse);
-                        console.log("สามารถแปลงข้อความเป็น JSON ได้:", data);
-                    } catch (parseError) {
-                        throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
-                    }
-                }
-                
-                if (data && data.history && data.history.length > 0) {
+                if (data && data.history && Array.isArray(data.history) && data.history.length > 0) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                    
+                    // ดีบักข้อมูลรายการแรก
+                    console.log("ตัวอย่างข้อมูลรายการแรก:", JSON.stringify(data.history[0]));
+                    
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1007,6 +1047,8 @@
                     document.getElementById('pagination').style.display = 'flex';
                 } else {
                     console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    if (data) console.log("ข้อมูลที่ได้รับ:", data);
+                    
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
@@ -1018,7 +1060,10 @@
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
                 let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                
+                if (error.name === 'AbortError') {
+                    errorMessage += ": การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
+                } else if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
                     errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
                 } else if (error.message.includes("status code")) {
                     errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
@@ -1029,9 +1074,20 @@
                 showErrorMessage(errorMessage);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                document.getElementById('noDataMessage').innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>${error.message}<br>กรุณาลองใหม่อีกครั้ง</p>
+                `;
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // เพิ่มปุ่มลองใหม่
+                const retryButton = document.createElement('button');
+                retryButton.className = 'btn';
+                retryButton.style.marginTop = '15px';
+                retryButton.innerText = 'ลองใหม่อีกครั้ง';
+                retryButton.onclick = fetchUserHistory;
+                document.getElementById('noDataMessage').appendChild(retryButton);
             }
         }
         
