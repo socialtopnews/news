@@ -783,11 +783,11 @@
         let filteredData = [];
         
         // ค่า Config สำคัญ
-        const LIFF_ID = '2007293657-Lw86gYw1';
+        const LIFF_ID = '2007231851-0DqwXxQg';
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec'; // แก้ไขเป็น URL ที่ถูกต้อง
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -944,16 +944,27 @@
                 document.getElementById('historyList').style.display = 'none';
                 document.getElementById('noDataMessage').style.display = 'none';
                 
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                console.log("กำลังดึงข้อมูลประวัติสำหรับผู้ใช้:", userId);
+                
+                // สร้าง URL ที่ถูกต้องและเพิ่มพารามิเตอร์เพื่อหลีกเลี่ยงการแคชข้อมูล
+                const cacheBuster = new Date().getTime();
+                const requestUrl = `${HISTORY_WEBHOOK_URL}?v=${cacheBuster}`;
+                
+                const response = await fetch(requestUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         action: 'getUserHistory',
-                        userId: userId
-                    })
+                        userId: userId,
+                        timestamp: new Date().toISOString()
+                    }),
+                    // เพิ่มตัวเลือก timeout เพื่อป้องกันการรอนานเกินไป
+                    signal: AbortSignal.timeout(15000) // 15 วินาที timeout
                 });
+                
+                console.log("Server ตอบกลับ status:", response.status);
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
@@ -961,20 +972,34 @@
                 // ตรวจสอบการตอบกลับ
                 let data;
                 try {
-                    if (response.headers.get("content-type")?.includes("application/json")) {
+                    if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
                         data = await response.json();
+                        console.log("ได้รับข้อมูล JSON จาก server:", data);
                     } else {
-                        // หากไม่ใช่ JSON ใช้ข้อมูลทดสอบ
-                        console.log("ไม่ได้รับข้อมูล JSON จาก server ใช้ข้อมูลทดสอบ");
+                        console.log("Server ตอบกลับไม่ใช่ JSON หรือมี status code ที่ไม่ถูกต้อง");
+                        
+                        // ดึงข้อความผิดพลาดจาก response
+                        const errorText = await response.text();
+                        console.log("Error response text:", errorText);
+                        
+                        // ใช้ข้อมูลทดสอบเป็น fallback
+                        console.log("ใช้ข้อมูลทดสอบแทน");
                         data = generateSampleData();
                     }
-                } catch (error) {
-                    // ถ้าไม่สามารถแปลงข้อมูลเป็น JSON ได้ ใช้ข้อมูลทดสอบ
-                    console.error("ไม่สามารถแปลงข้อมูลเป็น JSON ได้:", error);
+                } catch (parseError) {
+                    // ถ้าไม่สามารถแปลงข้อมูลเป็น JSON ได้
+                    console.error("ไม่สามารถแปลงข้อมูลเป็น JSON ได้:", parseError);
+                    
+                    // ใช้ข้อมูลจำลองเป็นตัวอย่าง
+                    console.log("ใช้ข้อมูลทดสอบแทน");
                     data = generateSampleData();
+                    
+                    // แสดงข้อความแจ้งเตือนให้ผู้ใช้ทราบ
+                    showErrorMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กำลังแสดงข้อมูลทดสอบแทน');
                 }
                 
                 if (data && data.history && data.history.length > 0) {
+                    console.log("พบข้อมูลประวัติ จำนวน:", data.history.length, "รายการ");
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -982,30 +1007,47 @@
                     displayHistoryData();
                     document.getElementById('historyList').style.display = 'block';
                 } else {
+                    console.log("ไม่พบข้อมูลประวัติหรือข้อมูลว่างเปล่า");
                     document.getElementById('noDataMessage').style.display = 'block';
+                    
+                    // ตรวจสอบและแสดงข้อความที่เหมาะสม
+                    const noDataElement = document.getElementById('noDataMessage');
+                    noDataElement.innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                 }
                 
             } catch (error) {
                 console.error('Error fetching history:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
-                showErrorMessage('ไม่สามารถโหลดข้อมูลประวัติได้ กรุณาลองใหม่อีกครั้ง');
+                
+                // ปรับปรุงข้อความแจ้งเตือนให้มีรายละเอียดมากขึ้น
+                if (error.name === 'AbortError') {
+                    showErrorMessage('การเชื่อมต่อกับเซิร์ฟเวอร์ใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง');
+                } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showErrorMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                } else {
+                    showErrorMessage('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
+                }
                 
                 // แสดงข้อมูลตัวอย่างในกรณีที่เกิดข้อผิดพลาด
-                currentHistoryData = generateSampleData();
+                console.log("ใช้ข้อมูลทดสอบแทน (เนื่องจากเกิดข้อผิดพลาด)");
+                currentHistoryData = generateSampleData().history;
                 filteredData = [...currentHistoryData];
                 totalPages = Math.ceil(filteredData.length / itemsPerPage);
                 
                 displayHistoryData();
                 document.getElementById('historyList').style.display = 'block';
+                
+                // เพิ่มข้อความแจ้งเตือนเพิ่มเติมว่ากำลังแสดงข้อมูลทดสอบ
+                showWarningMessage('กำลังแสดงข้อมูลตัวอย่าง เนื่องจากไม่สามารถโหลดข้อมูลจริงได้');
             }
         }
         
-        // สร้างข้อมูลตัวอย่างสำหรับทดสอบ
+        // สร้างข้อมูลตัวอย่างสำหรับทดสอบ - เพิ่มข้อมูลที่หลากหลายขึ้น
         function generateSampleData() {
             return {
                 history: [
                     {
-                        timestamp: '25/06/2024, 14:32:45',
+                        timestamp: formatThaiDateTime(new Date(Date.now() - 1000 * 60 * 60)), // 1 ชั่วโมงที่แล้ว
                         trackingKey: '1m9fvx2-j4x5',
                         caseName: 'ทดสอบเป้าหมาย Facebook',
                         ip: '8.8.8.8',
@@ -1014,7 +1056,7 @@
                         hits: 3
                     },
                     {
-                        timestamp: '24/06/2024, 09:15:22',
+                        timestamp: formatThaiDateTime(new Date(Date.now() - 1000 * 60 * 60 * 24)), // 1 วันที่แล้ว
                         trackingKey: '1m9fd32-kl9s',
                         caseName: 'ทดสอบเป้าหมาย Instagram',
                         ip: '1.1.1.1',
@@ -1023,7 +1065,7 @@
                         hits: 1
                     },
                     {
-                        timestamp: '23/06/2024, 18:05:33',
+                        timestamp: formatThaiDateTime(new Date(Date.now() - 1000 * 60 * 60 * 24 * 2)), // 2 วันที่แล้ว
                         trackingKey: '1m9e5g2-p7r2',
                         caseName: 'ทดสอบเป้าหมาย LINE',
                         ip: '203.151.xxx.xxx',
@@ -1033,6 +1075,18 @@
                     }
                 ]
             };
+        }
+        
+        // ฟังก์ชันฟอร์แมตเวลาเป็นรูปแบบไทย
+        function formatThaiDateTime(date) {
+            return date.toLocaleString('th-TH', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
         }
         
         // กรองข้อมูลตามการค้นหา
@@ -1248,6 +1302,21 @@
             setTimeout(() => {
                 errorMessage.remove();
             }, 5000);
+        }
+        
+        // เพิ่มฟังก์ชันแสดงข้อความเตือน (สีเหลือง)
+        function showWarningMessage(message) {
+            const warningMessage = document.createElement('div');
+            warningMessage.className = 'message-box';
+            warningMessage.innerHTML = `<p>${message}</p>`;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(warningMessage, content.firstChild);
+            
+            // ซ่อนข้อความหลังจากผ่านไป 8 วินาที
+            setTimeout(() => {
+                warningMessage.remove();
+            }, 8000);
         }
     </script>
 </body>
