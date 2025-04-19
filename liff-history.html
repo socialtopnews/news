@@ -569,7 +569,7 @@
 
         .no-data i {
             font-size: 40px;
-            color: var (--secondary-color);
+            color: var(--secondary-color);
             margin-bottom: 15px;
         }
 
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby-ymumZTHF9JHFLKBrraYXLubGryUc1esECFa6ZwKGdsm296oKfvVM_KTfBWuOyyCU/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -936,7 +936,7 @@
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้ (แก้ไขใหม่ให้เรียบง่าย)
+        // ดึงข้อมูลประวัติของผู้ใช้
         async function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -946,54 +946,46 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                if (!userId) {
-                    throw new Error("ไม่พบ userId ซึ่งจำเป็นต้องใช้");
-                }
-                
-                // URL ที่สามารถเข้าถึงได้แน่นอน
-                // ใช้ Webhook URL ที่แก้ไขใหม่
-                const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzrlliUlVOlJxTT5pxAqKEZaxaqLFpj1paBXmepNipyu0Lmo3LQJCVfhW7kjnxYL3n2/exec';
-                
-                console.log("เริ่มส่งคำขอไปยัง URL:", WEBHOOK_URL);
-                
-                // ใช้วิธีการส่ง request ที่เรียบง่ายที่สุด
-                const response = await fetch(WEBHOOK_URL, {
+                const response = await fetch(HISTORY_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        action: 'getUserHistory',
+                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
                         userId: userId
                     })
                 });
                 
-                console.log("ได้รับการตอบกลับ - Status:", response.status);
-                console.log("Content-Type:", response.headers.get("content-type"));
-                
-                // อ่านข้อมูลเป็นข้อความก่อน
-                const responseText = await response.text();
-                console.log("Response text (ตัวอย่าง):", responseText.substring(0, 500));
-                
-                // แปลงเป็น JSON
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (jsonError) {
-                    console.error("ไม่สามารถแปลงเป็น JSON ได้:", jsonError);
-                    throw new Error("ข้อมูลที่ได้รับจาก server ไม่ใช่ format JSON ที่ถูกต้อง");
-                }
-                
-                console.log("ข้อมูลที่ได้รับหลังแปลง JSON:", data);
-                
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // ตรวจสอบว่ามีข้อมูลประวัติหรือไม่
-                if (data && data.history && Array.isArray(data.history) && data.history.length > 0) {
-                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                // ตรวจสอบสถานะการตอบกลับ
+                if (!response.ok) {
+                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
+                }
+                
+                // ตรวจสอบการตอบกลับ
+                let data;
+                const contentType = response.headers.get("content-type");
+                
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                    console.log("ได้รับข้อมูล JSON จาก server:", data);
                     
+                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                    if (data.status === "error") {
+                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                    }
+                } else {
+                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    const textResponse = await response.text();
+                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
+                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                }
+                
+                if (data && data.history && data.history.length > 0) {
+                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1002,7 +994,7 @@
                     document.getElementById('historyList').style.display = 'block';
                     document.getElementById('pagination').style.display = 'flex';
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติหรือข้อมูลว่าง");
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
@@ -1012,17 +1004,22 @@
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
-                document.getElementById('noDataMessage').innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล:<br>${error.message}<br>กรุณาลองใหม่อีกครั้ง</p>
-                    <button id="retryButton" style="margin-top:15px;padding:8px 15px;background:#3876BF;color:white;border:none;border-radius:4px;cursor:pointer;">ลองใหม่อีกครั้ง</button>
-                `;
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
+                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
+                } else if (error.message.includes("status code")) {
+                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
+                } else {
+                    errorMessage += ": " + error.message;
+                }
+                
+                showErrorMessage(errorMessage);
+                
+                // แสดงข้อความว่าไม่มีข้อมูล
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
-                
-                // เพิ่ม event listener สำหรับปุ่มลองใหม่
-                document.getElementById('retryButton').addEventListener('click', fetchUserHistory);
             }
         }
         
@@ -1247,114 +1244,6 @@
                 errorMessage.remove();
             }, 5000);
         }
-
-        // เพิ่มฟังก์ชันทดสอบเชื่อมต่อ API สำหรับการ debug
-        function testApiConnection() {
-            console.log("กำลังทดสอบการเชื่อมต่อกับ API...");
-            
-            const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
-            
-            fetch(WEBHOOK_URL)
-                .then(response => {
-                    console.log("API Response Status:", response.status);
-                    console.log("Content-Type:", response.headers.get("content-type"));
-                    return response.text();
-                })
-                .then(text => {
-                    console.log("API Response Text:", text.substring(0, 500));
-                    try {
-                        const data = JSON.parse(text);
-                        console.log("API Response Parsed:", data);
-                        showErrorMessage("การทดสอบเชื่อมต่อ API สำเร็จ!");
-                    } catch (e) {
-                        console.error("ไม่สามารถแปลง response เป็น JSON ได้:", e);
-                        showErrorMessage("การทดสอบเชื่อมต่อ API สำเร็จ แต่ข้อมูลไม่ใช่ JSON");
-                    }
-                })
-                .catch(error => {
-                    console.error("การเชื่อมต่อ API ล้มเหลว:", error);
-                    showErrorMessage("การทดสอบเชื่อมต่อ API ล้มเหลว: " + error.message);
-                });
-        }
-
-        // เพิ่ม function สำหรับ debug แบบเร่งด่วน
-        function emergencyDebug() {
-            // แสดงข้อมูล mock เพื่อทดสอบการแสดงผล
-            const mockData = [
-                {
-                    timestamp: new Date().toLocaleString('th-TH'),
-                    trackingKey: "debug-key-1",
-                    caseName: "ทดสอบระบบ 1",
-                    ip: "192.168.1.1",
-                    location: {
-                        lat: "13.7563",
-                        long: "100.5018"
-                    },
-                    deviceInfo: {
-                        deviceType: "Smartphone",
-                        deviceModel: "iPhone"
-                    }
-                },
-                {
-                    timestamp: new Date(Date.now() - 86400000).toLocaleString('th-TH'),
-                    trackingKey: "debug-key-2",
-                    caseName: "ทดสอบระบบ 2",
-                    ip: "192.168.1.2",
-                    location: {
-                        lat: "13.8000",
-                        long: "100.5500"
-                    },
-                    deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC"
-                    }
-                }
-            ];
-            
-            currentHistoryData = mockData;
-            filteredData = [...currentHistoryData];
-            totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            
-            document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('noDataMessage').style.display = 'none';
-            
-            displayHistoryData();
-            document.getElementById('historyList').style.display = 'block';
-            document.getElementById('pagination').style.display = 'flex';
-            
-            showErrorMessage("โหมด Debug: แสดงข้อมูลจำลอง");
-        }
-
-        // เพิ่ม event listener สำหรับปุ่มทดสอบ
-        document.addEventListener('DOMContentLoaded', function() {
-            // เพิ่มปุ่มทดสอบเชื่อมต่อ API
-            const footer = document.querySelector('.footer');
-            const testApiButton = document.createElement('button');
-            testApiButton.textContent = 'ทดสอบเชื่อมต่อ API';
-            testApiButton.style.marginTop = '10px';
-            testApiButton.style.padding = '5px 10px';
-            testApiButton.style.backgroundColor = '#3876BF';
-            testApiButton.style.color = 'white';
-            testApiButton.style.border = 'none';
-            testApiButton.style.borderRadius = '4px';
-            testApiButton.style.cursor = 'pointer';
-            testApiButton.addEventListener('click', testApiConnection);
-            footer.appendChild(testApiButton);
-            
-            // เพิ่มปุ่ม Emergency Debug
-            const debugButton = document.createElement('button');
-            debugButton.textContent = 'แสดงข้อมูลจำลอง';
-            debugButton.style.marginTop = '10px';
-            debugButton.style.marginLeft = '10px';
-            debugButton.style.padding = '5px 10px';
-            debugButton.style.backgroundColor = '#FF5252';
-            debugButton.style.color = 'white';
-            debugButton.style.border = 'none';
-            debugButton.style.borderRadius = '4px';
-            debugButton.style.cursor = 'pointer';
-            debugButton.addEventListener('click', emergencyDebug);
-            footer.appendChild(debugButton);
-        });
     </script>
 </body>
 </html>
