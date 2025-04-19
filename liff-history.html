@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx8XyRPZjYvWtSgcFL6gm30DnLpfTxbZTco-yUX81R4fdnzVLTMLnwod9-tMNBLzfaF/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxrq6CWszkrjoEQK5UzloqWp1HNilCtejtAYfzhRKDAzZGNqXgx1OQ6pZCv1VE7_Zrb/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -952,7 +952,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        action: 'getUserHistory',
+                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
                         userId: userId
                     })
                 });
@@ -979,6 +979,8 @@
                     }
                 } else {
                     console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    const textResponse = await response.text();
+                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
                     throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                 }
                 
@@ -1114,9 +1116,15 @@
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                locationText = `${item.location.lat}, ${item.location.long}`;
-                mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+            if (item.location && typeof item.location === "object") {
+                if (item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
+                    mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                } else {
+                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
+                }
+            } else {
+                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
             const deviceInfo = item.deviceInfo || {};
@@ -1174,7 +1182,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || deviceInfo.osInfo || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
