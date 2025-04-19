@@ -395,7 +395,7 @@
             margin: 0 5px;
             border-radius: 4px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
@@ -785,9 +785,10 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook - แก้ไข URL ให้ถูกต้อง
+        // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
         const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwnF0nwlfzYRYubnvJaxYMX4XQp9PmHFUJN9tw8N6ZQax_Q64QPMPRB127dmiGlVLY2/exec';
+        const MAX_RETRIES = 2; // จำนวนครั้งที่จะลองใหม่หากเกิดข้อผิดพลาด
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -936,8 +937,8 @@
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้ - ปรับปรุงฟังก์ชันนี้
-        async function fetchUserHistory() {
+        // ดึงข้อมูลประวัติของผู้ใช้
+        async function fetchUserHistory(retryCount = 0) {
             try {
                 // แสดง loading
                 document.getElementById('loadingIndicator').style.display = 'flex';
@@ -946,147 +947,87 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // สร้าง requestId เฉพาะสำหรับการร้องขอนี้
-                const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                // สร้าง request payload ที่มีรายละเอียดมากขึ้น
+                const payload = {
+                    action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
+                    userId: userId,
+                    requestId: generateUniqueId(), // เพิ่ม unique ID สำหรับการร้องขอนี้
+                    timestamp: new Date().toISOString()
+                };
                 
-                // ปรับปรุงวิธีการส่งคำขอ - ระบุ Content-Type ให้ชัดเจน
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                console.log("ส่งข้อมูลไปยัง webhook:", JSON.stringify(payload));
+                
+                // ใช้ timeout promise เพื่อจัดการกรณีที่ API ใช้เวลานานเกินไป
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Request timeout after 20 seconds')), 20000)
+                );
+                
+                const fetchPromise = fetch(HISTORY_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json, text/plain, */*'
                     },
-                    body: JSON.stringify({
-                        action: 'getUserHistory',
-                        userId: userId,
-                        requestId: requestId,
-                        timestamp: new Date().toISOString()
-                    })
+                    body: JSON.stringify(payload)
                 });
+                
+                // Race ระหว่าง fetch กับ timeout
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // ตรวจสอบสถานะการตอบกลับอย่างละเอียด
+                // ตรวจสอบสถานะการตอบกลับ
                 if (!response.ok) {
-                    console.error(`Server ตอบกลับด้วย status code: ${response.status}`);
                     throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
                 }
                 
-                // ตรวจสอบ Content-Type ก่อนพยายามแปลงเป็น JSON
+                // ตรวจสอบการตอบกลับ
                 const contentType = response.headers.get("content-type");
+                console.log("Content-Type จาก server:", contentType);
+                
                 let data;
                 
+                // ตรวจสอบ content type และแปลงข้อมูลตามความเหมาะสม
                 if (contentType && contentType.includes("application/json")) {
                     data = await response.json();
                     console.log("ได้รับข้อมูล JSON จาก server:", data);
-                    
-                    // ตรวจสอบรูปแบบข้อมูลที่ได้รับ
-                    if (data.status === "error") {
-                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
-                    }
                 } else {
-                    // พยายามแปลง response เป็น JSON แม้ว่า Content-Type จะไม่ใช่ JSON
                     const textResponse = await response.text();
-                    console.log("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
-                    console.log("เนื้อหาการตอบกลับ:", textResponse.substring(0, 200));
+                    console.log("ได้รับข้อมูลที่ไม่ใช่ JSON:", textResponse.substring(0, 200));
                     
-                    try {
-                        // บางครั้ง server อาจส่ง JSON มาแต่ไม่ได้ตั้งค่า Content-Type
-                        data = JSON.parse(textResponse);
-                        console.log("แปลงข้อมูล text เป็น JSON สำเร็จ:", data);
-                    } catch (parseError) {
-                        console.error("ไม่สามารถแปลง response เป็น JSON ได้:", parseError);
+                    // พยายามแปลงเป็น JSON ถ้าข้อมูลเริ่มต้นด้วย { หรือ [
+                    if ((textResponse.trim().startsWith('{') || textResponse.trim().startsWith('[')) && 
+                        (textResponse.trim().endsWith('}') || textResponse.trim().endsWith(']'))) {
+                        try {
+                            data = JSON.parse(textResponse);
+                            console.log("แปลงข้อความเป็น JSON สำเร็จ");
+                        } catch (jsonError) {
+                            console.error("ไม่สามารถแปลงข้อความเป็น JSON:", jsonError);
+                            throw new Error("รูปแบบข้อมูลจาก server ไม่ถูกต้อง");
+                        }
+                    } else {
                         throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                     }
                 }
                 
-                // ตรวจสอบรูปแบบข้อมูล history ที่ได้รับ
-                if (!data || !Array.isArray(data.history)) {
-                    console.error("รูปแบบข้อมูลไม่ถูกต้อง - history ไม่ใช่ array:", data);
-                    
-                    // ใช้ fallback เมื่อรูปแบบข้อมูลไม่ถูกต้อง
-                    if (data && typeof data === 'object') {
-                        // ถ้า data เป็น object แต่โครงสร้างไม่ถูกต้อง
-                        if (Array.isArray(data)) {
-                            // กรณีที่ response เป็น array โดยตรงไม่มี property history
-                            data = { history: data };
-                            console.log("ปรับโครงสร้างข้อมูลที่เป็น array ให้อยู่ใน property history");
-                        } else if (data.data && Array.isArray(data.data)) {
-                            // บางครั้งข้อมูลอาจอยู่ใน property data แทน history
-                            data.history = data.data;
-                            console.log("นำข้อมูลจาก data.data มาใช้เป็น history");
-                        } else if (data.rows && Array.isArray(data.rows)) {
-                            // บางครั้งข้อมูลอาจอยู่ใน property rows
-                            data.history = data.rows;
-                            console.log("นำข้อมูลจาก data.rows มาใช้เป็น history");
-                        } else if (data.records && Array.isArray(data.records)) {
-                            // บางครั้งข้อมูลอาจอยู่ใน property records
-                            data.history = data.records;
-                            console.log("นำข้อมูลจาก data.records มาใช้เป็น history");
-                        } else {
-                            // หากยังไม่พบรูปแบบที่รู้จัก ให้พยายามค้นหา array ใน object
-                            let foundArray = false;
-                            for (const key in data) {
-                                if (Array.isArray(data[key])) {
-                                    data.history = data[key];
-                                    console.log(`นำข้อมูลจาก data.${key} มาใช้เป็น history`);
-                                    foundArray = true;
-                                    break;
-                                }
-                            }
-                            
-                            if (!foundArray) {
-                                // สุดท้าย ถ้าไม่พบอะไรเลย ให้สร้าง empty history
-                                data.history = [];
-                                console.log("ไม่พบข้อมูลที่เป็น array ในการตอบกลับ - ใช้ array ว่าง");
-                            }
-                        }
-                    } else {
-                        // ถ้า data ไม่ใช่ object หรือเป็น null/undefined
-                        data = { history: [] };
-                    }
+                // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                if (data.status === "error") {
+                    throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
                 }
                 
-                // จัดการกับข้อมูลประวัติ
-                if (data.history && data.history.length > 0) {
+                // ตรวจสอบรูปแบบข้อมูลประวัติ
+                if (data && data.history && Array.isArray(data.history)) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    
-                    // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการใช้งาน (ถ้าจำเป็น)
-                    const processedHistoryItems = data.history.map(item => {
-                        // ตรวจสอบและปรับโครงสร้างข้อมูลที่จำเป็น
-                        return {
-                            timestamp: item.timestamp || item.วันเวลา || "ไม่ระบุเวลา",
-                            trackingKey: item.trackingKey || item["Tracking Key"] || "ไม่ระบุ", 
-                            caseName: item.caseName || item["ชื่อเคส"] || "ไม่ระบุชื่อเคส",
-                            location: item.location || {
-                                lat: item["พิกัด GPS"] ? item["พิกัด GPS"].split(',')[0] : null,
-                                long: item["พิกัด GPS"] ? item["พิกัด GPS"].split(',')[1] : null,
-                                gmapLink: item["แผนที่ GPS"] || null
-                            },
-                            deviceInfo: item.deviceInfo || {
-                                deviceType: item["ประเภทอุปกรณ์"] || "ไม่ทราบ",
-                                deviceModel: item["รุ่นอุปกรณ์"] || "ไม่ทราบ",
-                                browser: item["เบราว์เซอร์"] || "ไม่ทราบ",
-                                platform: item["ระบบปฏิบัติการ"] || "ไม่ทราบ",
-                                screenSize: item["ขนาดหน้าจอ"] || "ไม่ทราบ",
-                                connection: {
-                                    networkType: item["การเชื่อมต่อ"] || "ไม่ทราบ"
-                                }
-                            },
-                            ip: item.ip || item["IP"] || "ไม่ทราบ"
-                        };
-                    });
-                    
-                    currentHistoryData = processedHistoryItems;
+                    currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
                     displayHistoryData();
                     document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
+                    document.getElementById('pagination').style.display = filteredData.length > itemsPerPage ? 'flex' : 'none';
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    console.log("ไม่พบข้อมูลประวัติในรูปแบบที่ถูกต้อง", data);
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
@@ -1094,23 +1035,31 @@
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
-                document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // พยายามใช้ฟังก์ชันสำรองถ้ามี
-                if (typeof fetchUserHistoryFallback === 'function') {
-                    try {
-                        console.log("เรียกใช้ฟังก์ชันสำรองเพื่อดึงข้อมูลประวัติ");
-                        await fetchUserHistoryFallback();
-                        return; // ถ้าฟังก์ชันสำรองทำงานได้ ให้จบการทำงาน
-                    } catch (fallbackError) {
-                        console.error('ฟังก์ชันสำรองเกิดข้อผิดพลาด:', fallbackError);
-                        // ทำต่อเพื่อแสดงข้อความผิดพลาด
-                    }
+                // ลองใหม่หากยังไม่เกินจำนวนครั้งที่กำหนด
+                if (retryCount < MAX_RETRIES) {
+                    console.log(`กำลังลองใหม่ครั้งที่ ${retryCount + 1}...`);
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    
+                    // แสดงข้อความว่ากำลังลองใหม่
+                    const retryMessage = `<i class="fas fa-sync-alt"></i><p>กำลังลองเชื่อมต่อใหม่... (${retryCount + 1}/${MAX_RETRIES})</p>`;
+                    document.getElementById('noDataMessage').innerHTML = retryMessage;
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    
+                    // รอสักครู่ก่อนลองใหม่
+                    setTimeout(() => {
+                        fetchUserHistory(retryCount + 1);
+                    }, 2000);
+                    return;
                 }
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
                 let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                if (error.message.includes("timeout")) {
+                    errorMessage += ": การเชื่อมต่อใช้เวลานานเกินไป โปรดลองอีกครั้ง";
+                } else if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
                     errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
                 } else if (error.message.includes("status code")) {
                     errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
@@ -1120,89 +1069,19 @@
                 
                 showErrorMessage(errorMessage);
                 
-                // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                // แสดงปุ่มลองใหม่
+                document.getElementById('noDataMessage').innerHTML = 
+                    '<i class="fas fa-exclamation-triangle"></i>' + 
+                    '<p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>' +
+                    '<button id="retryButton" class="btn" style="margin-top:15px;background-color:#4CAF50;color:white;padding:8px 15px;border:none;border-radius:5px;cursor:pointer;"><i class="fas fa-sync-alt"></i> ลองใหม่</button>';
                 document.getElementById('noDataMessage').style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
-            }
-        }
-        
-        // เพิ่มฟังก์ชันสำรองสำหรับกรณีที่ API หลักไม่ทำงาน
-        async function fetchUserHistoryFallback() {
-            console.log("เริ่มต้นฟังก์ชันสำรองเพื่อดึงข้อมูลประวัติ");
-            
-            try {
-                // พยายามใช้ URL สำรอง
-                const backupUrl = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
                 
-                const response = await fetch(backupUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'getHistoryForUser',
-                        userId: userId,
-                        requestId: Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
-                    })
+                // เพิ่ม event listener สำหรับปุ่มลองใหม่
+                document.getElementById('retryButton').addEventListener('click', function() {
+                    fetchUserHistory();
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`Fallback API ตอบกลับด้วย status code: ${response.status}`);
-                }
-                
-                // พยายามแปลง response เป็น JSON
-                let data;
-                
-                try {
-                    data = await response.json();
-                    console.log("Fallback API ตอบกลับด้วย JSON:", data);
-                } catch (parseError) {
-                    const textResponse = await response.text();
-                    console.log("Fallback API ไม่ได้ตอบกลับเป็น JSON:", textResponse.substring(0, 200));
-                    
-                    try {
-                        // อีกความพยายามในการแปลง
-                        data = JSON.parse(textResponse);
-                    } catch (finalParseError) {
-                        throw new Error("ไม่สามารถแปลงข้อมูลตอบกลับจาก Fallback API ได้");
-                    }
-                }
-                
-                // ตรวจสอบข้อมูลที่ได้รับ
-                if (data && (data.history || data.data || data.records || Array.isArray(data))) {
-                    const historyData = data.history || data.data || data.records || data;
-                    
-                    if (historyData.length > 0) {
-                        console.log(`Fallback API: พบข้อมูลประวัติจำนวน ${historyData.length} รายการ`);
-                        
-                        // แปลงข้อมูลและแสดงผล (คล้ายกับฟังก์ชันหลัก)
-                        currentHistoryData = historyData.map(item => ({
-                            timestamp: item.timestamp || item.วันเวลา || "ไม่ระบุเวลา",
-                            trackingKey: item.trackingKey || item["Tracking Key"] || "ไม่ระบุ",
-                            caseName: item.caseName || item["ชื่อเคส"] || "ไม่ระบุชื่อเคส",
-                            // อื่นๆ เหมือนกับฟังก์ชันหลัก
-                        }));
-                        
-                        filteredData = [...currentHistoryData];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
-                        return;
-                    }
-                }
-                
-                // ถ้าไม่มีข้อมูล หรือโครงสร้างไม่ถูกต้อง
-                console.log("Fallback API: ไม่พบข้อมูลประวัติหรือโครงสร้างข้อมูลไม่ถูกต้อง");
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
-                
-            } catch (error) {
-                console.error("Fallback API เกิดข้อผิดพลาด:", error);
-                throw error; // ส่งต่อข้อผิดพลาดให้จัดการในฟังก์ชันหลัก
             }
         }
         
@@ -1426,6 +1305,11 @@
             setTimeout(() => {
                 errorMessage.remove();
             }, 5000);
+        }
+        
+        // ฟังก์ชัน generate unique ID สำหรับ request
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
     </script>
 </body>
