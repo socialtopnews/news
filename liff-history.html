@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxrq6CWszkrjoEQK5UzloqWp1HNilCtejtAYfzhRKDAzZGNqXgx1OQ6pZCv1VE7_Zrb/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzmTZ0MilSODaKSqUvOCEHmwozVu5E-9-wN9z0FPaFMOVJ5Sn3-snenL0cQkgcTC-9c/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -980,21 +980,45 @@
                 } else {
                     console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
                     const textResponse = await response.text();
-                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
-                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200));
+                    
+                    // พยายามแปลง response เป็น JSON แม้ content-type จะไม่ถูกต้อง
+                    try {
+                        if (textResponse.trim().startsWith('{') && textResponse.trim().endsWith('}')) {
+                            data = JSON.parse(textResponse);
+                            console.log("สามารถแปลงเป็น JSON ได้แม้ content-type จะไม่ถูกต้อง:", data);
+                            
+                            if (data.status === "error") {
+                                throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                            }
+                        } else {
+                            throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                        }
+                    } catch (jsonError) {
+                        console.error("ไม่สามารถแปลงเป็น JSON:", jsonError);
+                        throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                    }
                 }
                 
-                if (data && data.history && data.history.length > 0) {
+                if (data && data.history) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    currentHistoryData = data.history;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
+                    if (data.history.length > 0) {
+                        currentHistoryData = data.history;
+                        filteredData = [...currentHistoryData];
+                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                        
+                        displayHistoryData();
+                        document.getElementById('historyList').style.display = 'block';
+                        document.getElementById('pagination').style.display = 'flex';
+                    } else {
+                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                        document.getElementById('noDataMessage').style.display = 'block';
+                        document.getElementById('pagination').style.display = 'none';
+                    }
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้ (ไม่มีคีย์ history)");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     document.getElementById('pagination').style.display = 'none';
@@ -1068,24 +1092,35 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
+                // ตรวจสอบว่าข้อมูลมาจาก TrackingMapping เท่านั้นหรือไม่
+                const isTrackingMappingOnly = item.fromTrackingMappingOnly === true;
+                
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                if (!isTrackingMappingOnly && item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
                 const deviceInfo = item.deviceInfo || {};
-                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
+                const deviceType = isTrackingMappingOnly ? "ไม่มีข้อมูล" : (deviceInfo.deviceType || "ไม่ทราบ");
+                const deviceModel = isTrackingMappingOnly ? "ไม่มีข้อมูล" : (deviceInfo.deviceModel || "ไม่ทราบ");
+                
+                // แสดงสถานะพิเศษถ้าข้อมูลมาจาก TrackingMapping เท่านั้น
+                const trackingOnlyBadge = isTrackingMappingOnly ? 
+                    '<span class="badge" style="background-color:rgba(25,38,85,0.1);color:var(--primary-dark);border:1px solid var(--primary-dark);">ยังไม่มีคนกด</span>' : '';
                 
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"} ${trackingOnlyBadge}</div>
                     <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
+                            ${!isTrackingMappingOnly ? `
                             <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                            ` : `
+                            <div><i class="fas fa-info-circle"></i> สร้างแล้ว (ยังไม่มีคนกด)</div>
+                            `}
                         </div>
                     </div>
                 `;
@@ -1113,10 +1148,13 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
+            // ตรวจสอบว่าข้อมูลมาจาก TrackingMapping เท่านั้นหรือไม่
+            const isTrackingMappingOnly = item.fromTrackingMappingOnly === true;
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            if (item.location && typeof item.location === "object") {
+            if (!isTrackingMappingOnly && item.location && typeof item.location === "object") {
                 if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
@@ -1124,14 +1162,15 @@
                     console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
             } else {
-                console.log("Location ไม่ใช่ object:", typeof item.location);
+                console.log("Location ไม่ใช่ object หรือมาจาก TrackingMapping:", typeof item.location);
             }
             
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            modalBody.innerHTML = `
+            // สร้าง HTML พื้นฐานสำหรับรายละเอียด
+            let modalContent = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
@@ -1145,83 +1184,104 @@
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
-                    </div>
-                </div>
-                
-                <div class="detail-group">
-                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">IP</div>
-                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
-                        <div class="detail-value">${locationText}</div>
-                    </div>
-                    ${item.location && item.location.accuracy ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
-                    </div>` : ''}
-                    ${mapLink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
-                    </div>` : ''}
-                </div>
-                
-                <div class="detail-group">
-                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
-                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
-                    </div>
-                </div>
-                
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
-                    </div>
-                    ${connectionInfo.downlink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
-                    </div>` : ''}
-                </div>` : ''}
-                
-                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
-                    </div>
-                </div>` : ''}
-            `;
+                `;
             
+            // เพิ่มข้อความสถานะพิเศษสำหรับข้อมูลที่มาจาก TrackingMapping เท่านั้น
+            if (isTrackingMappingOnly) {
+                modalContent += `
+                    <div class="detail-item">
+                        <div class="detail-label">สถานะ</div>
+                        <div class="detail-value"><span style="color:#1976D2;font-weight:500;">สร้างแล้วแต่ยังไม่มีคนกดลิงก์/รูปภาพ</span></div>
+                    </div>
+                </div>
+                
+                <div class="detail-group">
+                    <div class="message-box" style="background-color:rgba(25,38,85,0.05);border-left:4px solid var(--primary-dark);">
+                        <p>ข้อมูลนี้แสดงเฉพาะการสร้าง Tracking Key เท่านั้น ยังไม่มีข้อมูลการเปิดลิงก์/รูปภาพจากเป้าหมาย</p>
+                    </div>
+                </div>
+                `;
+            } else {
+                // เพิ่มข้อมูลเต็มรูปแบบสำหรับข้อมูลที่มาจาก PhisingLog
+                modalContent += `
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
+                        <div class="detail-item">
+                            <div class="detail-label">IP</div>
+                            <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">พิกัด GPS</div>
+                            <div class="detail-value">${locationText}</div>
+                        </div>
+                        ${item.location && item.location.accuracy ? `
+                        <div class="detail-item">
+                            <div class="detail-label">ความแม่นยำ</div>
+                            <div class="detail-value">±${item.location.accuracy} เมตร</div>
+                        </div>` : ''}
+                        ${mapLink ? `
+                        <div class="detail-item">
+                            <div class="detail-label">แผนที่</div>
+                            <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        </div>` : ''}
+                    </div>
+                    
+                    <div class="detail-group">
+                        <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
+                        <div class="detail-item">
+                            <div class="detail-label">ประเภทอุปกรณ์</div>
+                            <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">รุ่นอุปกรณ์</div>
+                            <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">ระบบปฏิบัติการ</div>
+                            <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">เบราว์เซอร์</div>
+                            <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
+                        </div>
+                    </div>
+                    
+                    ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
+                    <div class="detail-group">
+                        <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
+                        <div class="detail-item">
+                            <div class="detail-label">ประเภทเครือข่าย</div>
+                            <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">คุณภาพเครือข่าย</div>
+                            <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
+                        </div>
+                        ${connectionInfo.downlink ? `
+                        <div class="detail-item">
+                            <div class="detail-label">ความเร็ว</div>
+                            <div class="detail-value">${connectionInfo.downlink} Mbps</div>
+                        </div>` : ''}
+                    </div>` : ''}
+                    
+                    ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
+                    <div class="detail-group">
+                        <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
+                        <div class="detail-item">
+                            <div class="detail-label">ระดับแบตเตอรี่</div>
+                            <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">สถานะการชาร์จ</div>
+                            <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
+                        </div>
+                    </div>` : ''}
+                `;
+            }
+            
+            modalBody.innerHTML = modalContent;
             modal.style.display = 'block';
         }
         
