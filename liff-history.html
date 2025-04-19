@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzSvMEBqSoaEPCCEgywRV5rXMm4G08ya5G1zAsC6wRgcUaUEXD6pPSgdPf64hBvlvbv/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -946,7 +946,8 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                // เพิ่ม timeout เพื่อป้องกันการรอนานเกินไป
+                const fetchPromise = fetch(HISTORY_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -957,11 +958,20 @@
                     })
                 });
                 
+                // กำหนด timeout 15 วินาที
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('การเชื่อมต่อใช้เวลานานเกินไป')), 15000)
+                );
+                
+                // ใช้ Promise.race เพื่อจัดการ timeout
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
                 // ตรวจสอบสถานะการตอบกลับ
                 if (!response.ok) {
+                    console.error(`Server ตอบกลับด้วย status code: ${response.status}`);
                     throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
                 }
                 
@@ -975,12 +985,13 @@
                     
                     // ตรวจสอบว่าสถานะเป็น error หรือไม่
                     if (data.status === "error") {
+                        console.error("Server ตอบกลับ error:", data.message);
                         throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
                     }
                 } else {
                     console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
                     const textResponse = await response.text();
-                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
+                    console.log("ข้อมูลการตอบกลับ (ตัวอย่าง):", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
                     throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                 }
                 
@@ -1006,10 +1017,15 @@
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
                 let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                
                 if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
                     errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
+                } else if (error.message.includes("timeout") || error.message.includes("การเชื่อมต่อใช้เวลานานเกินไป")) {
+                    errorMessage += ": การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
                 } else if (error.message.includes("status code")) {
                     errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
+                } else if (error.message.includes("โครงสร้างชีต")) {
+                    errorMessage += ": " + error.message;
                 } else {
                     errorMessage += ": " + error.message;
                 }
@@ -1017,7 +1033,12 @@
                 showErrorMessage(errorMessage);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                document.getElementById('noDataMessage').innerHTML = `
+                    <i class="fas fa-exclamation-triangle" style="color: #d32f2f;"></i>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>
+                    <small style="color:#666;">${error.message}</small><br>
+                    กรุณาลองใหม่อีกครั้ง</p>
+                `;
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
             }
