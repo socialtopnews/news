@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDhvnu_URp6bji_wH3mGjfcMF7DO70uyXarE1KK_8c9XzReI3dH3tYfPj9uV2ij2yn/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx8XyRPZjYvWtSgcFL6gm30DnLpfTxbZTco-yUX81R4fdnzVLTMLnwod9-tMNBLzfaF/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -984,48 +984,13 @@
                 
                 if (data && data.history && data.history.length > 0) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    
-                    // ทำการแปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่ายสำหรับไทย
-                    data.history.forEach(item => {
-                        if (item.timestamp) {
-                            if (typeof item.timestamp === 'string') {
-                                // ถ้า timestamp เป็น string อยู่แล้ว (อาจจะอยู่ในรูปแบบไทยอยู่แล้ว)
-                                // ไม่ต้องแปลง แต่ตรวจสอบว่าเป็นวันที่ที่ถูกต้องหรือไม่
-                                const date = new Date(item.timestamp);
-                                if (!isNaN(date.getTime())) {
-                                    // ถ้าสามารถแปลงเป็น Date ได้ ให้แสดงในรูปแบบไทย
-                                    item.timestamp = date.toLocaleString('th-TH', { 
-                                        timeZone: 'Asia/Bangkok',
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        hour12: false 
-                                    });
-                                }
-                            } else if (item.timestamp instanceof Date) {
-                                // ถ้า timestamp เป็น Date object
-                                item.timestamp = item.timestamp.toLocaleString('th-TH', { 
-                                    timeZone: 'Asia/Bangkok',
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false 
-                                });
-                            }
-                        }
-                    });
-                    
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
                     displayHistoryData();
                     document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = filteredData.length > itemsPerPage ? 'flex' : 'none';
+                    document.getElementById('pagination').style.display = 'flex';
                 } else {
                     console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
