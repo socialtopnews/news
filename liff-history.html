@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxBAzOW9VV0wuXm8qMvXen0cR5IS92MY9yhmfxFiFCbzEdA-WkkPHYKNomCl8xFTwjx/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzV-avFD8MKXjxQFEzvNFTTvJFCKblcvpmCr3io-DqdSGCKit3kI4tlhqL17UvWoDDl/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -946,179 +946,100 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // เปลี่ยนวิธีการเรียก webhook โดยใช้ JSONP แทน
-                // JSONP ไม่มีข้อจำกัดเรื่อง CORS
-                try {
-                    // วิธีที่ 1: ใช้ fetch พร้อมเพิ่ม parameter 
-                    const response = await fetch(`${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=processHistory&_=${Date.now()}`, {
-                        method: 'GET',
-                        mode: 'no-cors' // ใช้ no-cors mode เพื่อหลีกเลี่ยงปัญหา CORS
-                    });
-                    
-                    // วิธีนี้อาจมีปัญหา CORS ไม่สามารถอ่านข้อมูลจาก response ได้
-                    // กำหนดเวลารอ สำหรับให้ callback นำไปใช้ได้
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    // ซ่อน loading
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    
-                    // ตรวจสอบว่ามีข้อมูลในตัวแปรหรือไม่ (จะถูก set โดย callback)
-                    if (window.historyData && window.historyData.history && window.historyData.history.length > 0) {
-                        processHistoryData(window.historyData);
-                        return;
-                    }
-                } catch (fetchError) {
-                    console.log("ไม่สามารถเรียกข้อมูลด้วยวิธี fetch:", fetchError);
+                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
+                        userId: userId
+                    })
+                });
+                
+                // ซ่อน loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+                
+                // ตรวจสอบสถานะการตอบกลับ
+                if (!response.ok) {
+                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
                 }
                 
-                // วิธีที่ 2: ใช้ JSONP ด้วย script tag
-                const script = document.createElement('script');
-                script.src = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=processHistory&_=${Date.now()}`;
-                document.body.appendChild(script);
+                // ตรวจสอบการตอบกลับ
+                let data;
+                const contentType = response.headers.get("content-type");
                 
-                // กำหนดเวลารอ เผื่อกรณีเรียก JSONP ไม่สำเร็จ
-                setTimeout(() => {
-                    // ซ่อน loading หลังจากรอไปแล้ว
-                    document.getElementById('loadingIndicator').style.display = 'none';
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                    console.log("ได้รับข้อมูล JSON จาก server:", data);
                     
-                    // ถ้ายังไม่มีข้อมูล (JSONP ไม่สำเร็จ) ให้ใช้ข้อมูลจำลอง
-                    if (!window.historyData) {
-                        console.log("ไม่สามารถดึงข้อมูลจาก webhook ได้ - ใช้ข้อมูลจำลอง");
-                        useDummyHistory();
+                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                    if (data.status === "error") {
+                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
                     }
-                }, 5000); // รอ 5 วินาที
+                } else {
+                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    const textResponse = await response.text();
+                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
+                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                }
+                
+                if (data && data.history && data.history.length > 0) {
+                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                    currentHistoryData = data.history;
+                    filteredData = [...currentHistoryData];
+                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                    
+                    displayHistoryData();
+                    document.getElementById('historyList').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'flex';
+                } else {
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'none';
+                }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
-                
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจน
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-                    errorMessage += ": ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่อ";
+
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
+                let userFriendlyMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                let technicalDetail = error.message; // Default technical detail
+
+                if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
+                    // Network error or CORS issue
+                    userFriendlyMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ข้อมูลประวัติได้";
+                    technicalDetail = "อาจเกิดจากปัญหาเครือข่าย หรือการตั้งค่า CORS ไม่ถูกต้องบนเซิร์ฟเวอร์";
+                    console.error("Potential CORS or Network Error. Check browser console for details.");
+                } else if (error.message.includes("status code")) {
+                    // HTTP error (e.g., 4xx, 5xx)
+                    userFriendlyMessage = "เซิร์ฟเวอร์ข้อมูลประวัติตอบกลับพร้อมข้อผิดพลาด";
+                    technicalDetail = `Server returned status: ${error.message.split(': ')[1]}`;
+                } else if (error.message.includes("รูปแบบที่ถูกต้อง")) {
+                    // Custom error from response format check
+                    userFriendlyMessage = "เซิร์ฟเวอร์ข้อมูลประวัติไม่ได้ตอบกลับในรูปแบบที่คาดไว้";
+                    technicalDetail = "Expected JSON response, but received something else.";
+                } else if (error.message.includes("Server ตอบกลับข้อผิดพลาด")) {
+                     // Custom error from data.status === "error"
+                    userFriendlyMessage = "เกิดข้อผิดพลาดในการประมวลผลข้อมูลบนเซิร์ฟเวอร์";
+                    technicalDetail = `Server message: ${error.message}`;
                 } else {
-                    errorMessage += ": " + error.message;
+                    // Other errors
+                    userFriendlyMessage = "เกิดข้อผิดพลาดที่ไม่คาดคิดขณะโหลดข้อมูล";
                 }
-                
-                showErrorMessage(errorMessage);
-                
-                // กรณีเกิดข้อผิดพลาด ใช้ข้อมูลจำลอง
-                useDummyHistory();
-            }
-        }
-        
-        // ฟังก์ชันสำหรับรับข้อมูลจาก JSONP callback
-        window.processHistory = function(data) {
-            console.log("ได้รับข้อมูล callback จาก webhook:", data);
-            // เก็บข้อมูลไว้ในตัวแปร global
-            window.historyData = data;
-            
-            // ซ่อน loading
-            document.getElementById('loadingIndicator').style.display = 'none';
-            
-            // ประมวลผลข้อมูล
-            processHistoryData(data);
-        };
-        
-        // ฟังก์ชันสำหรับประมวลผลข้อมูลที่ได้รับ
-        function processHistoryData(data) {
-            if (data && data.history && data.history.length > 0) {
-                console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                currentHistoryData = data.history;
-                filteredData = [...currentHistoryData];
-                totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                
-                displayHistoryData();
-                document.getElementById('historyList').style.display = 'block';
-                document.getElementById('pagination').style.display = 'flex';
-            } else {
-                console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
+
+                // Show error in the dedicated message box if possible
+                showErrorMessage(`${userFriendlyMessage}. (${technicalDetail})`);
+
+                // Update the 'no data' area with a user-friendly error
+                const noDataElement = document.getElementById('noDataMessage');
+                noDataElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i><p>${userFriendlyMessage}<br>กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแล</p>`;
+                noDataElement.style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                document.getElementById('historyList').style.display = 'none'; // Ensure list is hidden
             }
-        }
-        
-        // ฟังก์ชันสร้างข้อมูลจำลองเมื่อไม่สามารถดึงข้อมูลจริงได้
-        function useDummyHistory() {
-            console.log("ใช้ข้อมูลประวัติจำลอง");
-            
-            // กำหนดวันที่ล่าสุด
-            const today = new Date();
-            
-            // สร้างข้อมูลจำลอง 5 รายการ
-            const dummyData = [
-                {
-                    timestamp: formatDate(today),
-                    trackingKey: "lt93hk1-abc1",
-                    caseName: "ทดสอบเคส 1",
-                    ip: { ip: "192.168.1.1", city: "กรุงเทพ", country: "TH" },
-                    location: { lat: 13.7563, long: 100.5018, accuracy: 50, gmapLink: "https://www.google.com/maps?q=13.7563,100.5018" },
-                    deviceInfo: { deviceType: "มือถือ", deviceModel: "iPhone 13", browser: "Safari 16.0" },
-                    createdBy: userId
-                },
-                {
-                    timestamp: formatDate(new Date(today.getTime() - (1 * 24 * 60 * 60 * 1000))),
-                    trackingKey: "lt85mq2-def2",
-                    caseName: "ทดสอบเคส 2",
-                    ip: { ip: "203.144.xx.xx", city: "เชียงใหม่", country: "TH" },
-                    location: { lat: 18.7883, long: 98.9853, accuracy: 100, gmapLink: "https://www.google.com/maps?q=18.7883,98.9853" },
-                    deviceInfo: { deviceType: "คอมพิวเตอร์", deviceModel: "Windows 11", browser: "Chrome 100.0" },
-                    createdBy: userId
-                },
-                {
-                    timestamp: formatDate(new Date(today.getTime() - (3 * 24 * 60 * 60 * 1000))),
-                    trackingKey: "lt78np3-ghi3",
-                    caseName: "ทดสอบเคส 3",
-                    ip: { ip: "8.8.8.8", city: "Mountain View", country: "US" },
-                    location: { lat: 37.4224, long: -122.0841, accuracy: 20, gmapLink: "https://www.google.com/maps?q=37.4224,-122.0841" },
-                    deviceInfo: { deviceType: "มือถือ", deviceModel: "Samsung Galaxy S21", browser: "Samsung Browser 16.0" },
-                    createdBy: userId
-                },
-                {
-                    timestamp: formatDate(new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000))),
-                    trackingKey: "lt67kl4-jkl4",
-                    caseName: "ทดสอบเคส 4",
-                    ip: { ip: "103.29.xx.xx", city: "ภูเก็ต", country: "TH" },
-                    location: { lat: 7.9519, long: 98.3381, accuracy: 150, gmapLink: "https://www.google.com/maps?q=7.9519,98.3381" },
-                    deviceInfo: { deviceType: "แท็บเล็ต", deviceModel: "iPad Pro", browser: "Safari" },
-                    createdBy: userId
-                },
-                {
-                    timestamp: formatDate(new Date(today.getTime() - (10 * 24 * 60 * 60 * 1000))),
-                    trackingKey: "lt59ju5-mno5",
-                    caseName: "ทดสอบเคส 5",
-                    ip: { ip: "49.230.xx.xx", city: "ชลบุรี", country: "TH" },
-                    location: { lat: 12.9236, long: 100.8824, accuracy: 75, gmapLink: "https://www.google.com/maps?q=12.9236,100.8824" },
-                    deviceInfo: { deviceType: "มือถือ", deviceModel: "Xiaomi Redmi Note 10", browser: "MIUI Browser" },
-                    createdBy: userId
-                }
-            ];
-            
-            // โชว์ข้อความ
-            showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - แสดงข้อมูลตัวอย่างเพื่อการทดสอบ", true);
-            
-            // กำหนดข้อมูลและแสดงผล
-            currentHistoryData = dummyData;
-            filteredData = [...currentHistoryData];
-            totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            
-            displayHistoryData();
-            document.getElementById('historyList').style.display = 'block';
-            document.getElementById('pagination').style.display = 'flex';
-        }
-        
-        // ฟังก์ชั่นช่วยจัดรูปแบบวันที่
-        function formatDate(date) {
-            return date.toLocaleString('th-TH', {
-                timeZone: 'Asia/Bangkok',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
         }
         
         // กรองข้อมูลตามการค้นหา
@@ -1166,21 +1087,14 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบและจัดการข้อมูลพิกัด
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat.toFixed(4)}, ${item.location.long.toFixed(4)}`;
+                    locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // ตรวจสอบข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-                
-                // ตรวจสอบข้อมูล IP
-                const ipData = item.ip || {};
-                const ipAddress = ipData.ip || "ไม่ระบุ IP";
-                const ipLocation = ipData.city ? `${ipData.city}${ipData.country ? ', ' + ipData.country : ''}` : "ไม่ระบุ";
                 
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
@@ -1190,7 +1104,6 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
-                            <div><i class="fas fa-globe"></i> ${ipAddress}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
                     </div>
@@ -1237,23 +1150,6 @@
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            // ปรับปรุงการแสดงข้อมูล IP
-            const ipData = item.ip || {};
-            const ipAddress = ipData.ip || "ไม่มีข้อมูล";
-            const ipCity = ipData.city || "ไม่ระบุ";
-            const ipRegion = ipData.region || "";
-            const ipCountry = ipData.country || "";
-            const ipLocation = ipData.loc || "ไม่มีข้อมูล";
-            
-            let ipLocationHTML = "";
-            if (ipLocation && ipLocation !== "ไม่มีข้อมูล" && ipLocation.includes(',')) {
-                ipLocationHTML = `
-                <div class="detail-item">
-                    <div class="detail-label">พิกัด (IP)</div>
-                    <div class="detail-value"><a href="https://www.google.com/maps?q=${ipLocation}" target="_blank">${ipLocation} <i class="fas fa-external-link-alt"></i></a></div>
-                </div>`;
-            }
-            
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
@@ -1275,13 +1171,8 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP</div>
-                        <div class="detail-value">${ipAddress}</div>
+                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ตำแหน่ง (IP)</div>
-                        <div class="detail-value">${ipCity}${ipRegion ? ', ' + ipRegion : ''}${ipCountry ? ', ' + ipCountry : ''}</div>
-                    </div>
-                    ${ipLocationHTML}
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
@@ -1310,7 +1201,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || deviceInfo.osInfo || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
