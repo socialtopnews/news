@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ประวัติการใช้งาน Phishing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Line LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3876BF;
+            --primary-dark: #192655;
+            --primary-light: #5A96E3;
+            --secondary-color: #A1C2F1;
+            --accent-color: #00AAFF;
+            --success-color: #4CAF50;
+            --error-color: #FF5252;
+            --warning-color: #FFC107;
+            --text-color: #333333;
+            --text-light: #666666;
+            --text-white: #FFFFFF;
+            --bg-color: #F8F9FA;
+            --border-radius: 12px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+            --transition-normal: all 0.3s ease;
+            --spacer: 1.5rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 0 20px 0;
+            min-height: 100vh;
+            background-color: #ffffff;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
+            background-size: 200% 200%;
+            animation: gradientFlow 3s ease infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header .header-icon {
+            width: 36px;
+            height: 36px;
+            fill: white;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .header .header-text {
+            text-align: left;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-top: 3px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .content {
+            padding: var(--spacer);
+            background-color: #ffffff;
+        }
+
+        /* User Info Section */
+        .user-info {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            border: none;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary-color);
+        }
+
+        .user-info .profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info .profile-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+            border: 2px solid var(--primary-light);
+            padding: 2px;
+            background-color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info .user-name {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .user-info .user-status {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+            transition: var(--transition-normal);
+        }
+
+        .badge.approved {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--success-color);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .badge.pending {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: var(--warning-color);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        /* Message Box */
+        .message-box {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid var(--warning-color);
+            padding: 15px 20px;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+            position: relative;
+            transition: var(--transition-normal);
+        }
+
+        .message-box:before {
+            content: '\f071';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 15px;
+            left: -12px;
+            background-color: white;
+            color: var(--warning-color);
+            padding: 0 4px;
+            font-size: 14px;
+            border-radius: 50%;
+        }
+
+        .message-box p {
+            margin: 0;
+            color: #856404;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .message-box.error {
+            background-color: rgba(255, 82, 82, 0.1);
+            border-left: 4px solid var(--error-color);
+        }
+
+        .message-box.error p {
+            color: #721c24;
+        }
+
+        /* Search Box */
+        .search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 1px solid #E0E0E0;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            transition: var(--transition-normal);
+            background-color: #FAFAFA;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+            background-color: #FFFFFF;
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        /* History List */
+        .history-list {
+            margin-top: 20px;
+        }
+
+        .history-item {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .history-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background-color: var(--primary-light);
+        }
+
+        .history-date {
+            color: var(--text-light);
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .history-date i {
+            margin-right: 6px;
+            color: var(--primary-color);
+        }
+
+        .history-key {
+            color: var(--primary-dark);
+            font-weight: 500;
+            margin-bottom: 5px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
+        .history-case {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--text-color);
+        }
+
+        .history-action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-details-btn {
+            background-color: var(--secondary-color);
+            color: var(--primary-dark);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+        }
+
+        .view-details-btn i {
+            margin-right: 5px;
+        }
+
+        .view-details-btn:hover {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .history-stats {
+            display: flex;
+            font-size: 12px;
+            color: var(--text-light);
+            align-items: center;
+        }
+
+        .history-stats div {
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .history-stats i {
+            margin-right: 5px;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            align-items: center;
+        }
+
+        .pagination-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .pagination-btn:hover:not(.active, .disabled) {
+            background-color: var(--secondary-color);
+            border-color: var(--primary-light);
+        }
+
+        .pagination-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            cursor: default;
+        }
+
+        .pagination-btn.disabled {
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: var(--text-light);
+            margin: 0 10px;
+        }
+        
+        /* Details Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 550px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            animation: modalOpen 0.3s ease-out;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalOpen {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 15px 20px;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
+
+        .close-modal:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .detail-group {
+            margin-bottom: 20px;
+        }
+
+        .detail-group h3 {
+            font-size: 15px;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .detail-group h3 i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+
+        .detail-item {
+            display: flex;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            width: 140px;
+            color: var(--text-color);
+            flex-shrink: 0;
+        }
+
+        .detail-value {
+            color: var(--text-light);
+            flex-grow: 1;
+            word-break: break-word;
+        }
+
+        .detail-value a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .detail-value a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .modal-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* No Data Message */
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .no-data i {
+            font-size: 40px;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .no-data p {
+            font-size: 16px;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(88, 136, 231, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #F8F9FA;
+            border-top: 1px solid #E9ECEF;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        #loadingScreen .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(88, 136, 231, 0.2);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        #loadingScreen p {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 576px) {
+            .app-container {
+                max-width: 100%;
+                min-height: 100svh;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 1.2rem;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .user-info .profile-img {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <p>กำลังเริ่มระบบ...</p>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path fill="currentColor" d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/>
+            </svg>
+            <div class="header-text">
+                <h1>ประวัติการใช้งาน Phishing</h1>
+                <div class="subtitle">ดูประวัติการใช้งานและผลลัพธ์</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ข้อความแนะนำหรือแจ้งเตือน -->
+            <div id="permissionMessage" class="message-box" style="display: none;">
+                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
+            </div>
+            
+            <!-- ส่วนค้นหา -->
+            <div id="searchBox" class="search-box" style="display: none;">
+                <input type="text" id="searchInput" placeholder="ค้นหาจากชื่อเคส หรือ Tracking Key">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            
+            <!-- ส่วนแสดงข้อมูลรายการ -->
+            <div id="historyList" class="history-list" style="display: none;"></div>
+            
+            <!-- ส่วนแสดง Pagination -->
+            <div id="pagination" class="pagination" style="display: none;">
+                <button class="pagination-btn" id="prevBtn" disabled><i class="fas fa-chevron-left"></i></button>
+                <div class="pagination-info">หน้า <span id="currentPage">1</span> จาก <span id="totalPages">1</span></div>
+                <button class="pagination-btn" id="nextBtn" disabled><i class="fas fa-chevron-right"></i></button>
+            </div>
+            
+            <!-- ส่วนแสดง Loading -->
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>กำลังโหลดข้อมูลประวัติ...</p>
+            </div>
+            
+            <!-- ส่วนแสดงเมื่อไม่มีข้อมูล -->
+            <div id="noDataMessage" class="no-data" style="display: none;">
+                <i class="fas fa-folder-open"></i>
+                <p>ยังไม่มีประวัติการใช้งาน</p>
+            </div>
+        </div>
+        
+        <!-- Modal สำหรับแสดงรายละเอียดเพิ่มเติม -->
+        <div id="detailsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>รายละเอียด Phishing</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- รายละเอียดจะถูกใส่ที่นี่ด้วย JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-btn" id="closeModalBtn">ปิด</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 Image Phishing - Detective-X</p>
+        </div>
+    </div>
+
+    <script>
+        // ตัวแปรหลักสำหรับเก็บข้อมูล
+        let userId = "";
+        let displayName = "";
+        let pictureUrl = "";
+        let isLiffInitialized = false;
+        let userHasPermission = false;
+        
+        // ตัวแปรสำหรับ Pagination
+        let currentHistoryData = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let itemsPerPage = 10;
+        let filteredData = [];
+        
+        // ค่า Config สำคัญ
+        const LIFF_ID = '2007231851-0DqwXxQg';
+        
+        // URL สำหรับ webhook
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+        
+        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLiff();
+            setupEventListeners();
+        });
+        
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                displayName = profile.displayName;
+                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
+                
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
+                
+                // แสดงข้อมูลผู้ใช้
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('profileImage').src = pictureUrl;
+                document.getElementById('userInfoSection').style.display = 'block';
+                
+                // ตรวจสอบสิทธิ์ผู้ใช้
+                userHasPermission = await checkUserPermission(userId);
+                
+                if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    enableHistoryFeatures();
+                    fetchUserHistory();
+                } else {
+                    // ไม่มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('permissionMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-lock"></i><p>คุณยังไม่ได้รับอนุมัติให้ใช้งานระบบ</p>';
+                }
+                
+                isLiffInitialized = true;
+                
+                // ซ่อนหน้าโหลดดิ้ง
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+            } catch (error) {
+                console.error('LIFF initialization failed', error);
+                document.getElementById('loadingScreen').style.display = 'none';
+                showErrorMessage('เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message);
+            }
+        }
+        
+        // ตรวจสอบสิทธิ์ผู้ใช้
+        async function checkUserPermission(userId) {
+            try {
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                
+                const response = await fetch(LINE_OA_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'checkUserPermission',
+                        userId: userId
+                    })
+                });
+                
+                try {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
+                    } else {
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
+                    }
+                } catch (e) {
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
+                    return checkUserPermissionFallback(userId);
+                }
+            } catch (error) {
+                console.error('Error checking permission:', error);
+                return checkUserPermissionFallback(userId);
+            }
+        }
+        
+        // ตรวจสอบสิทธิ์แบบสำรอง
+        function checkUserPermissionFallback(userId) {
+            const approvedUserIds = [
+                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+            ];
+            
+            return approvedUserIds.includes(userId);
+        }
+        
+        // เปิดใช้งานฟีเจอร์ประวัติ
+        function enableHistoryFeatures() {
+            document.getElementById('searchBox').style.display = 'block';
+            document.getElementById('historyList').style.display = 'block';
+            document.getElementById('pagination').style.display = 'flex';
+        }
+        
+        // ตั้งค่า Event Listeners
+        function setupEventListeners() {
+            // ค้นหา
+            document.getElementById('searchInput').addEventListener('input', function() {
+                filterHistoryData();
+            });
+            
+            // ปุ่ม Pagination
+            document.getElementById('prevBtn').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayHistoryData();
+                }
+            });
+            
+            document.getElementById('nextBtn').addEventListener('click', function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    displayHistoryData();
+                }
+            });
+            
+            // ปุ่มปิด Modal
+            document.querySelector('.close-modal').addEventListener('click', closeModal);
+            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            
+            // ปิด Modal เมื่อคลิกที่พื้นหลัง
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('detailsModal')) {
+                    closeModal();
+                }
+            });
+        }
+        
+        // ดึงข้อมูลประวัติของผู้ใช้
+        async function fetchUserHistory() {
+            try {
+                // แสดง loading
+                document.getElementById('loadingIndicator').style.display = 'flex';
+                document.getElementById('historyList').style.display = 'none';
+                document.getElementById('noDataMessage').style.display = 'none';
+                
+                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getUserHistory',
+                        userId: userId
+                    })
+                });
+                
+                // ซ่อน loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+                
+                // ตรวจสอบการตอบกลับ
+                let data;
+                try {
+                    if (response.headers.get("content-type")?.includes("application/json")) {
+                        data = await response.json();
+                    } else {
+                        // หากไม่ใช่ JSON ใช้ข้อมูลทดสอบ
+                        console.log("ไม่ได้รับข้อมูล JSON จาก server ใช้ข้อมูลทดสอบ");
+                        data = generateSampleData();
+                    }
+                } catch (error) {
+                    // ถ้าไม่สามารถแปลงข้อมูลเป็น JSON ได้ ใช้ข้อมูลทดสอบ
+                    console.error("ไม่สามารถแปลงข้อมูลเป็น JSON ได้:", error);
+                    data = generateSampleData();
+                }
+                
+                if (data && data.history && data.history.length > 0) {
+                    currentHistoryData = data.history;
+                    filteredData = [...currentHistoryData];
+                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                    
+                    displayHistoryData();
+                    document.getElementById('historyList').style.display = 'block';
+                } else {
+                    document.getElementById('noDataMessage').style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Error fetching history:', error);
+                document.getElementById('loadingIndicator').style.display = 'none';
+                showErrorMessage('ไม่สามารถโหลดข้อมูลประวัติได้ กรุณาลองใหม่อีกครั้ง');
+                
+                // แสดงข้อมูลตัวอย่างในกรณีที่เกิดข้อผิดพลาด
+                currentHistoryData = generateSampleData();
+                filteredData = [...currentHistoryData];
+                totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                
+                displayHistoryData();
+                document.getElementById('historyList').style.display = 'block';
+            }
+        }
+        
+        // สร้างข้อมูลตัวอย่างสำหรับทดสอบ
+        function generateSampleData() {
+            return {
+                history: [
+                    {
+                        timestamp: '25/06/2024, 14:32:45',
+                        trackingKey: '1m9fvx2-j4x5',
+                        caseName: 'ทดสอบเป้าหมาย Facebook',
+                        ip: '8.8.8.8',
+                        deviceInfo: { deviceType: 'มือถือ', deviceModel: 'iPhone 14 Pro Max (iOS 16.5)' },
+                        location: { lat: '13.7563', long: '100.5018', accuracy: '15' },
+                        hits: 3
+                    },
+                    {
+                        timestamp: '24/06/2024, 09:15:22',
+                        trackingKey: '1m9fd32-kl9s',
+                        caseName: 'ทดสอบเป้าหมาย Instagram',
+                        ip: '1.1.1.1',
+                        deviceInfo: { deviceType: 'คอมพิวเตอร์', deviceModel: 'Windows 11' },
+                        location: { lat: '13.7650', long: '100.5380', accuracy: '22' },
+                        hits: 1
+                    },
+                    {
+                        timestamp: '23/06/2024, 18:05:33',
+                        trackingKey: '1m9e5g2-p7r2',
+                        caseName: 'ทดสอบเป้าหมาย LINE',
+                        ip: '203.151.xxx.xxx',
+                        deviceInfo: { deviceType: 'มือถือ', deviceModel: 'Samsung Galaxy S21 (Android 13)' },
+                        location: { lat: '13.8531', long: '100.5856', accuracy: '8' },
+                        hits: 5
+                    }
+                ]
+            };
+        }
+        
+        // กรองข้อมูลตามการค้นหา
+        function filterHistoryData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredData = [...currentHistoryData];
+            } else {
+                filteredData = currentHistoryData.filter(item => 
+                    (item.caseName && item.caseName.toLowerCase().includes(searchTerm)) || 
+                    (item.trackingKey && item.trackingKey.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            currentPage = 1; // รีเซ็ทกลับไปหน้าแรก
+            
+            displayHistoryData();
+        }
+        
+        // แสดงข้อมูลประวัติตาม pagination
+        function displayHistoryData() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if (filteredData.length === 0) {
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('pagination').style.display = 'flex';
+            
+            // คำนวณ index เริ่มต้นและสิ้นสุดสำหรับหน้าปัจจุบัน
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            
+            // สร้าง HTML สำหรับแต่ละรายการ
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = filteredData[i];
+                const listItem = document.createElement('div');
+                listItem.className = 'history-item';
+                
+                let locationText = "ไม่มีข้อมูล";
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
+                }
+                
+                const deviceInfo = item.deviceInfo || {};
+                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
+                
+                listItem.innerHTML = `
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
+                    <div class="history-action">
+                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
+                        <div class="history-stats">
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
+                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                        </div>
+                    </div>
+                `;
+                
+                historyList.appendChild(listItem);
+                
+                // เพิ่ม event listener สำหรับปุ่มดูรายละเอียด
+                const detailBtn = listItem.querySelector('.view-details-btn');
+                detailBtn.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    showDetailsModal(filteredData[index]);
+                });
+            }
+            
+            // อัปเดต pagination UI
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+        
+        // แสดง Modal รายละเอียด
+        function showDetailsModal(item) {
+            const modal = document.getElementById('detailsModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            // สร้างเนื้อหา Modal
+            let locationText = "ไม่มีข้อมูล";
+            let mapLink = "";
+            if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                locationText = `${item.location.lat}, ${item.location.long}`;
+                mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+            }
+            
+            const deviceInfo = item.deviceInfo || {};
+            const connectionInfo = deviceInfo.connection || {};
+            const batteryInfo = deviceInfo.battery || {};
+            
+            modalBody.innerHTML = `
+                <div class="detail-group">
+                    <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">วันเวลา</div>
+                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ชื่อเคส</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-group">
+                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">IP</div>
+                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">พิกัด GPS</div>
+                        <div class="detail-value">${locationText}</div>
+                    </div>
+                    ${item.location && item.location.accuracy ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
+                    </div>` : ''}
+                    ${mapLink ? `
+                    <div class="detail-item">
+                        <div class="detail-label">แผนที่</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                    </div>` : ''}
+                </div>
+                
+                <div class="detail-group">
+                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">รุ่นอุปกรณ์</div>
+                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ระบบปฏิบัติการ</div>
+                        <div class="detail-value">${deviceInfo.platform || deviceInfo.osInfo || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
+                    </div>
+                </div>
+                
+                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเภทเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">คุณภาพเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
+                    </div>
+                    ${connectionInfo.downlink ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความเร็ว</div>
+                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
+                    </div>` : ''}
+                </div>` : ''}
+                
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ระดับแบตเตอรี่</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">สถานะการชาร์จ</div>
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
+                    </div>
+                </div>` : ''}
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        // ปิด Modal
+        function closeModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+        
+        // แสดงข้อความผิดพลาด
+        function showErrorMessage(message) {
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'message-box error';
+            errorMessage.innerHTML = `<p>${message}</p>`;
+            
+            const content = document.querySelector('.content');
+            content.insertBefore(errorMessage, content.firstChild);
+            
+            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
+            setTimeout(() => {
+                errorMessage.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
