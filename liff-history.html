@@ -785,10 +785,9 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook - แก้ไขให้ชี้ไปที่ GoogleScript ที่ถูกต้อง
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0kjeWVtkX4QtHSdjKAW2DhxOMNH3TwGWqbw_V0KAB3vq_ocWwXARZiL9b2MqiWWtsQg/exec';
-        // IMPORTANT: แก้ไข URL ให้ถูกต้อง - ต้องชี้ไปที่ script.google.com ที่มี doPost function
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwH--VVqzfazGT60B0109tykqSuOfAYo8qb7NFZZBgzCChyPJz1YJaSz9Yw2ahhMa11/exec';
+        // URL สำหรับ webhook
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwDhvnu_URp6bji_wH3mGjfcMF7DO70uyXarE1KK_8c9XzReI3dH3tYfPj9uV2ij2yn/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -946,21 +945,16 @@
                 document.getElementById('noDataMessage').style.display = 'none';
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
-                console.log("กำลังส่งคำขอไปยัง URL:", HISTORY_WEBHOOK_URL);
-                
-                const requestBody = {
-                    action: 'getUserHistory',
-                    userId: userId
-                };
-                
-                console.log("ข้อมูลที่ส่ง:", JSON.stringify(requestBody));
                 
                 const response = await fetch(HISTORY_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify({
+                        action: 'getUserHistory',
+                        userId: userId
+                    })
                 });
                 
                 // ซ่อน loading
@@ -971,34 +965,67 @@
                     throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
                 }
                 
-                // ดึงและแสดงข้อมูลการตอบกลับแบบ raw เพื่อการแก้ไขปัญหา
-                const responseText = await response.text();
-                console.log("Raw response:", responseText);
-                
-                // พยายามแปลงเป็น JSON
+                // ตรวจสอบการตอบกลับ
                 let data;
-                try {
-                    data = JSON.parse(responseText);
-                    console.log("ข้อมูล JSON ที่ได้รับ:", data);
-                } catch (jsonError) {
-                    console.error("ไม่สามารถแปลงข้อมูลเป็น JSON:", jsonError);
-                    throw new Error("ไม่สามารถแปลงข้อมูลจาก server เป็น JSON ได้");
-                }
+                const contentType = response.headers.get("content-type");
                 
-                // ตรวจสอบว่าสถานะเป็น error หรือไม่
-                if (data.status === "error") {
-                    throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                    console.log("ได้รับข้อมูล JSON จาก server:", data);
+                    
+                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                    if (data.status === "error") {
+                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                    }
+                } else {
+                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
                 }
                 
                 if (data && data.history && data.history.length > 0) {
                     console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                    
+                    // ทำการแปลงวันที่ให้อยู่ในรูปแบบที่อ่านง่ายสำหรับไทย
+                    data.history.forEach(item => {
+                        if (item.timestamp) {
+                            if (typeof item.timestamp === 'string') {
+                                // ถ้า timestamp เป็น string อยู่แล้ว (อาจจะอยู่ในรูปแบบไทยอยู่แล้ว)
+                                // ไม่ต้องแปลง แต่ตรวจสอบว่าเป็นวันที่ที่ถูกต้องหรือไม่
+                                const date = new Date(item.timestamp);
+                                if (!isNaN(date.getTime())) {
+                                    // ถ้าสามารถแปลงเป็น Date ได้ ให้แสดงในรูปแบบไทย
+                                    item.timestamp = date.toLocaleString('th-TH', { 
+                                        timeZone: 'Asia/Bangkok',
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false 
+                                    });
+                                }
+                            } else if (item.timestamp instanceof Date) {
+                                // ถ้า timestamp เป็น Date object
+                                item.timestamp = item.timestamp.toLocaleString('th-TH', { 
+                                    timeZone: 'Asia/Bangkok',
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false 
+                                });
+                            }
+                        }
+                    });
+                    
                     currentHistoryData = data.history;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
                     displayHistoryData();
                     document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
+                    document.getElementById('pagination').style.display = filteredData.length > itemsPerPage ? 'flex' : 'none';
                 } else {
                     console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
@@ -1011,9 +1038,16 @@
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = `ไม่สามารถโหลดข้อมูลประวัติได้: ${error.message}`;
+                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
+                } else if (error.message.includes("status code")) {
+                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
+                } else {
+                    errorMessage += ": " + error.message;
+                }
                 
-                showStatus(errorMessage, false);
+                showErrorMessage(errorMessage);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
@@ -1236,21 +1270,6 @@
             setTimeout(() => {
                 errorMessage.remove();
             }, 5000);
-        }
-        
-        // เพิ่มฟังก์ชันแสดงสถานะ
-        function showStatus(message, isSuccess) {
-            const statusElement = document.createElement('div');
-            statusElement.className = isSuccess ? 'message-box success' : 'message-box error';
-            statusElement.innerHTML = `<p>${message}</p>`;
-            
-            const content = document.querySelector('.content');
-            content.insertBefore(statusElement, content.firstChild);
-            
-            // ลบข้อความหลังจาก 10 วินาที
-            setTimeout(() => {
-                statusElement.remove();
-            }, 10000);
         }
     </script>
 </body>
