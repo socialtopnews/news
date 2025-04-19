@@ -614,7 +614,7 @@
             border-top: 1px solid #E9ECEF;
             margin-top: 30px;
             font-size: 14px;
-            color: var (--text-light);
+            color: var(--text-light);
         }
 
         /* Loading Screen */
@@ -785,9 +785,11 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook
+        // URL สำหรับ Google Sheets (แทนที่ webhook)
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxBAzOW9VV0wuXm8qMvXen0cR5IS92MY9yhmfxFiFCbzEdA-WkkPHYKNomCl8xFTwjx/exec';
+        
+        // Google Sheets ID
+        const SHEET_ID = '1j7MqTTEW6izLtVDk95SlPYLjkUqk9MTV7-ZK0Arpnj8';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -946,44 +948,16 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // การส่ง request ชนิด GET เพื่อให้เข้ากับการทำงานของ Google Script
-                const response = await fetch(`${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // ใช้วิธีใหม่: ดึงข้อมูลจาก Google Sheets API
+                // วิธีที่ 1: ใช้ Google Sheets API โดยตรง (ต้องมี API Key)
+                const combinedData = await fetchCombinedData(userId);
                 
                 // ซ่อน loading
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // ตรวจสอบสถานะการตอบกลับ
-                if (!response.ok) {
-                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
-                }
-                
-                // ตรวจสอบการตอบกลับ
-                const responseText = await response.text();
-                console.log("ข้อมูลการตอบกลับ:", responseText.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
-                
-                let data;
-                try {
-                    // พยายามแปลงข้อความเป็น JSON
-                    data = JSON.parse(responseText);
-                    console.log("ได้รับข้อมูล JSON จาก server:", data);
-                } catch (e) {
-                    console.error("การตอบกลับไม่ใช่ JSON ที่ถูกต้อง:", e);
-                    
-                    // แสดงข้อความผิดพลาดที่เฉพาะเจาะจง
-                    showErrorMessage(`ไม่สามารถประมวลผลข้อมูลที่ได้รับ: ${e.message}`);
-                    
-                    // สร้างข้อมูลเริ่มต้นว่างเปล่า
-                    data = { status: "error", message: "รูปแบบข้อมูลไม่ถูกต้อง", history: [] };
-                }
-                
-                if (data && data.status === "success" && data.history && data.history.length > 0) {
-                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    currentHistoryData = data.history;
+                if (combinedData && combinedData.length > 0) {
+                    console.log(`พบข้อมูลประวัติจำนวน ${combinedData.length} รายการ`);
+                    currentHistoryData = combinedData;
                     filteredData = [...currentHistoryData];
                     totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
@@ -1002,21 +976,234 @@
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
-                } else if (error.message.includes("status code")) {
-                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
-                } else {
-                    errorMessage += ": " + error.message;
-                }
-                
-                showErrorMessage(errorMessage);
+                showErrorMessage("ไม่สามารถโหลดข้อมูลประวัติได้: " + error.message);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+            }
+        }
+        
+        // ฟังก์ชันใหม่: ดึงและรวมข้อมูลจาก TrackingMapping และ PhisingLog
+        async function fetchCombinedData(userLineId) {
+            try {
+                // 1. ดึงข้อมูล tracking keys ของผู้ใช้จาก TrackingMapping
+                const trackingData = await fetchTrackingMappingData(userLineId);
+                
+                if (!trackingData || trackingData.length === 0) {
+                    console.log("ไม่พบข้อมูล tracking keys ของผู้ใช้");
+                    return [];
+                }
+                
+                // 2. ดึงข้อมูลประวัติการเข้าชมจาก PhisingLog
+                const phisingLogData = await fetchPhisingLogData();
+                
+                if (!phisingLogData || phisingLogData.length === 0) {
+                    console.log("ไม่พบข้อมูลประวัติการเข้าชม");
+                    return [];
+                }
+                
+                // 3. รวมข้อมูลเข้าด้วยกัน โดยใช้ trackingKey เป็นตัวเชื่อม
+                const combinedData = [];
+                
+                // เก็บ tracking keys ของผู้ใช้นี้เป็น Set เพื่อค้นหาได้เร็วขึ้น
+                const userTrackingKeys = new Set(trackingData.map(item => item.trackingKey));
+                
+                // กรองข้อมูลจาก PhisingLog ที่มี trackingKey ตรงกับของผู้ใช้
+                for (const logItem of phisingLogData) {
+                    if (userTrackingKeys.has(logItem.trackingKey)) {
+                        // หาข้อมูลเพิ่มเติมจาก trackingData
+                        const trackingInfo = trackingData.find(t => t.trackingKey === logItem.trackingKey);
+                        
+                        if (trackingInfo) {
+                            // รวมข้อมูลจากทั้งสองแหล่ง
+                            combinedData.push({
+                                ...logItem,
+                                caseName: trackingInfo.caseName,
+                                creatorName: trackingInfo.creatorName,
+                                imageUrl: trackingInfo.imageUrl || null
+                            });
+                        }
+                    }
+                }
+                
+                console.log(`รวมข้อมูลได้ ${combinedData.length} รายการ`);
+                return combinedData;
+            } catch (error) {
+                console.error("Error fetching combined data:", error);
+                throw error;
+            }
+        }
+        
+        // ฟังก์ชันใหม่: ดึงข้อมูล Tracking Mappings ของผู้ใช้
+        async function fetchTrackingMappingData(userLineId) {
+            // GoogleSheet URL แบบ export เป็น JSON
+            // ต้องทำให้ Sheet เป็น Public หรือ Anyone with link can view
+            const sheetName = 'TrackingMapping';
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+            
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                // แปลง response format พิเศษของ Google Sheet เป็น JSON
+                const jsonText = text.substring(47).slice(0, -2);
+                const data = JSON.parse(jsonText);
+                
+                // ตรวจสอบว่ามีข้อมูลหรือไม่
+                if (!data.table || !data.table.rows || data.table.rows.length === 0) {
+                    console.log("ไม่พบข้อมูลใน TrackingMapping sheet");
+                    return [];
+                }
+                
+                // หาตำแหน่ง column ที่เก็บ CreatorId (โดยดูจาก headers)
+                const headers = data.table.cols.map(col => col.label);
+                const creatorIdIndex = headers.indexOf('CreatorId');
+                
+                if (creatorIdIndex === -1) {
+                    console.error("ไม่พบคอลัมน์ CreatorId ใน TrackingMapping sheet");
+                    return [];
+                }
+                
+                // แปลงข้อมูลเป็นรูปแบบที่ใช้งานง่าย
+                const trackingData = [];
+                
+                // กรองเฉพาะรายการของ userLineId นี้
+                for (const row of data.table.rows) {
+                    // ข้าม row ที่ไม่มีข้อมูลหรือข้อมูลไม่ครบ
+                    if (!row.c || !row.c[0] || !row.c[0].v) continue;
+                    
+                    // ตรวจสอบว่าเป็น trackingKey ของผู้ใช้นี้หรือไม่
+                    const creatorId = row.c[creatorIdIndex]?.v || '';
+                    
+                    if (creatorId === userLineId) {
+                        trackingData.push({
+                            trackingKey: row.c[0].v,
+                            caseName: row.c[1]?.v || "ไม่ระบุ",
+                            createDate: row.c[2]?.v || "",
+                            creatorId: creatorId,
+                            creatorName: row.c[4]?.v || "ไม่ทราบ",
+                            creatorFullName: row.c[5]?.v || "ไม่ทราบ",
+                            imageUrl: row.c[6]?.v || null
+                        });
+                    }
+                }
+                
+                console.log(`พบข้อมูล TrackingMapping ของผู้ใช้ ${userLineId} จำนวน ${trackingData.length} รายการ`);
+                return trackingData;
+                
+            } catch (error) {
+                console.error("Error fetching TrackingMapping data:", error);
+                throw new Error("ไม่สามารถเข้าถึงข้อมูล Tracking Mapping ได้");
+            }
+        }
+        
+        // ฟังก์ชันใหม่: ดึงข้อมูลประวัติการเข้าชมจาก PhisingLog
+        async function fetchPhisingLogData() {
+            const sheetName = 'PhisingLog';
+            const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+            
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                // แปลง response format พิเศษของ Google Sheet เป็น JSON
+                const jsonText = text.substring(47).slice(0, -2);
+                const data = JSON.parse(jsonText);
+                
+                // ตรวจสอบว่ามีข้อมูลหรือไม่
+                if (!data.table || !data.table.rows || data.table.rows.length === 0) {
+                    console.log("ไม่พบข้อมูลใน PhisingLog sheet");
+                    return [];
+                }
+                
+                // หาตำแหน่งคอลัมน์ที่สำคัญ
+                const headers = data.table.cols.map(col => col.label);
+                const timestampIndex = headers.indexOf('วันเวลา');
+                const trackingKeyIndex = headers.indexOf('Tracking Key');
+                const ipIndex = headers.indexOf('IP');
+                const deviceTypeIndex = headers.indexOf('ประเภทอุปกรณ์');
+                const deviceModelIndex = headers.indexOf('รุ่นอุปกรณ์');
+                const locationIndex = headers.indexOf('พิกัด GPS');
+                const sourceIndex = headers.indexOf('แหล่งที่มา');
+                
+                // ตรวจสอบว่าพบคอลัมน์ที่จำเป็นหรือไม่
+                if (trackingKeyIndex === -1) {
+                    console.error("ไม่พบคอลัมน์ Tracking Key ใน PhisingLog sheet");
+                    return [];
+                }
+                
+                // แปลงข้อมูลเป็นรูปแบบที่ใช้งานง่าย
+                const phisingData = [];
+                
+                for (const row of data.table.rows) {
+                    // ข้าม row ที่ไม่มีข้อมูลหรือข้อมูลไม่ครบ
+                    if (!row.c || !row.c[trackingKeyIndex] || !row.c[trackingKeyIndex].v) continue;
+                    
+                    // เก็บข้อมูลประวัติการเข้าชม
+                    phisingData.push({
+                        timestamp: row.c[timestampIndex]?.v || "ไม่ระบุเวลา",
+                        trackingKey: row.c[trackingKeyIndex].v,
+                        ip: row.c[ipIndex]?.v || "ไม่ระบุ",
+                        deviceInfo: {
+                            deviceType: row.c[deviceTypeIndex]?.v || "ไม่ทราบ",
+                            deviceModel: row.c[deviceModelIndex]?.v || "ไม่ทราบ"
+                        },
+                        location: row.c[locationIndex]?.v || "ไม่มีข้อมูล",
+                        source: row.c[sourceIndex]?.v || "ไม่ทราบ"
+                    });
+                }
+                
+                console.log(`ดึงข้อมูลประวัติการเข้าชมได้ ${phisingData.length} รายการ`);
+                return phisingData;
+                
+            } catch (error) {
+                console.error("Error fetching PhisingLog data:", error);
+                throw new Error("ไม่สามารถเข้าถึงข้อมูลประวัติการเข้าชมได้");
+            }
+        }
+        
+        // ทำ fallback สำหรับกรณีที่ไม่สามารถใช้ Google Sheets API ได้
+        async function fetchUserHistoryFallback() {
+            try {
+                console.log("ใช้วิธีสำรองในการดึงข้อมูลประวัติ");
+                
+                // ลองใช้ webhook โดยตรงอีกครั้ง แต่ปรับวิธีการส่งข้อมูล
+                const response = await fetch("https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain' // เปลี่ยนเป็น text/plain แทน JSON เพื่อหลีกเลี่ยง preflight request
+                    },
+                    body: JSON.stringify({
+                        action: 'getUserHistory',
+                        userId: userId
+                    }),
+                    mode: 'no-cors' // ใช้ no-cors เพื่อหลีกเลี่ยงปัญหา CORS
+                });
+                
+                // เนื่องจากใช้ no-cors response จะเป็น opaque ไม่สามารถอ่านข้อมูลได้
+                // จึงจำเป็นต้องรอให้ webhook ส่งข้อมูลกลับมาในช่องทางอื่น (เช่น JSONP)
+                
+                // รอสักครู่เผื่อ webhook ประมวลผลข้อมูล
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // สร้างข้อมูลจำลองสำหรับการทดสอบ
+                return [{
+                    timestamp: new Date().toLocaleString('th-TH'),
+                    trackingKey: "sample-key-1",
+                    caseName: "ทดสอบดึงข้อมูล",
+                    location: "13.7563, 100.5018",
+                    deviceInfo: {
+                        deviceType: "โทรศัพท์มือถือ",
+                        deviceModel: "iPhone"
+                    },
+                    source: "รูปภาพ"
+                }];
+                
+            } catch (error) {
+                console.error("Fallback method failed:", error);
+                throw error;
             }
         }
         
@@ -1065,37 +1252,19 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบและจัดการข้อมูลที่อาจไม่มี
-                const timestamp = item.timestamp || "ไม่ระบุเวลา";
-                const trackingKey = item.trackingKey || "ไม่ระบุ";
-                const caseName = item.caseName || "ไม่ระบุชื่อเคส";
-                
-                // สร้างข้อความแสดงพิกัด
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
-                } else if (item.พิกัดGPS) {
-                    // กรณีข้อมูลมาจาก PhisingLog
-                    locationText = item.พิกัดGPS;
                 }
                 
-                // ข้อมูลอุปกรณ์
-                let deviceType = "ไม่ทราบ";
-                let deviceModel = "ไม่ทราบ";
-                
-                if (item.deviceInfo) {
-                    deviceType = item.deviceInfo.deviceType || "ไม่ทราบ";
-                    deviceModel = item.deviceInfo.deviceModel || "ไม่ทราบ";
-                } else if (item.ประเภทอุปกรณ์) {
-                    // กรณีข้อมูลมาจาก PhisingLog
-                    deviceType = item.ประเภทอุปกรณ์;
-                    deviceModel = item.รุ่นอุปกรณ์ || "ไม่ทราบ";
-                }
+                const deviceInfo = item.deviceInfo || {};
+                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${timestamp}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${trackingKey}</div>
-                    <div class="history-case">${caseName}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
@@ -1131,62 +1300,35 @@
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            
-            // ตรวจสอบรูปแบบข้อมูลหลากหลาย (รองรับทั้งข้อมูลจาก API และจาก Sheet)
             if (item.location && typeof item.location === "object") {
                 if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                } else {
+                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
-            } else if (item.พิกัดGPS) {
-                // กรณีข้อมูลมาจาก PhisingLog
-                locationText = item.พิกัดGPS;
-                mapLink = item.แผนที่GPS || "";
-            }
-            
-            // ข้อมูล IP และอุปกรณ์
-            const ipInfo = item.ip || {};
-            const ip = typeof ipInfo === 'object' ? (ipInfo.ip || "ไม่ระบุ") : (item.IP || "ไม่ระบุ");
-            
-            // เตรียมข้อมูลอุปกรณ์
-            let deviceInfo = {};
-            let connectionInfo = {};
-            let batteryInfo = {};
-            
-            if (item.deviceInfo) {
-                deviceInfo = item.deviceInfo;
-                connectionInfo = deviceInfo.connection || {};
-                batteryInfo = deviceInfo.battery || {};
             } else {
-                // กรณีข้อมูลมาจาก PhisingLog
-                deviceInfo = {
-                    deviceType: item.ประเภทอุปกรณ์ || "ไม่ระบุ",
-                    deviceModel: item.รุ่นอุปกรณ์ || "ไม่ระบุ", 
-                    platform: item.ระบบปฏิบัติการ || "ไม่ระบุ",
-                    browser: item.เบราว์เซอร์ || "ไม่ระบุ"
-                };
-                connectionInfo = { networkType: item.การเชื่อมต่อ || "ไม่ระบุ" };
-                batteryInfo = { level: item.แบตเตอรี่ || "ไม่ระบุ" };
+                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
+            
+            const deviceInfo = item.deviceInfo || {};
+            const connectionInfo = deviceInfo.connection || {};
+            const batteryInfo = deviceInfo.battery || {};
             
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${item.timestamp || item.วันเวลา || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${item.trackingKey || item.TrackingKey || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName || item.ชื่อเคส || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
-                        <div class="detail-value">${item.creatorFullName || item.ผู้สร้าง || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
@@ -1194,16 +1336,16 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP</div>
-                        <div class="detail-value">${ip}</div>
+                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${item.location && item.location.accuracy || item['ความแม่นยำGPS(m)'] ? `
+                    ${item.location && item.location.accuracy ? `
                     <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${item.location && item.location.accuracy || item['ความแม่นยำGPS(m)']} เมตร</div>
+                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
@@ -1224,66 +1366,42 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || item.ระบบปฏิบัติการ || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${deviceInfo.browser || item.เบราว์เซอร์ || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ขนาดหน้าจอ</div>
-                        <div class="detail-value">${deviceInfo.screenSize || item.ขนาดหน้าจอ || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType || item.การเชื่อมต่อ) ? `
+                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || item.การเชื่อมต่อ || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
                     </div>
-                    ${connectionInfo.effectiveType ? `
                     <div class="detail-item">
                         <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType}</div>
-                    </div>` : ''}
-                    ${connectionInfo.downlink || item.ความเร็วเน็ต ? `
+                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
+                    </div>
+                    ${connectionInfo.downlink ? `
                     <div class="detail-item">
                         <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink || item.ความเร็วเน็ต} Mbps</div>
+                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level || item.แบตเตอรี่) ? `
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || item.แบตเตอรี่}</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
                     </div>
-                    ${batteryInfo.charging ? `
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging}</div>
-                    </div>` : ''}
-                </div>` : ''}
-                
-                ${item.ที่มา && item.ที่มา !== "ไม่มีข้อมูล" ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-link"></i> แหล่งที่มา</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">Referrer</div>
-                        <div class="detail-value">${item.ที่มา}</div>
-                    </div>
-                </div>` : ''}
-                
-                ${item.แหล่งที่มา ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-sign-in-alt"></i> ช่องทางการเข้าถึง</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">เข้าถึงผ่าน</div>
-                        <div class="detail-value">${item.แหล่งที่มา}</div>
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
                     </div>
                 </div>` : ''}
             `;
