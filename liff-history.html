@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ประวัติการใช้งาน Phishing</title>
+    <title>ประวัติการใช้งานฟิชชิ่ง</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -150,6 +150,11 @@
             background-color: var(--primary-color);
         }
 
+        .user-info:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
         .user-info .profile {
             display: flex;
             align-items: center;
@@ -165,6 +170,11 @@
             padding: 2px;
             background-color: white;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: var(--transition-normal);
+        }
+
+        .user-info:hover .profile-img {
+            transform: scale(1.05) rotate(5deg);
         }
 
         .user-info .user-name {
@@ -235,6 +245,12 @@
             font-size: 14px;
         }
 
+        .message-box strong {
+            background-color: rgba(255, 193, 7, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
             border-left: 4px solid var(--error-color);
@@ -244,356 +260,325 @@
             color: #721c24;
         }
 
-        /* Search Box */
-        .search-box {
-            margin-bottom: 20px;
-            position: relative;
+        /* History Cards */
+        .history-container {
+            margin-top: 1.5rem;
         }
 
-        .search-box input {
-            width: 100%;
-            padding: 12px 40px 12px 15px;
+        .history-card {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
             border: 1px solid #E0E0E0;
-            border-radius: var(--border-radius);
-            font-size: 15px;
-            transition: var(--transition-normal);
-            background-color: #FAFAFA;
-        }
-
-        .search-box input:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
-            background-color: #FFFFFF;
-        }
-
-        .search-box .search-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-        }
-
-        /* History List */
-        .history-list {
-            margin-top: 20px;
-        }
-
-        .history-item {
-            background-color: white;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            margin-bottom: 15px;
             box-shadow: var(--shadow-sm);
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
-            cursor: pointer;
         }
 
-        .history-item:hover {
-            transform: translateY(-2px);
+        .history-card:hover {
             box-shadow: var(--shadow-md);
-        }
-
-        .history-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 4px;
-            background-color: var(--primary-light);
-        }
-
-        .history-date {
-            color: var(--text-light);
-            font-size: 13px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-        }
-
-        .history-date i {
-            margin-right: 6px;
-            color: var(--primary-color);
-        }
-
-        .history-key {
-            color: var(--primary-dark);
-            font-weight: 500;
-            margin-bottom: 5px;
-            font-size: 14px;
-            word-break: break-all;
-        }
-
-        .history-case {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: var(--text-color);
-        }
-
-        .history-action {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .view-details-btn {
-            background-color: var(--secondary-color);
-            color: var(--primary-dark);
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            display: flex;
-            align-items: center;
-        }
-
-        .view-details-btn i {
-            margin-right: 5px;
-        }
-
-        .view-details-btn:hover {
-            background-color: var(--primary-light);
-            color: white;
-        }
-
-        .history-stats {
-            display: flex;
-            font-size: 12px;
-            color: var(--text-light);
-            align-items: center;
-        }
-
-        .history-stats div {
-            margin-right: 12px;
-            display: flex;
-            align-items: center;
-        }
-
-        .history-stats i {
-            margin-right: 5px;
-        }
-
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            margin-top: 30px;
-            align-items: center;
-        }
-
-        .pagination-btn {
-            background-color: white;
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            margin: 0 5px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: var(--transition-normal);
-        }
-
-        .pagination-btn:hover:not(.active, .disabled) {
-            background-color: var(--secondary-color);
+            transform: translateY(-2px);
             border-color: var(--primary-light);
         }
 
-        .pagination-btn.active {
+        .history-card .case-name {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 17px;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-card .tracking-key {
+            color: var(--text-light);
+            font-size: 13px;
+            background-color: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .history-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .history-stat {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-light);
+            gap: 5px;
+        }
+
+        .history-stat i {
+            color: var(--primary-color);
+            font-size: 15px;
+        }
+
+        .history-card .view-details {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-card .view-details:hover {
             background-color: var(--primary-color);
             color: white;
-            border-color: var(--primary-color);
-            cursor: default;
         }
 
-        .pagination-btn.disabled {
-            color: #aaa;
-            cursor: not-allowed;
+        .history-card .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
         }
 
-        .pagination-info {
-            font-size: 13px;
+        .history-card .case-date {
             color: var(--text-light);
-            margin: 0 10px;
+            font-size: 13px;
         }
-        
-        /* Details Modal */
+
+        .history-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            border: 1px solid #E0E0E0;
+            padding: 2px;
+            background-color: white;
+            transition: var(--transition-normal);
+        }
+
+        .history-card:hover .history-image {
+            transform: scale(1.05);
+        }
+
+        /* History Details Modal */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: #ffffff;
             margin: 15% auto;
-            padding: 0;
-            width: 90%;
-            max-width: 550px;
+            padding: 20px;
             border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
             box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
+            animation: modalFadeIn 0.3s ease;
         }
 
-        @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes modalFadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
         }
 
         .modal-header {
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            padding: 15px 20px;
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #E0E0E0;
         }
 
-        .modal-header h2 {
-            margin: 0;
+        .modal-title {
+            color: var(--primary-dark);
             font-size: 18px;
             font-weight: 600;
+            margin: 0;
         }
 
-        .close-modal {
-            color: white;
-            font-size: 22px;
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
             font-weight: bold;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+            margin-top: -5px;
         }
 
-        .close-modal:hover {
-            background-color: rgba(255,255,255,0.2);
+        .close:hover,
+        .close:focus {
+            color: var(--primary-dark);
+            text-decoration: none;
+            cursor: pointer;
         }
 
         .modal-body {
-            padding: 20px;
+            max-height: 60vh;
             overflow-y: auto;
+            padding-right: 5px;
         }
 
-        .detail-group {
-            margin-bottom: 20px;
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .detail-group h3 {
-            font-size: 15px;
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #b8b8b8;
+            border-radius: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        /* Access History Item */
+        .access-item {
+            padding: 12px;
+            border-radius: var(--border-radius);
+            background-color: #f9f9f9;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .access-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .access-timestamp {
+            font-weight: 500;
             color: var(--primary-dark);
-            margin-bottom: 8px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .access-details {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .access-details p {
+            margin: 5px 0;
+        }
+
+        .access-details .ip {
+            font-family: monospace;
+            background-color: #e8e8e8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .access-location {
             display: flex;
             align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            font-size: 13px;
         }
 
-        .detail-group h3 i {
-            margin-right: 8px;
-            color: var(--primary-color);
+        .access-location i {
+            color: #d32f2f;
         }
 
-        .detail-item {
-            display: flex;
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .detail-label {
-            font-weight: 500;
-            width: 140px;
-            color: var(--text-color);
-            flex-shrink: 0;
-        }
-
-        .detail-value {
-            color: var(--text-light);
-            flex-grow: 1;
-            word-break: break-word;
-        }
-
-        .detail-value a {
+        .access-map-link {
             color: var(--primary-color);
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+            font-size: 13px;
         }
 
-        .detail-value a:hover {
+        .access-map-link:hover {
             text-decoration: underline;
         }
 
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: var(--transition-normal);
-        }
-
-        .modal-btn:hover {
-            background-color: var(--primary-dark);
-        }
-
-        /* No Data Message */
-        .no-data {
+        /* Status Message */
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--border-radius);
             text-align: center;
-            padding: 40px 20px;
-            color: var(--text-light);
+            display: none;
+            position: relative;
+            animation: fadeIn 0.3s forwards;
         }
 
-        .no-data i {
-            font-size: 40px;
-            color: var(--secondary-color);
-            margin-bottom: 15px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .no-data p {
-            font-size: 16px;
+        .status.success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
-        /* Loading Spinner */
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
+        .status.success:before {
+            content: '\f058';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 8px;
         }
 
-        .loading-spinner {
+        .status.error {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+        }
+
+        .status.error:before {
+            content: '\f057';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 8px;
+        }
+
+        /* Loader */
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .loader-spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
+            margin: 0 auto 12px;
+            border: 3px solid rgba(88, 136, 231, 0.2);
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
-            border-top: 4px solid var(--primary-color);
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
         }
 
         @keyframes spin {
@@ -601,9 +586,35 @@
             100% { transform: rotate(360deg); }
         }
 
-        .loading p {
+        .loader p {
             color: var(--text-light);
             font-size: 14px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+            border: 2px dashed #E0E0E0;
+            border-radius: var(--border-radius);
+            margin-top: 30px;
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            color: #ccc;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .empty-state .subtext {
+            font-size: 14px;
+            opacity: 0.7;
         }
 
         /* Footer */
@@ -615,6 +626,10 @@
             margin-top: 30px;
             font-size: 14px;
             color: var(--text-light);
+        }
+
+        .footer p {
+            margin-bottom: 10px;
         }
 
         /* Loading Screen */
@@ -667,15 +682,71 @@
                 padding: 16px;
             }
 
-            .user-info .profile-img {
-                width: 50px;
-                height: 50px;
-            }
-            
             .modal-content {
                 width: 95%;
                 margin: 10% auto;
             }
+
+            .history-image {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* Filter Controls */
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 1px solid #E0E0E0;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition-normal);
+        }
+
+        .filter-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+        }
+
+        .filter-input::placeholder {
+            color: #BBBBBB;
+        }
+
+        .refresh-btn {
+            background-color: var(--secondary-color);
+            color: var(--primary-dark);
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition-normal);
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--primary-light);
+            color: var(--text-white);
+        }
+
+        .filter-label {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+            display: block;
         }
     </style>
 </head>
@@ -688,12 +759,13 @@
 
     <div class="app-container">
         <div class="header">
+            <!-- Icon -->
             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path fill="currentColor" d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/>
+                <path d="M256 0c36.8 0 68.8 20.7 84.9 51.1C373.8 41 411 49 437 75s34 63.3 23.9 96.1C491.3 187.2 512 219.2 512 256s-20.7 68.8-51.1 84.9C471 373.8 463 411 437 437s-63.3 34-96.1 23.9C324.8 491.3 292.8 512 256 512s-68.8-20.7-84.9-51.1C138.2 471 101 463 75 437s-34-63.3-23.9-96.1C20.7 324.8 0 292.8 0 256s20.7-68.8 51.1-84.9C41 138.2 49 101 75 75s63.3-34 96.1-23.9C187.2 20.7 219.2 0 256 0zM256 128c-17.7 0-32 14.3-32 32v32H160c-17.7 0-32 14.3-32 32s14.3 32 32 32h64v32c0 17.7 14.3 32 32 32s32-14.3 32-32V256h64c17.7 0 32-14.3 32-32s-14.3-32-32-32H288V160c0-17.7-14.3-32-32-32z"/>
             </svg>
             <div class="header-text">
-                <h1>ประวัติการใช้งาน Phishing</h1>
-                <div class="subtitle">ดูประวัติการใช้งานและผลลัพธ์</div>
+                <h1>ประวัติการใช้งานฟิชชิ่ง</h1>
+                <div class="subtitle">ติดตามการใช้งานฟิชชิ่งทั้งหมดของคุณ</div>
             </div>
         </div>
         
@@ -717,52 +789,53 @@
                 <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
             
-            <!-- ส่วนค้นหา -->
-            <div id="searchBox" class="search-box" style="display: none;">
-                <input type="text" id="searchInput" placeholder="ค้นหาจากชื่อเคส หรือ Tracking Key">
-                <i class="fas fa-search search-icon"></i>
-            </div>
-            
-            <!-- ส่วนแสดงข้อมูลรายการ -->
-            <div id="historyList" class="history-list" style="display: none;"></div>
-            
-            <!-- ส่วนแสดง Pagination -->
-            <div id="pagination" class="pagination" style="display: none;">
-                <button class="pagination-btn" id="prevBtn" disabled><i class="fas fa-chevron-left"></i></button>
-                <div class="pagination-info">หน้า <span id="currentPage">1</span> จาก <span id="totalPages">1</span></div>
-                <button class="pagination-btn" id="nextBtn" disabled><i class="fas fa-chevron-right"></i></button>
-            </div>
-            
-            <!-- ส่วนแสดง Loading -->
-            <div id="loadingIndicator" class="loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <p>กำลังโหลดข้อมูลประวัติ...</p>
-            </div>
-            
-            <!-- ส่วนแสดงเมื่อไม่มีข้อมูล -->
-            <div id="noDataMessage" class="no-data" style="display: none;">
-                <i class="fas fa-folder-open"></i>
-                <p>ยังไม่มีประวัติการใช้งาน</p>
-            </div>
-        </div>
-        
-        <!-- Modal สำหรับแสดงรายละเอียดเพิ่มเติม -->
-        <div id="detailsModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>รายละเอียด Phishing</h2>
-                    <span class="close-modal">&times;</span>
+            <!-- ส่วนแสดงประวัติ -->
+            <div id="historyContent">
+                <div class="filter-controls">
+                    <div>
+                        <label for="searchInput" class="filter-label">ค้นหาเคส</label>
+                        <input type="text" id="searchInput" class="filter-input" placeholder="ระบุชื่อเคสหรือ Tracking Key">
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> รีเฟรช
+                    </button>
                 </div>
-                <div class="modal-body" id="modalBody">
-                    <!-- รายละเอียดจะถูกใส่ที่นี่ด้วย JavaScript -->
+                
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังโหลดประวัติ...</p>
                 </div>
-                <div class="modal-footer">
-                    <button class="modal-btn" id="closeModalBtn">ปิด</button>
+                
+                <div id="statusMessage" class="status"></div>
+                
+                <div id="historyContainer" class="history-container">
+                    <!-- ประวัติการใช้งานจะถูกเพิ่มที่นี่ด้วย JavaScript -->
+                </div>
+                
+                <!-- แสดงเมื่อไม่มีข้อมูลประวัติ -->
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i class="fas fa-history"></i>
+                    <p>ยังไม่มีประวัติการใช้งาน</p>
+                    <div class="subtext">คุณยังไม่มีการสร้างฟิชชิ่งหรือยังไม่มีการใช้งาน</div>
+                </div>
+            </div>
+            
+            <!-- History Details Modal -->
+            <div id="historyModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="modalTitle">รายละเอียด</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body" id="modalBody">
+                        <!-- รายละเอียดประวัติจะถูกเพิ่มที่นี่ด้วย JavaScript -->
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="footer">
+            <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
             <p>&copy; 2025 Image Phishing - Detective-X</p>
         </div>
     </div>
@@ -774,20 +847,13 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        
-        // ตัวแปรสำหรับ Pagination
-        let currentHistoryData = [];
-        let currentPage = 1;
-        let totalPages = 1;
-        let itemsPerPage = 10;
-        let filteredData = [];
+        let historyData = [];
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
         // URL สำหรับ webhook
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxmmoLSECqARJUrnLhJ1MSlT0-hoSvsbC-3CAXyetkduaDKOMw1nn2qX7T3WSjtqC8w/exec';
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxmmoLSECqARJUrnLhJ1MSlT0-hoSvsbC-3CAXyetkduaDKOMw1nn2qX7T3WSjtqC8w/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -826,16 +892,16 @@
                     document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
                     document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
                     document.getElementById('statusBadge').className = 'badge approved';
-                    enableHistoryFeatures();
-                    fetchUserHistory();
+                    
+                    // โหลดข้อมูลประวัติ
+                    loadHistoryData();
                 } else {
                     // ไม่มีสิทธิ์ใช้งาน
                     document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
                     document.getElementById('statusBadge').textContent = 'รออนุมัติ';
                     document.getElementById('statusBadge').className = 'badge pending';
                     document.getElementById('permissionMessage').style.display = 'block';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-lock"></i><p>คุณยังไม่ได้รับอนุมัติให้ใช้งานระบบ</p>';
+                    document.getElementById('historyContent').style.display = 'none';
                 }
                 
                 isLiffInitialized = true;
@@ -845,8 +911,8 @@
                 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
                 document.getElementById('loadingScreen').style.display = 'none';
-                showErrorMessage('เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message);
             }
         }
         
@@ -855,7 +921,7 @@
             try {
                 console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                 
-                const response = await fetch(LINE_OA_WEBHOOK_URL, {
+                const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -895,386 +961,304 @@
             return approvedUserIds.includes(userId);
         }
         
-        // เปิดใช้งานฟีเจอร์ประวัติ
-        function enableHistoryFeatures() {
-            document.getElementById('searchBox').style.display = 'block';
-            document.getElementById('historyList').style.display = 'block';
-            document.getElementById('pagination').style.display = 'flex';
-        }
-        
         // ตั้งค่า Event Listeners
         function setupEventListeners() {
-            // ค้นหา
+            // ปุ่มรีเฟรช
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                if (userHasPermission) {
+                    loadHistoryData();
+                } else {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                }
+            });
+            
+            // การค้นหา
             document.getElementById('searchInput').addEventListener('input', function() {
-                filterHistoryData();
+                filterHistory(this.value);
             });
             
-            // ปุ่ม Pagination
-            document.getElementById('prevBtn').addEventListener('click', function() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    displayHistoryData();
-                }
+            // ปิด Modal
+            document.querySelector('.close').addEventListener('click', function() {
+                document.getElementById('historyModal').style.display = 'none';
             });
             
-            document.getElementById('nextBtn').addEventListener('click', function() {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    displayHistoryData();
-                }
-            });
-            
-            // ปุ่มปิด Modal
-            document.querySelector('.close-modal').addEventListener('click', closeModal);
-            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-            
-            // ปิด Modal เมื่อคลิกที่พื้นหลัง
+            // ปิด Modal เมื่อคลิกนอกพื้นที่
             window.addEventListener('click', function(event) {
-                if (event.target === document.getElementById('detailsModal')) {
-                    closeModal();
+                const modal = document.getElementById('historyModal');
+                if (event.target === modal) {
+                    modal.style.display = 'none';
                 }
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้
-        async function fetchUserHistory() {
+        // โหลดข้อมูลประวัติจาก Google Sheets
+        async function loadHistoryData() {
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            // แสดง loader
+            document.querySelector('.loader').style.display = 'block';
+            document.getElementById('historyContainer').innerHTML = '';
+            document.getElementById('emptyState').style.display = 'none';
+            
             try {
-                // แสดง loading
-                document.getElementById('loadingIndicator').style.display = 'flex';
-                document.getElementById('historyList').style.display = 'none';
-                document.getElementById('noDataMessage').style.display = 'none';
-                
-                console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
-                
-                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                // เรียกข้อมูลจาก webhook
+                const response = await fetch(WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
+                        action: 'getUserHistory',
                         userId: userId
                     })
                 });
                 
-                // ซ่อน loading
-                document.getElementById('loadingIndicator').style.display = 'none';
+                const data = await response.json();
                 
-                // ตรวจสอบสถานะการตอบกลับ
-                if (!response.ok) {
-                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
-                }
+                // ซ่อน loader
+                document.querySelector('.loader').style.display = 'none';
                 
-                // ตรวจสอบการตอบกลับ
-                let data;
-                const contentType = response.headers.get("content-type");
-                
-                if (contentType && contentType.includes("application/json")) {
-                    data = await response.json();
-                    console.log("ได้รับข้อมูล JSON จาก server:", data);
+                if (data.success) {
+                    historyData = data.history || [];
                     
-                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
-                    if (data.status === "error") {
-                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                    if (historyData.length > 0) {
+                        renderHistoryCards(historyData);
+                    } else {
+                        document.getElementById('emptyState').style.display = 'block';
                     }
-                } else {
-                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
-                    const textResponse = await response.text();
-                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
-                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
-                }
-                
-                if (data && data.history && data.history.length > 0) {
-                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                    currentHistoryData = data.history;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
+                    showStatus('โหลดประวัติสำเร็จ', true);
                 } else {
-                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'none';
+                    showStatus('ไม่สามารถโหลดประวัติได้: ' + (data.message || 'เกิดข้อผิดพลาด'), false);
+                    document.getElementById('emptyState').style.display = 'block';
                 }
-                
             } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
-                document.getElementById('loadingIndicator').style.display = 'none';
-                
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
-                } else if (error.message.includes("status code")) {
-                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
-                } else {
-                    errorMessage += ": " + error.message;
-                }
-                
-                showErrorMessage(errorMessage);
-                
-                // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
+                console.error('Error loading history:', error);
+                document.querySelector('.loader').style.display = 'none';
+                showStatus('เกิดข้อผิดพลาดในการโหลดประวัติ: ' + error.message, false);
+                document.getElementById('emptyState').style.display = 'block';
             }
         }
         
-        // กรองข้อมูลตามการค้นหา
-        function filterHistoryData() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        // แสดงการ์ดประวัติการใช้งาน
+        function renderHistoryCards(historyItems) {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '';
             
-            if (searchTerm === '') {
-                filteredData = [...currentHistoryData];
-            } else {
-                filteredData = currentHistoryData.filter(item => 
-                    (item.caseName && item.caseName.toLowerCase().includes(searchTerm)) || 
-                    (item.trackingKey && item.trackingKey.toLowerCase().includes(searchTerm))
-                );
-            }
-            
-            totalPages = Math.ceil(filteredData.length / itemsPerPage);
-            currentPage = 1; // รีเซ็ทกลับไปหน้าแรก
-            
-            displayHistoryData();
-        }
-        
-        // แสดงข้อมูลประวัติตาม pagination
-        function displayHistoryData() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-            
-            // ตรวจสอบว่ามีข้อมูลหรือไม่
-            if (filteredData.length === 0) {
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
-                return;
-            }
-            
-            document.getElementById('noDataMessage').style.display = 'none';
-            document.getElementById('pagination').style.display = 'flex';
-            
-            // คำนวณ index เริ่มต้นและสิ้นสุดสำหรับหน้าปัจจุบัน
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
-            
-            // สร้าง HTML สำหรับแต่ละรายการ
-            for (let i = startIndex; i < endIndex; i++) {
-                const item = filteredData[i];
-                const listItem = document.createElement('div');
-                listItem.className = 'history-item';
+            historyItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'history-card';
                 
-                let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
-                }
+                // จำนวนการเข้าถึง
+                const accessCount = item.accessCount || 0;
+                const lastAccess = item.lastAccess || 'ไม่มีข้อมูล';
                 
-                const deviceInfo = item.deviceInfo || {};
-                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-                
-                listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
-                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
-                    <div class="history-action">
-                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
-                        <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
-                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                // HTML สำหรับการ์ดประวัติ
+                card.innerHTML = `
+                    <div class="case-name">${item.caseName || 'ไม่มีชื่อเคส'}</div>
+                    <div class="tracking-key">${item.trackingKey}</div>
+                    ${item.imageUrl ? `<img src="${item.imageUrl}" class="history-image" alt="รูปภาพที่ใช้">` : ''}
+                    <div class="history-info">
+                        <div class="history-stat">
+                            <i class="fas fa-calendar-days"></i>
+                            <span>สร้างเมื่อ: ${formatDate(item.createDate)}</span>
                         </div>
+                        <div class="history-stat">
+                            <i class="fas fa-eye"></i>
+                            <span>การเข้าถึง: ${accessCount} ครั้ง</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <span class="case-date">เข้าถึงล่าสุด: ${formatDate(lastAccess)}</span>
+                        <button class="view-details">
+                            <i class="fas fa-chart-line"></i>
+                            รายละเอียด
+                        </button>
                     </div>
                 `;
                 
-                historyList.appendChild(listItem);
-                
-                // เพิ่ม event listener สำหรับปุ่มดูรายละเอียด
-                const detailBtn = listItem.querySelector('.view-details-btn');
-                detailBtn.addEventListener('click', function() {
-                    const index = this.getAttribute('data-index');
-                    showDetailsModal(filteredData[index]);
+                // เพิ่มการคลิกเพื่อดูรายละเอียด
+                const detailsBtn = card.querySelector('.view-details');
+                detailsBtn.addEventListener('click', () => {
+                    showHistoryDetails(item.trackingKey);
                 });
-            }
-            
-            // อัปเดต pagination UI
-            document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
-            
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+                
+                container.appendChild(card);
+            });
         }
         
-        // แสดง Modal รายละเอียด
-        function showDetailsModal(item) {
-            const modal = document.getElementById('detailsModal');
+        // ฟังก์ชันแสดงรายละเอียดประวัติในหน้าต่าง Modal
+        async function showHistoryDetails(trackingKey) {
+            // ตั้งค่า Modal
+            const modal = document.getElementById('historyModal');
+            const modalTitle = document.getElementById('modalTitle');
             const modalBody = document.getElementById('modalBody');
             
-            // สร้างเนื้อหา Modal
-            let locationText = "ไม่มีข้อมูล";
-            let mapLink = "";
-            if (item.location && typeof item.location === "object") {
-                if (item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
-                    mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+            modalTitle.textContent = 'กำลังโหลดข้อมูล...';
+            modalBody.innerHTML = '<div class="loader"><div class="loader-spinner"></div><p>กำลังโหลดรายละเอียด...</p></div>';
+            modal.style.display = 'block';
+            
+            try {
+                // เรียกข้อมูลรายละเอียดจาก webhook
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getTrackingDetails',
+                        trackingKey: trackingKey,
+                        userId: userId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.details) {
+                    // ข้อมูลเคสพื้นฐาน
+                    const basicInfo = data.details.basicInfo || {};
+                    // ประวัติการเข้าถึง
+                    const accessLogs = data.details.accessLogs || [];
+                    
+                    // แสดงชื่อเคสในหัวข้อ Modal
+                    modalTitle.textContent = basicInfo.caseName || 'รายละเอียดการเข้าถึง';
+                    
+                    // สร้าง HTML สำหรับเนื้อหา Modal
+                    let modalContent = `
+                        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                            <div><strong>Tracking Key:</strong> <span style="font-family: monospace; background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">${trackingKey}</span></div>
+                            <div style="margin-top: 8px;"><strong>สร้างเมื่อ:</strong> ${formatDate(basicInfo.createDate)}</div>
+                            ${basicInfo.imageUrl ? `<div style="margin-top: 15px;"><a href="${basicInfo.imageUrl}" target="_blank"><img src="${basicInfo.imageUrl}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #ddd;" alt="รูปภาพที่ใช้"></a></div>` : ''}
+                        </div>
+                    `;
+                    
+                    if (accessLogs.length > 0) {
+                        modalContent += `<h3 style="margin-bottom: 15px; font-size: 16px;">ประวัติการเข้าถึงทั้งหมด (${accessLogs.length} ครั้ง)</h3>`;
+                        
+                        accessLogs.forEach((log, index) => {
+                            modalContent += `
+                                <div class="access-item">
+                                    <div class="access-timestamp">#${index + 1} - ${formatDate(log.timestamp)}</div>
+                                    <div class="access-details">
+                                        <p>IP: <span class="ip">${log.ip || 'ไม่ระบุ'}</span></p>
+                                        <p>อุปกรณ์: ${log.device || 'ไม่มีข้อมูล'}</p>
+                                        <p>เบราว์เซอร์: ${log.browser || 'ไม่มีข้อมูล'}</p>
+                                        <div class="access-location">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            ${log.city ? `${log.city}, ${log.region || ''}, ${log.country || ''}` : 'ไม่มีข้อมูลตำแหน่ง'}
+                                        </div>
+                                        ${log.mapUrl ? `<a href="${log.mapUrl}" target="_blank" class="access-map-link"><i class="fas fa-map"></i> ดูแผนที่</a>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        modalContent += `
+                            <div style="text-align: center; padding: 30px 20px; color: #666;">
+                                <i class="fas fa-search" style="font-size: 30px; opacity: 0.5; margin-bottom: 10px;"></i>
+                                <p>ยังไม่มีประวัติการเข้าถึง</p>
+                            </div>
+                        `;
+                    }
+                    
+                    modalBody.innerHTML = modalContent;
                 } else {
-                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
+                    modalTitle.textContent = 'ไม่สามารถโหลดข้อมูล';
+                    modalBody.innerHTML = `
+                        <div style="text-align: center; padding: 30px 20px; color: #d32f2f;">
+                            <i class="fas fa-exclamation-circle" style="font-size: 40px; margin-bottom: 15px;"></i>
+                            <p>${data.message || 'ไม่สามารถโหลดข้อมูลรายละเอียดได้'}</p>
+                        </div>
+                    `;
                 }
-            } else {
-                console.log("Location ไม่ใช่ object:", typeof item.location);
+            } catch (error) {
+                console.error('Error loading tracking details:', error);
+                modalTitle.textContent = 'เกิดข้อผิดพลาด';
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 30px 20px; color: #d32f2f;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 40px; margin-bottom: 15px;"></i>
+                        <p>ไม่สามารถโหลดข้อมูล: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // ฟังก์ชันกรองข้อมูลประวัติตามคำค้นหา
+        function filterHistory(searchTerm) {
+            if (!searchTerm) {
+                renderHistoryCards(historyData);
+                return;
             }
             
-            const deviceInfo = item.deviceInfo || {};
-            const connectionInfo = deviceInfo.connection || {};
-            const batteryInfo = deviceInfo.battery || {};
+            searchTerm = searchTerm.toLowerCase();
             
-            modalBody.innerHTML = `
-                <div class="detail-group">
-                    <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">แหล่งที่มา</div>
-                        <div class="detail-value">${item.accessSource ? (item.accessSource === "รูปภาพฟิชชิ่ง" ? "รูปภาพฟิชชิ่ง" : "ลิงก์โดยตรง") : "ไม่ระบุ"}</div>
-                    </div>
-                </div>
+            const filteredItems = historyData.filter(item => {
+                const caseName = (item.caseName || '').toLowerCase();
+                const trackingKey = (item.trackingKey || '').toLowerCase();
                 
-                <div class="detail-group">
-                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">IP</div>
-                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
-                        <div class="detail-value">${locationText}</div>
-                    </div>
-                    ${item.location && item.location.accuracy ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
-                    </div>` : ''}
-                    ${mapLink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
-                    </div>` : ''}
-                </div>
-                
-                <div class="detail-group">
-                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
-                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
-                    </div>
-                </div>
-                
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
-                    </div>
-                    ${connectionInfo.downlink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
-                    </div>` : ''}
-                </div>` : ''}
-                
-                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
-                    </div>
-                </div>` : ''}
-                
-                <div class="detail-group">
-                    <h3><i class="fas fa-globe"></i> ข้อมูล IP เพิ่มเติม</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">Hostname</div>
-                        <div class="detail-value">${item.hostname || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
-                        <div class="detail-value">${item.country || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ภูมิภาค</div>
-                        <div class="detail-value">${item.region || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เมือง</div>
-                        <div class="detail-value">${item.city || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">รหัสไปรษณีย์</div>
-                        <div class="detail-value">${item.postal || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ISP/องค์กร</div>
-                        <div class="detail-value">${item.org || "ไม่ระบุ"}</div>
-                    </div>
-                </div>
-            `;
+                return caseName.includes(searchTerm) || trackingKey.includes(searchTerm);
+            });
             
-            modal.style.display = 'block';
+            if (filteredItems.length > 0) {
+                renderHistoryCards(filteredItems);
+                document.getElementById('emptyState').style.display = 'none';
+            } else {
+                document.getElementById('historyContainer').innerHTML = '';
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('emptyState').innerHTML = `
+                    <i class="fas fa-search"></i>
+                    <p>ไม่พบประวัติที่ตรงกับ "${searchTerm}"</p>
+                    <div class="subtext">ลองค้นหาด้วยคำอื่นหรือลองดูประวัติทั้งหมด</div>
+                `;
+            }
         }
         
-        // ปิด Modal
-        function closeModal() {
-            document.getElementById('detailsModal').style.display = 'none';
-        }
-        
-        // แสดงข้อความผิดพลาด
-        function showErrorMessage(message) {
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'message-box error';
-            errorMessage.innerHTML = `<p>${message}</p>`;
+        // แสดงสถานะการทำงาน
+        function showStatus(message, isSuccess) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
             
-            const content = document.querySelector('.content');
-            content.insertBefore(errorMessage, content.firstChild);
+            if (isSuccess) {
+                statusEl.className = 'status success';
+            } else {
+                statusEl.className = 'status error';
+            }
             
-            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
+            // ซ่อนสถานะหลังจาก 5 วินาที
             setTimeout(() => {
-                errorMessage.remove();
+                statusEl.style.display = 'none';
             }, 5000);
+        }
+        
+        // ฟอร์แมตวันที่
+        function formatDate(dateStr) {
+            if (!dateStr) return 'ไม่มีข้อมูล';
+            
+            // หากเป็นวันที่ที่อยู่ในรูปแบบไทยอยู่แล้ว
+            if (typeof dateStr === 'string' && dateStr.includes('/')) {
+                return dateStr;
+            }
+            
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    return dateStr; // ส่งคืนค่าเดิมถ้าไม่สามารถแปลงเป็นวันที่ได้
+                }
+                
+                return date.toLocaleString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateStr; // ส่งคืนค่าเดิมในกรณีที่เกิดข้อผิดพลาด
+            }
         }
     </script>
 </body>
