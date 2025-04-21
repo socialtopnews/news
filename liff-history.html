@@ -9,8 +9,6 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Apps Script Client Library -->
-    <script src="https://apis.google.com/js/api.js"></script>
     <style>
         :root {
             --primary-color: #3876BF;
@@ -571,7 +569,7 @@
 
         .no-data i {
             font-size: 40px;
-            color: var(--secondary-color);
+            color: var (--secondary-color);
             margin-bottom: 15px;
         }
 
@@ -787,9 +785,9 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // ตั้งค่า Google Script URL
-        // เปลี่ยนจากการใช้ webhook URL เป็นค่า deployment ID ของ Google Apps Script
-        const SCRIPT_ID = 'AKfycbz7SHMOhe8wffRHhcQEKEI4TfDPPg3QK1ef8wBgTvXMYvncenSUpoTfWHd4xyoj5SYK';
+        // URL สำหรับ webhook
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzS6jRzNY3hwmKxIRYs-xZwtto36ExAUk0ZbiVBQgixuhKZBFt2PPL1XICXU5d6eWhm/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -820,38 +818,30 @@
                 document.getElementById('profileImage').src = pictureUrl;
                 document.getElementById('userInfoSection').style.display = 'block';
                 
-                // ตรวจสอบสิทธิ์ผู้ใช้ด้วย Google Apps Script
-                checkUserPermission()
-                    .then(result => {
-                        userHasPermission = result;
-                        
-                        if (userHasPermission) {
-                            // มีสิทธิ์ใช้งาน
-                            document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
-                            document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
-                            document.getElementById('statusBadge').className = 'badge approved';
-                            enableHistoryFeatures();
-                            fetchUserHistory();
-                        } else {
-                            // ไม่มีสิทธิ์ใช้งาน
-                            document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
-                            document.getElementById('statusBadge').textContent = 'รออนุมัติ';
-                            document.getElementById('statusBadge').className = 'badge pending';
-                            document.getElementById('permissionMessage').style.display = 'block';
-                            document.getElementById('noDataMessage').style.display = 'block';
-                            document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-lock"></i><p>คุณยังไม่ได้รับอนุมัติให้ใช้งานระบบ</p>';
-                        }
-                        
-                        isLiffInitialized = true;
-                        
-                        // ซ่อนหน้าโหลดดิ้ง
-                        document.getElementById('loadingScreen').style.display = 'none';
-                    })
-                    .catch(error => {
-                        console.error('Permission check failed:', error);
-                        document.getElementById('loadingScreen').style.display = 'none';
-                        showErrorMessage('เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: ' + error.message);
-                    });
+                // ตรวจสอบสิทธิ์ผู้ใช้
+                userHasPermission = await checkUserPermission(userId);
+                
+                if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    enableHistoryFeatures();
+                    fetchUserHistory();
+                } else {
+                    // ไม่มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('permissionMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-lock"></i><p>คุณยังไม่ได้รับอนุมัติให้ใช้งานระบบ</p>';
+                }
+                
+                isLiffInitialized = true;
+                
+                // ซ่อนหน้าโหลดดิ้ง
+                document.getElementById('loadingScreen').style.display = 'none';
                 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
@@ -860,38 +850,36 @@
             }
         }
         
-        // ตรวจสอบสิทธิ์ผู้ใช้โดยใช้ Google Apps Script Client API
-        async function checkUserPermission() {
+        // ตรวจสอบสิทธิ์ผู้ใช้
+        async function checkUserPermission(userId) {
             try {
                 console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                 
-                // เริ่มใช้ Google Client Libraries แทน fetch
-                return new Promise((resolve, reject) => {
-                    gapi.load('client', () => {
-                        gapi.client.load('script', 'v1', () => {
-                            gapi.client.script.scripts.run({
-                                scriptId: SCRIPT_ID,
-                                resource: {
-                                    function: 'checkUserPermission',
-                                    parameters: [userId]
-                                }
-                            }).then(response => {
-                                if (response.result && response.result.response) {
-                                    const result = JSON.parse(response.result.response);
-                                    console.log("ผลการตรวจสอบสิทธิ์:", result);
-                                    resolve(result.hasPermission === true);
-                                } else {
-                                    console.log("API ไม่ได้ส่งคืนข้อมูลที่ถูกต้อง - ใช้การตรวจสอบสำรอง");
-                                    resolve(checkUserPermissionFallback(userId));
-                                }
-                            }).catch(error => {
-                                console.error("Error calling Google Script API:", error);
-                                resolve(checkUserPermissionFallback(userId));
-                            });
-                        });
-                    });
+                const response = await fetch(LINE_OA_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'checkUserPermission',
+                        userId: userId
+                    })
                 });
                 
+                try {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
+                    } else {
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
+                    }
+                } catch (e) {
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
+                    return checkUserPermissionFallback(userId);
+                }
             } catch (error) {
                 console.error('Error checking permission:', error);
                 return checkUserPermissionFallback(userId);
@@ -948,7 +936,7 @@
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้โดยใช้ JSONP
+        // ดึงข้อมูลประวัติของผู้ใช้
         async function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -958,90 +946,78 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // ใช้ Google API Client Libraries แทน fetch
-                return new Promise((resolve, reject) => {
-                    gapi.load('client', () => {
-                        gapi.client.load('script', 'v1', () => {
-                            gapi.client.script.scripts.run({
-                                scriptId: SCRIPT_ID,
-                                resource: {
-                                    function: 'getUserHistory',
-                                    parameters: [userId]
-                                }
-                            }).then(response => {
-                                // ซ่อน loading
-                                document.getElementById('loadingIndicator').style.display = 'none';
-                                
-                                if (response.result && response.result.response) {
-                                    const data = JSON.parse(response.result.response);
-                                    console.log("ได้รับข้อมูลจาก API:", data);
-                                    
-                                    if (data.status === "error") {
-                                        showErrorMessage(data.message || "Server ตอบกลับข้อผิดพลาด");
-                                        document.getElementById('noDataMessage').innerHTML = 
-                                            '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
-                                        document.getElementById('noDataMessage').style.display = 'block';
-                                        return;
-                                    }
-                                    
-                                    if (data.history && data.history.length > 0) {
-                                        console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                                        currentHistoryData = data.history;
-                                        filteredData = [...currentHistoryData];
-                                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                                        
-                                        displayHistoryData();
-                                        document.getElementById('historyList').style.display = 'block';
-                                        document.getElementById('pagination').style.display = 'flex';
-                                    } else {
-                                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                                        document.getElementById('noDataMessage').innerHTML = 
-                                            '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                                        document.getElementById('noDataMessage').style.display = 'block';
-                                        document.getElementById('pagination').style.display = 'none';
-                                    }
-                                } else {
-                                    console.error("API ไม่ได้ส่งคืนข้อมูลที่ถูกต้อง");
-                                    document.getElementById('noDataMessage').innerHTML = 
-                                        '<i class="fas fa-exclamation-triangle"></i><p>ไม่สามารถโหลดข้อมูลได้</p>';
-                                    document.getElementById('noDataMessage').style.display = 'block';
-                                }
-                            }).catch(error => {
-                                console.error("Error calling Google Script API:", error);
-                                document.getElementById('loadingIndicator').style.display = 'none';
-                                showErrorMessage('เกิดข้อผิดพลาดในการดึงข้อมูล: ' + error.message);
-                                document.getElementById('noDataMessage').innerHTML = 
-                                    '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
-                                document.getElementById('noDataMessage').style.display = 'block';
-                            });
-                        });
-                    });
+                const response = await fetch(HISTORY_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getUserHistory',  // ระบุ action ที่ชัดเจน
+                        userId: userId
+                    })
                 });
+                
+                // ซ่อน loading
+                document.getElementById('loadingIndicator').style.display = 'none';
+                
+                // ตรวจสอบสถานะการตอบกลับ
+                if (!response.ok) {
+                    throw new Error(`Server ตอบกลับด้วย status code: ${response.status}`);
+                }
+                
+                // ตรวจสอบการตอบกลับ
+                let data;
+                const contentType = response.headers.get("content-type");
+                
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                    console.log("ได้รับข้อมูล JSON จาก server:", data);
+                    
+                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                    if (data.status === "error") {
+                        throw new Error(data.message || "Server ตอบกลับข้อผิดพลาด");
+                    }
+                } else {
+                    console.error("Server ไม่ได้ตอบกลับเป็น JSON แต่เป็น:", contentType);
+                    const textResponse = await response.text();
+                    console.log("ข้อมูลการตอบกลับ:", textResponse.substring(0, 200)); // แสดงแค่ 200 ตัวอักษรแรก
+                    throw new Error("Server ไม่ได้ตอบกลับข้อมูลในรูปแบบที่ถูกต้อง");
+                }
+                
+                if (data && data.history && data.history.length > 0) {
+                    console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                    currentHistoryData = data.history;
+                    filteredData = [...currentHistoryData];
+                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                    
+                    displayHistoryData();
+                    document.getElementById('historyList').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'flex';
+                } else {
+                    console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'none';
+                }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
-                showErrorMessage('เกิดข้อผิดพลาด: ' + error.message);
-                document.getElementById('noDataMessage').innerHTML = 
-                    '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
-            }
-        }
-        
-        // JSONP Callback สำหรับการดึงข้อมูล
-        function handleHistoryData(data) {
-            document.getElementById('loadingIndicator').style.display = 'none';
-            
-            if (data && data.history && data.history.length > 0) {
-                currentHistoryData = data.history;
-                filteredData = [...currentHistoryData];
-                totalPages = Math.ceil(filteredData.length / itemsPerPage);
                 
-                displayHistoryData();
-                document.getElementById('historyList').style.display = 'block';
-                document.getElementById('pagination').style.display = 'flex';
-            } else {
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
+                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
+                if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+                    errorMessage += ": ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาตรวจสอบการเชื่อมต่อ";
+                } else if (error.message.includes("status code")) {
+                    errorMessage += ": เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด";
+                } else {
+                    errorMessage += ": " + error.message;
+                }
+                
+                showErrorMessage(errorMessage);
+                
+                // แสดงข้อความว่าไม่มีข้อมูล
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
             }
@@ -1268,64 +1244,6 @@
                 errorMessage.remove();
             }, 5000);
         }
-
-        // เพิ่มฟังก์ชันสำหรับการเรียก Google Apps Script ด้วย IFRAME เพื่อแก้ไขปัญหา CORS
-        function loadHistoryWithIframe() {
-            // แสดง loading
-            document.getElementById('loadingIndicator').style.display = 'flex';
-            
-            // สร้าง iframe สำหรับโหลดข้อมูล
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            
-            // เตรียม URL สำหรับ Google Apps Script Web App
-            // ใช้ ?userId= เพื่อส่งพารามิเตอร์ผู้ใช้
-            const scriptUrl = `https://script.google.com/macros/s/${SCRIPT_ID}/exec?userId=${encodeURIComponent(userId)}&callback=handleHistoryData`;
-            
-            // กำหนด event listener เพื่อตรวจจับเมื่อโหลดเสร็จ
-            iframe.onload = function() {
-                // iframe โหลดเสร็จแล้ว แต่ข้อมูลจะถูกส่งต่อที่ handleHistoryData
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 100);
-            };
-            
-            iframe.onerror = function() {
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showErrorMessage('ไม่สามารถโหลดข้อมูลได้');
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
-                document.body.removeChild(iframe);
-            };
-            
-            // เพิ่ม iframe ลงใน DOM และเริ่มการโหลด
-            iframe.src = scriptUrl;
-            document.body.appendChild(iframe);
-        }
-
-        // ตั้งค่า JSONP โดยไม่ใช้ fetch
-        function setupJsonp() {
-            window.handleHistoryData = function(data) {
-                document.getElementById('loadingIndicator').style.display = 'none';
-                
-                if (data && data.history && data.history.length > 0) {
-                    currentHistoryData = data.history;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                    
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
-                } else {
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'none';
-                }
-            };
-        }
-
-        // เรียกใช้ฟังก์ชันตั้งค่า JSONP
-        setupJsonp();
     </script>
 </body>
 </html>
