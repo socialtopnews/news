@@ -785,9 +785,9 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook - เพิ่มพารามิเตอร์ v เพื่อป้องกัน cache
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec?v=' + new Date().getTime();
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby6eH4-VBtHRaHxfBC2nCfHIlbGVklUKeY8omYOaHsIVEhPjrRxDfQNAR47Aggfhb_Z/exec?v=' + new Date().getTime();
+        // URL สำหรับ webhook
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbygkvMD7_tEO3TXdkoOZ8r71dgtlmv05fRACKqg2GAiRAyUtp6SBVZ9jr8SyfsN7OwE/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -850,54 +850,59 @@
             }
         }
         
-        // ฟังก์ชันสร้าง script tag สำหรับ JSONP (JSON with Padding)
-        function fetchJSONP(url, callback) {
-            // สร้างชื่อฟังก์ชัน callback แบบไม่ซ้ำกัน
-            const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-            
-            // กำหนด callback function ชั่วคราว
-            window[callbackName] = function(data) {
-                // ลบ script tag เมื่อได้รับการตอบกลับ
-                delete window[callbackName];
-                document.body.removeChild(script);
-                // เรียกใช้ callback ที่ผู้ใช้กำหนด
-                callback(data);
-            };
-            
-            // เพิ่ม callback parameter ในลิงก์
-            const urlWithCallback = url.includes('?') 
-                ? `${url}&callback=${callbackName}` 
-                : `${url}?callback=${callbackName}`;
-            
-            // สร้าง script element และเพิ่มเข้าไปใน document
-            const script = document.createElement('script');
-            script.src = urlWithCallback;
-            document.body.appendChild(script);
-            
-            // กำหนด timeout สำหรับกรณีที่ server ไม่ตอบกลับ
-            setTimeout(() => {
-                if (window[callbackName]) {
-                    console.error("JSONP request timed out");
-                    delete window[callbackName];
-                    document.body.removeChild(script);
-                    callback({ status: "error", message: "การเชื่อมต่อกับเซิร์ฟเวอร์หมดเวลา" });
-                }
-            }, 10000); // 10 วินาที
-        }
-        
         // ตรวจสอบสิทธิ์ผู้ใช้
         async function checkUserPermission(userId) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 try {
                     console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                     
-                    // ใช้ JSONP แทน fetch
-                    const apiUrl = `${LINE_OA_WEBHOOK_URL}&action=checkUserPermission&userId=${userId}`;
+                    // สร้าง unique callback name
+                    const callbackName = 'permCallback_' + new Date().getTime();
                     
-                    fetchJSONP(apiUrl, function(data) {
-                        console.log("ผลการตรวจสอบสิทธิ์:", data);
-                        resolve(data.hasPermission === true);
-                    });
+                    // สร้าง global callback function
+                    window[callbackName] = function(data) {
+                        console.log("ได้รับข้อมูลสิทธิ์:", data);
+                        
+                        if (data && data.hasPermission !== undefined) {
+                            resolve(data.hasPermission === true);
+                        } else {
+                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
+                            resolve(checkUserPermissionFallback(userId));
+                        }
+                        
+                        // ลบ callback หลังจากใช้งานเสร็จ
+                        delete window[callbackName];
+                    };
+                    
+                    // สร้าง script tag สำหรับ JSONP
+                    const script = document.createElement('script');
+                    const url = new URL(LINE_OA_WEBHOOK_URL);
+                    url.searchParams.append('action', 'checkUserPermission');
+                    url.searchParams.append('userId', userId);
+                    url.searchParams.append('callback', callbackName);
+                    url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
+                    
+                    script.src = url.toString();
+                    script.onerror = function() {
+                        console.error('เกิดข้อผิดพลาดในการโหลด permission script');
+                        resolve(checkUserPermissionFallback(userId));
+                        
+                        // ลบ callback หากเกิดข้อผิดพลาด
+                        delete window[callbackName];
+                    };
+                    
+                    // เพิ่ม script เข้าไปใน DOM
+                    document.body.appendChild(script);
+                    
+                    // ตั้งเวลาหมดเวลา 10 วินาที
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้การตรวจสอบสำรอง");
+                            delete window[callbackName];
+                            resolve(checkUserPermissionFallback(userId));
+                        }
+                    }, 10000);
+                    
                 } catch (error) {
                     console.error('Error checking permission:', error);
                     resolve(checkUserPermissionFallback(userId));
@@ -955,7 +960,7 @@
             });
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้
+        // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
         function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -965,25 +970,26 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // สร้าง URL สำหรับเรียก API
-                const apiUrl = `${HISTORY_WEBHOOK_URL}&action=getUserHistory&userId=${userId}`;
+                // สร้าง unique callback name เพื่อป้องกันการชนกันของ callback
+                const callbackName = 'jsonpCallback_' + new Date().getTime();
                 
-                // ใช้ JSONP แทน fetch
-                fetchJSONP(apiUrl, function(data) {
+                // สร้าง global callback function
+                window[callbackName] = function(data) {
                     // ซ่อน loading
                     document.getElementById('loadingIndicator').style.display = 'none';
                     
-                    console.log("ได้รับข้อมูลจาก server:", data);
+                    console.log("ได้รับข้อมูล JSONP:", data);
                     
-                    // ตรวจสอบว่าสถานะเป็น error หรือไม่
+                    // ตรวจสอบข้อผิดพลาด
                     if (data.status === "error") {
-                        showErrorMessage(data.message || "Server ตอบกลับข้อผิดพลาด");
+                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
+                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         return;
                     }
                     
-                    if (data && data.history && data.history.length > 0) {
+                    if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
@@ -998,19 +1004,40 @@
                         document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
                     }
-                });
+                    
+                    // ลบ callback หลังจากใช้งานเสร็จเพื่อป้องกัน memory leak
+                    delete window[callbackName];
+                };
+                
+                // สร้าง script tag สำหรับ JSONP
+                const script = document.createElement('script');
+                const url = new URL(HISTORY_WEBHOOK_URL);
+                url.searchParams.append('action', 'getUserHistory');
+                url.searchParams.append('userId', userId);
+                url.searchParams.append('callback', callbackName);
+                url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
+                
+                script.src = url.toString();
+                script.onerror = function() {
+                    console.error('เกิดข้อผิดพลาดในการโหลด script JSONP');
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    
+                    // ลบ callback หากเกิดข้อผิดพลาด
+                    delete window[callbackName];
+                };
+                
+                // เพิ่ม script เข้าไปใน DOM
+                document.body.appendChild(script);
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
                 
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาดที่ชัดเจนมากขึ้น
-                let errorMessage = "ไม่สามารถโหลดข้อมูลประวัติได้";
-                if (error.message) {
-                    errorMessage += ": " + error.message;
-                }
-                
-                showErrorMessage(errorMessage);
+                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
+                showErrorMessage("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
