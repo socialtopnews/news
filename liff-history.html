@@ -406,7 +406,7 @@
         .pagination-btn.active {
             background-color: var(--primary-color);
             color: white;
-            border-color: var (--primary-color);
+            border-color: var(--primary-color);
             cursor: default;
         }
 
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxkc_ulS81cCsRqVQHnif3CcxQnHhFJmc-ZAaq7hdRwdwfTh8R9cthFEXnOWBBriZXt/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4z7rhGKlTwRwPknvktyWD2Mmpf0Js6CFhf6lWW9lLk0AIUKQjBN1IZfdNUgjf56Y9/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1011,28 +1011,37 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // กำจัดข้อมูลซ้ำซ้อนด้วย Map (ใช้ timestamp + trackingKey เป็น unique key)
-                        const uniqueMap = new Map();
+                        // กรองข้อมูลซ้ำซ้อนอีกครั้งด้วย Set (ป้องกันกรณีที่ server-side มีข้อมูลซ้ำ)
+                        const uniqueEntries = new Map();
+                        
                         data.history.forEach(item => {
-                            const uniqueKey = `${item.timestamp}_${item.trackingKey}`;
-                            uniqueMap.set(uniqueKey, item);
-                        });
-                        
-                        // แปลง Map กลับเป็น Array
-                        currentHistoryData = Array.from(uniqueMap.values());
-                        console.log(`หลังจากกำจัดข้อมูลซ้ำซ้อน เหลือข้อมูล ${currentHistoryData.length} รายการ`);
-                        
-                        // เรียงข้อมูลตามวันที่ล่าสุด
-                        currentHistoryData.sort((a, b) => {
-                            // พยายามแปลงเป็น Date ก่อน ถ้าไม่ได้ให้เปรียบเทียบสตริง
-                            try {
-                                const dateA = new Date(a.timestamp);
-                                const dateB = new Date(b.timestamp);
-                                return dateB - dateA;  // เรียงจากใหม่ไปเก่า
-                            } catch (e) {
-                                return String(b.timestamp).localeCompare(String(a.timestamp));
+                            // สร้าง key ที่ไม่ซ้ำกันสำหรับแต่ละรายการประวัติ
+                            const key = `${item.timestamp}-${item.trackingKey}`;
+                            
+                            // ถ้าเป็นข้อมูลใหม่หรือเป็นข้อมูลที่มี timestamp ใหม่กว่า ให้ใช้ข้อมูลนั้น
+                            if (!uniqueEntries.has(key) || 
+                                new Date(item.timestamp) > new Date(uniqueEntries.get(key).timestamp)) {
+                                uniqueEntries.set(key, item);
                             }
                         });
+                        
+                        // แปลง Map เป็น Array สำหรับใช้งาน
+                        currentHistoryData = Array.from(uniqueEntries.values());
+                        
+                        // เรียงลำดับตามเวลาล่าสุด
+                        currentHistoryData.sort((a, b) => {
+                            try {
+                                // ถ้าไม่มี timestamp ให้ถือว่าเป็นข้อมูลเก่า (ไปอยู่ท้ายสุด)
+                                if (!a.timestamp) return 1;
+                                if (!b.timestamp) return -1;
+                                
+                                return new Date(b.timestamp) - new Date(a.timestamp);
+                            } catch (e) {
+                                return 0;
+                            }
+                        });
+                        
+                        console.log(`หลังจากกรองข้อมูลซ้ำซ้อน เหลือข้อมูล ${currentHistoryData.length} รายการ`);
                         
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1051,7 +1060,7 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API
+                // สร้าง URL สำหรับเรียก API พร้อมเพิ่ม timestamp เพื่อป้องกันการใช้ cache
                 const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
@@ -1147,27 +1156,45 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
+                // เตรียมข้อมูลตำแหน่ง
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
+                if (item.location && typeof item.location === "object") {
+                    if (item.location.lat && item.location.long) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                    }
                 }
                 
+                // เตรียมข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || deviceInfo.platform || "ไม่ทราบ";
                 
-                // ทำให้ trackingKey และ caseName ไม่เป็น undefined หรือค่าว่าง
-                const trackingKeyDisplay = item.trackingKey && item.trackingKey !== "ไม่มีค่า" ? item.trackingKey : "ไม่ระบุ";
-                const caseNameDisplay = item.caseName && item.caseName !== "ไม่ระบุ" && item.caseName !== "ไม่มีค่า" ? item.caseName : "ไม่ระบุชื่อเคส";
+                // จัดรูปแบบวันที่ให้อ่านง่ายขึ้น
+                let displayDate = item.timestamp || "ไม่ระบุเวลา";
+                try {
+                    const date = new Date(item.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        // ถ้าเป็นวันที่ปัจจุบัน แสดงเฉพาะเวลา
+                        const today = new Date();
+                        if (date.toDateString() === today.toDateString()) {
+                            displayDate = "วันนี้ " + date.toLocaleTimeString('th-TH');
+                        } else {
+                            displayDate = date.toLocaleDateString('th-TH') + ' ' + date.toLocaleTimeString('th-TH');
+                        }
+                    }
+                } catch (e) {
+                    console.warn("ไม่สามารถแปลงวันที่:", e);
+                }
                 
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${trackingKeyDisplay}</div>
-                    <div class="history-case">${caseNameDisplay}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i> ${displayDate}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText === "ไม่มีข้อมูล" ? "ไม่มีข้อมูล" : 
+                                  (locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText)}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
                     </div>
@@ -1203,23 +1230,28 @@
                 if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                } else {
-                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
-            } else {
-                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
+            // จัดรูปแบบวันที่ให้อ่านง่าย
+            let formattedDate = item.timestamp || "ไม่ระบุ";
+            try {
+                const date = new Date(item.timestamp);
+                if (!isNaN(date.getTime())) {
+                    formattedDate = date.toLocaleDateString('th-TH') + ' ' + date.toLocaleTimeString('th-TH');
+                }
+            } catch (e) {}
+            
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${formattedDate}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
@@ -1291,17 +1323,19 @@
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
+                ${batteryInfo && (batteryInfo.level !== undefined || batteryInfo.charging !== undefined) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
+                    ${batteryInfo.level !== undefined ? `
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
-                    </div>
+                        <div class="detail-value">${batteryInfo.level}</div>
+                    </div>` : ''}
+                    ${batteryInfo.charging !== undefined ? `
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
-                    </div>
+                        <div class="detail-value">${batteryInfo.charging}</div>
+                    </div>` : ''}
                 </div>` : ''}
             `;
             
