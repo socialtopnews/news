@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ประวัติการใช้งานฟิชชิ่ง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Line LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DateRangePicker - เพิ่มสำหรับกรองข้อมูลตามวันที่ -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
+        :root {
+            --primary-color: #3876BF;
+            --primary-dark: #192655;
+            --primary-light: #5A96E3;
+            --secondary-color: #A1C2F1;
+            --accent-color: #00AAFF;
+            --success-color: #4CAF50;
+            --error-color: #FF5252;
+            --warning-color: #FFC107;
+            --info-color: #2196F3;
+            --text-color: #333333;
+            --text-light: #666666;
+            --text-white: #FFFFFF;
+            --bg-color: #F8F9FA;
+            --border-radius: 12px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+            --transition-normal: all 0.3s ease;
+            --spacer: 1.5rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 0 20px 0;
+            min-height: 100vh;
+            background-color: #ffffff;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
+            background-size: 200% 200%;
+            animation: gradientFlow 3s ease infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header .header-icon {
+            width: 36px;
+            height: 36px;
+            fill: white;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .header .header-text {
+            text-align: left;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            opacity: 0.95;
+            margin-top: 3px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+        }
+
+        .content {
+            padding: var(--spacer);
+            background-color: #ffffff;
+        }
+
+        /* User Info Section */
+        .user-info {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            border: none;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary-color);
+        }
+
+        .user-info .profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info .profile-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+            border: 2px solid var(--primary-light);
+            padding: 2px;
+            background-color: white;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info .user-name {
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .user-info .user-status {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+            transition: var(--transition-normal);
+        }
+
+        .badge.approved {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--success-color);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .badge.pending {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: var(--warning-color);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+        }
+
+        .stat-card.total::after {
+            background-color: var(--primary-color);
+        }
+
+        .stat-card.active::after {
+            background-color: var(--success-color);
+        }
+
+        .stat-card.clicks::after {
+            background-color: var(--info-color);
+        }
+
+        .stat-card .stat-title {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .stat-card .stat-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            font-size: 18px;
+        }
+
+        .stat-card.total .stat-icon {
+            background-color: rgba(56, 118, 191, 0.1);
+            color: var(--primary-color);
+        }
+
+        .stat-card.active .stat-icon {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+        }
+
+        .stat-card.clicks .stat-icon {
+            background-color: rgba(33, 150, 243, 0.1);
+            color: var(--info-color);
+        }
+
+        /* Search and Filter */
+        .filter-container {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .filter-title {
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #FAFAFA;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            background-color: #FFFFFF;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(88, 136, 231, 0.1);
+        }
+
+        /* Campaign List */
+        .campaign-list {
+            margin-bottom: 30px;
+        }
+
+        .campaign-item {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            overflow: hidden;
+            border-left: 4px solid transparent;
+        }
+
+        .campaign-item:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .campaign-item.active {
+            border-left-color: var(--success-color);
+        }
+
+        .campaign-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .campaign-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .campaign-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .campaign-meta {
+            display: flex;
+            font-size: 13px;
+            color: var(--text-light);
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .campaign-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background-color: transparent;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 16px;
+            border-radius: 5px;
+            transition: var(--transition-normal);
+        }
+
+        .action-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(88, 136, 231, 0.1);
+        }
+        
+        .campaign-details {
+            display: none; /* Hidden by default */
+            padding: 0 20px 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .detail-header {
+            padding: 15px 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .detail-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .access-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .access-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid var(--info-color);
+            font-size: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .access-detail {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .access-detail i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .access-detail.date {
+            color: var(--primary-dark);
+        }
+
+        .access-detail.ip {
+            color: var(--text-light);
+        }
+
+        .access-detail.location {
+            color: var(--primary-color);
+        }
+
+        .access-detail.device {
+            color: var(--text-color);
+        }
+
+        .access-detail a {
+            color: var(--info-color);
+            text-decoration: none;
+        }
+
+        .access-detail a:hover {
+            text-decoration: underline;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-light);
+        }
+
+        .no-data i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: block;
+            color: var(--secondary-color);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .pagination-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: white;
+            border: 1px solid #E0E0E0;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+
+        .pagination-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .pagination-item.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Loading */
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px;
+            border: 3px solid rgba(88, 136, 231, 0.2);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Detail Expander */
+        .detail-toggle {
+            background-color: transparent;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: var(--primary-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 4px;
+        }
+
+        .detail-toggle:hover {
+            background-color: rgba(88, 136, 231, 0.1);
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        #loadingScreen .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(88, 136, 231, 0.2);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        #loadingScreen p {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Error message */
+        .error-message {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #F8F9FA;
+            border-top: 1px solid #E9ECEF;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .campaign-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .campaign-actions {
+                margin-top: 10px;
+                align-self: flex-end;
+            }
+            
+            .access-item {
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px;
+            }
+            
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .app-container {
+                max-width: 100%;
+                min-height: 100svh;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 1.2rem;
+            }
+
+            .content {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="spinner"></div>
+        <p>กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <div class="app-container">
+        <div class="header">
+            <!-- History Icon -->
+            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <path fill="white" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5 0-200-89.5-200-200S145.5 56 256 56s200 89.5 200 200-89.5 200-200 200zm61.8-104.4l-84.9-61.7c-3.1-2.3-4.9-5.9-4.9-9.7V116c0-6.6 5.4-12 12-12h32c6.6 0 12 5.4 12 12v141.7l66.8 48.6c5.4 3.9 6.5 11.4 2.6 16.8L334.6 349c-3.9 5.3-11.4 6.5-16.8 2.6z"/>
+            </svg>
+            <div class="header-text">
+                <h1>ประวัติการใช้งานฟิชชิ่ง</h1>
+                <div class="subtitle">ดูข้อมูลการเข้าถึงของแคมเปญที่คุณสร้าง</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- แสดงข้อผิดพลาด -->
+            <div id="errorMessage" class="error-message">
+                <i class="fas fa-exclamation-triangle"></i> ไม่สามารถโหลดข้อมูลได้ โปรดลองอีกครั้งภายหลัง
+            </div>
+            
+            <!-- สรุปสถิติ -->
+            <div class="stats-container" id="statsContainer">
+                <div class="stat-card total">
+                    <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    <div class="stat-title">จำนวนแคมเปญที่สร้าง</div>
+                    <div class="stat-value" id="totalCampaigns">0</div>
+                </div>
+                <div class="stat-card active">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-title">แคมเปญที่มีคลิก</div>
+                    <div class="stat-value" id="activeCampaigns">0</div>
+                </div>
+                <div class="stat-card clicks">
+                    <div class="stat-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="stat-title">จำนวนคลิกทั้งหมด</div>
+                    <div class="stat-value" id="totalClicks">0</div>
+                </div>
+            </div>
+            
+            <!-- ส่วนค้นหาและกรองข้อมูล -->
+            <div class="filter-container">
+                <div class="filter-header">
+                    <div class="filter-title"><i class="fas fa-filter"></i> ตัวกรองข้อมูล</div>
+                </div>
+                <div class="filter-form">
+                    <div class="form-group">
+                        <label for="searchInput">ค้นหาตามชื่อเคส:</label>
+                        <input type="text" id="searchInput" class="form-control" placeholder="พิมพ์ชื่อเคสที่ต้องการค้นหา...">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateRangeInput">ช่วงวันที่:</label>
+                        <input type="text" id="dateRangeInput" class="form-control" placeholder="เลือกช่วงวันที่...">
+                    </div>
+                    <div class="form-group">
+                        <label for="sortBy">เรียงลำดับตาม:</label>
+                        <select id="sortBy" class="form-control">
+                            <option value="newest">ล่าสุดก่อน</option>
+                            <option value="oldest">เก่าสุดก่อน</option>
+                            <option value="most_clicks">คลิกมากสุดก่อน</option>
+                            <option value="name_asc">ชื่อ (ก-ฮ)</option>
+                            <option value="name_desc">ชื่อ (ฮ-ก)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button id="resetFilterBtn" class="btn btn-outline"><i class="fas fa-undo"></i> รีเซ็ตตัวกรอง</button>
+                    <button id="applyFilterBtn" class="btn"><i class="fas fa-search"></i> ค้นหา</button>
+                </div>
+            </div>
+            
+            <!-- แสดงโหลดดิ้ง -->
+            <div class="loader" id="dataLoader">
+                <div class="loader-spinner"></div>
+                <p>กำลังโหลดข้อมูล...</p>
+            </div>
+            
+            <!-- รายการแคมเปญ -->
+            <div id="campaignList" class="campaign-list">
+                <!-- Campaign items will be dynamically added here -->
+            </div>
+            
+            <!-- ไม่มีข้อมูล -->
+            <div class="no-data" id="noDataMessage" style="display: none;">
+                <i class="fas fa-search"></i>
+                <p>ไม่พบข้อมูลแคมเปญที่คุณสร้าง</p>
+                <p>คุณสามารถสร้างแคมเปญใหม่ได้ที่หน้าสร้างรูปภาพฟิชชิ่ง</p>
+                <button id="createNewBtn" class="btn" style="margin-top: 15px;">
+                    <i class="fas fa-plus-circle"></i> สร้างแคมเปญใหม่
+                </button>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination items will be dynamically added here -->
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 ระบบติดตามฟิชชิ่ง - Detective-X</p>
+        </div>
+    </div>
+
+    <script>
+        // ตัวแปรหลักสำหรับเก็บข้อมูล
+        let userId = "";
+        let displayName = "";
+        let pictureUrl = "";
+        let isLiffInitialized = false;
+        let userHasPermission = false;
+        let userCampaigns = [];
+        let filteredCampaigns = [];
+        let accessData = {};
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        
+        // ค่า Config สำคัญ
+        const LIFF_ID = '2007293657-Lw86gYw1';
+        
+        // URL สำหรับ webhook
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxLjisrzGvOoW-zCb9E4P2-pVhySo3DXq3mdb9FfPEj6q6sQ9YxG46y_caMOx5Kpluv/exec';
+        
+        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLiff();
+            setupEventListeners();
+            initializeDateRangePicker();
+        });
+        
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                displayName = profile.displayName;
+                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
+                
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
+                
+                // แสดงข้อมูลผู้ใช้
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('profileImage').src = pictureUrl;
+                document.getElementById('userInfoSection').style.display = 'block';
+                
+                // ตรวจสอบสิทธิ์ผู้ใช้
+                userHasPermission = await checkUserPermission(userId);
+                
+                if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    
+                    // โหลดข้อมูลแคมเปญของผู้ใช้
+                    await loadUserCampaigns();
+                } else {
+                    // ไม่มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('errorMessage').textContent = 'คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้ กรุณาติดต่อผู้ดูแลระบบ';
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+                
+                isLiffInitialized = true;
+                
+                // ซ่อนหน้าโหลดดิ้ง
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+            } catch (error) {
+                console.error('LIFF initialization failed', error);
+                document.getElementById('errorMessage').textContent = 'เกิดข้อผิดพลาดในการเริ่มต้นใช้งาน: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('loadingScreen').style.display = 'none';
+            }
+        }
+        
+        // ตรวจสอบสิทธิ์ผู้ใช้
+        async function checkUserPermission(userId) {
+            try {
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                
+                const response = await fetch(LINE_OA_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'checkUserPermission',
+                        userId: userId
+                    })
+                });
+                
+                try {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        console.log("ผลการตรวจสอบสิทธิ์:", data);
+                        return data.hasPermission === true;
+                    } else {
+                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
+                        return checkUserPermissionFallback(userId);
+                    }
+                } catch (e) {
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
+                    return checkUserPermissionFallback(userId);
+                }
+            } catch (error) {
+                console.error('Error checking permission:', error);
+                return checkUserPermissionFallback(userId);
+            }
+        }
+        
+        // ตรวจสอบสิทธิ์แบบสำรอง
+        function checkUserPermissionFallback(userId) {
+            const approvedUserIds = [
+                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+            ];
+            
+            return approvedUserIds.includes(userId);
+        }
+        
+        // โหลดข้อมูลแคมเปญของผู้ใช้
+        async function loadUserCampaigns() {
+            try {
+                showLoader();
+                console.log("กำลังโหลดข้อมูลแคมเปญของผู้ใช้:", userId);
+                
+                // ดึงข้อมูลแคมเปญจาก Google Script
+                const response = await fetch(PHISHING_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getUserCampaigns',
+                        userId: userId
+                    })
+                });
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (error) {
+                    console.error("ไม่สามารถแปลง response เป็น JSON:", error);
+                    throw new Error("ไม่สามารถโหลดข้อมูลได้ (รูปแบบข้อมูลไม่ถูกต้อง)");
+                }
+                
+                if (!data.success) {
+                    throw new Error(data.message || "ไม่สามารถโหลดข้อมูลได้");
+                }
+                
+                console.log("โหลดข้อมูลแคมเปญสำเร็จ:", data);
+                userCampaigns = data.campaigns || [];
+                accessData = data.accessData || {};
+                
+                // Update stats
+                updateStats();
+                
+                // Filter and display campaigns
+                applyFilters();
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลแคมเปญ:', error);
+                document.getElementById('errorMessage').textContent = 'ไม่สามารถโหลดข้อมูลแคมเปญ: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('noDataMessage').style.display = 'flex';
+            } finally {
+                hideLoader();
+            }
+        }
+        
+        // อัปเดตสถิติ
+        function updateStats() {
+            const totalCampaigns = userCampaigns.length;
+            
+            // Count campaigns with clicks
+            let campaignsWithClicks = 0;
+            let totalClicks = 0;
+            
+            // Count total clicks and campaigns with clicks
+            for (const trackingKey in accessData) {
+                const clickCount = accessData[trackingKey].length;
+                if (clickCount > 0) {
+                    campaignsWithClicks++;
+                    totalClicks += clickCount;
+                }
+            }
+            
+            // Update stats display
+            document.getElementById('totalCampaigns').textContent = totalCampaigns;
+            document.getElementById('activeCampaigns').textContent = campaignsWithClicks;
+            document.getElementById('totalClicks').textContent = totalClicks;
+        }
+        
+        // ใช้ตัวกรอง
+        function applyFilters() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const sortBy = document.getElementById('sortBy').value;
+            const dateRange = $('#dateRangeInput').data('daterangepicker');
+            
+            // Filter campaigns based on search
+            filteredCampaigns = userCampaigns.filter(campaign => {
+                // Filter by case name
+                if (searchInput && !campaign.caseName.toLowerCase().includes(searchInput)) {
+                    return false;
+                }
+                
+                // Filter by date range
+                if (dateRange && dateRange.startDate && dateRange.endDate) {
+                    const campaignDate = moment(campaign.createDate, 'D/M/YYYY, HH:mm:ss');
+                    if (!campaignDate.isBetween(dateRange.startDate, dateRange.endDate, null, '[]')) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // Sort filtered campaigns
+            filteredCampaigns.sort((a, b) => {
+                switch (sortBy) {
+                    case 'newest':
+                        return moment(b.createDate, 'D/M/YYYY, HH:mm:ss') - moment(a.createDate, 'D/M/YYYY, HH:mm:ss');
+                    case 'oldest':
+                        return moment(a.createDate, 'D/M/YYYY, HH:mm:ss') - moment(b.createDate, 'D/M/YYYY, HH:mm:ss');
+                    case 'most_clicks':
+                        const clicksA = accessData[a.trackingKey]?.length || 0;
+                        const clicksB = accessData[b.trackingKey]?.length || 0;
+                        return clicksB - clicksA;
+                    case 'name_asc':
+                        return a.caseName.localeCompare(b.caseName);
+                    case 'name_desc':
+                        return b.caseName.localeCompare(a.caseName);
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Reset pagination
+            currentPage = 1;
+            
+            // Display campaigns
+            displayCampaigns();
+        }
+        
+        // แสดงแคมเปญตามการเลือกหน้า
+        function displayCampaigns() {
+            const campaignListEl = document.getElementById('campaignList');
+            const noDataEl = document.getElementById('noDataMessage');
+            
+            // Clear current content
+            campaignListEl.innerHTML = '';
+            
+            // Show no data message if no campaigns
+            if (filteredCampaigns.length === 0) {
+                noDataEl.style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            noDataEl.style.display = 'none';
+            
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredCampaigns.length);
+            const currentPageItems = filteredCampaigns.slice(startIndex, endIndex);
+            
+            // Display current page items
+            currentPageItems.forEach(campaign => {
+                const clicks = accessData[campaign.trackingKey]?.length || 0;
+                const hasClicks = clicks > 0;
+                
+                const campaignEl = document.createElement('div');
+                campaignEl.className = `campaign-item ${hasClicks ? 'active' : ''}`;
+                
+                // Create campaign header
+                const headerEl = document.createElement('div');
+                headerEl.className = 'campaign-header';
+                headerEl.onclick = () => toggleCampaignDetails(campaign.trackingKey);
+                
+                // Create campaign info
+                const infoEl = document.createElement('div');
+                infoEl.className = 'campaign-info';
+                
+                // Format date
+                let createDate = campaign.createDate;
+                try {
+                    createDate = moment(campaign.createDate, 'D/M/YYYY, HH:mm:ss').format('D MMM YYYY, HH:mm');
+                } catch (e) {
+                    console.log('Error formatting date:', e);
+                }
+                
+                infoEl.innerHTML = `
+                    <div class="campaign-name">
+                        ${hasClicks ? '<i class="fas fa-check-circle" style="color: var(--success-color);"></i>' : 
+                                     '<i class="far fa-circle" style="color: var(--text-light);"></i>'}
+                        ${escapeHtml(campaign.caseName)}
+                    </div>
+                    <div class="campaign-meta">
+                        <div class="meta-item"><i class="fas fa-key"></i> ${campaign.trackingKey}</div>
+                        <div class="meta-item"><i class="far fa-calendar-alt"></i> ${createDate}</div>
+                        <div class="meta-item"><i class="fas fa-mouse-pointer"></i> ${clicks} คลิก</div>
+                    </div>
+                `;
+                
+                // Create actions
+                const actionsEl = document.createElement('div');
+                actionsEl.className = 'campaign-actions';
+                actionsEl.innerHTML = `
+                    <button class="action-btn detail-btn" title="ดูรายละเอียด">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                `;
+                
+                // Append elements to header
+                headerEl.appendChild(infoEl);
+                headerEl.appendChild(actionsEl);
+                
+                // Create campaign details
+                const detailsEl = document.createElement('div');
+                detailsEl.className = 'campaign-details';
+                detailsEl.id = `details-${campaign.trackingKey}`;
+                
+                // Add content to details section
+                if (hasClicks) {
+                    const accessList = accessData[campaign.trackingKey];
+                    
+                    detailsEl.innerHTML = `
+                        <div class="detail-header">
+                            <div class="detail-title">ประวัติการเข้าถึง (${clicks} ครั้ง)</div>
+                        </div>
+                        <ul class="access-list" id="access-list-${campaign.trackingKey}">
+                            ${renderAccessList(accessList)}
+                        </ul>
+                    `;
+                } else {
+                    detailsEl.innerHTML = `
+                        <div style="padding: 15px 0; text-align: center; color: var(--text-light);">
+                            <i class="fas fa-info-circle"></i> ยังไม่มีประวัติการเข้าถึงของแคมเปญนี้
+                        </div>
+                    `;
+                }
+                
+                // Append elements to campaign item
+                campaignEl.appendChild(headerEl);
+                campaignEl.appendChild(detailsEl);
+                
+                // Add to the list
+                campaignListEl.appendChild(campaignEl);
+            });
+            
+            // Update pagination
+            updatePagination();
+        }
+        
+        // สร้าง HTML สำหรับรายการการเข้าถึง
+        function renderAccessList(accessList) {
+            if (!accessList || accessList.length === 0) {
+                return '<div class="no-data">ไม่มีข้อมูลการเข้าถึง</div>';
+            }
+            
+            let html = '';
+            
+            accessList.forEach(access => {
+                // Process date
+                let accessDate = access.timestamp || 'ไม่มีข้อมูล';
+                
+                // Process location
+                let location = 'ไม่มีข้อมูล';
+                if (access.city && access.country) {
+                    location = `${access.city}, ${access.region || ''} ${access.country}`;
+                }
+                
+                // Process GPS
+                let gps = access.gpsLocationText || 'ไม่มีข้อมูล';
+                let mapLink = access.mapLink || '';
+                
+                // Process device
+                let device = 'ไม่มีข้อมูล';
+                if (access.deviceType && access.deviceModel) {
+                    device = `${access.deviceType} - ${access.deviceModel}`;
+                } else if (access.deviceType) {
+                    device = access.deviceType;
+                }
+
+                html += `
+                    <li class="access-item">
+                        <div class="access-detail date">
+                            <i class="far fa-clock"></i> ${accessDate}
+                        </div>
+                        <div class="access-detail ip">
+                            <i class="fas fa-network-wired"></i> ${access.ip || 'ไม่มีข้อมูล'}
+                        </div>
+                        <div class="access-detail location">
+                            <i class="fas fa-map-marker-alt"></i> ${location}
+                        </div>
+                        ${mapLink ? `
+                            <div class="access-detail">
+                                <i class="fas fa-map"></i> 
+                                <a href="${mapLink}" target="_blank">ดูแผนที่ GPS</a>
+                            </div>
+                        ` : ''}
+                        <div class="access-detail device">
+                            <i class="fas fa-mobile-alt"></i> ${device}
+                        </div>
+                    </li>
+                `;
+            });
+            
+            return html;
+        }
+        
+        // อัปเดตการแบ่งหน้า
+        function updatePagination() {
+            const paginationEl = document.getElementById('pagination');
+            paginationEl.innerHTML = '';
+            
+            if (filteredCampaigns.length <= itemsPerPage) {
+                paginationEl.style.display = 'none';
+                return;
+            }
+            
+            paginationEl.style.display = 'flex';
+            
+            // Calculate total pages
+            const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+            
+            // Previous button
+            if (currentPage > 1) {
+                const prevBtn = document.createElement('div');
+                prevBtn.className = 'pagination-item';
+                prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                prevBtn.addEventListener('click', () => {
+                    currentPage--;
+                    displayCampaigns();
+                });
+                paginationEl.appendChild(prevBtn);
+            }
+            
+            // Page numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('div');
+                pageBtn.className = `pagination-item ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    displayCampaigns();
+                });
+                paginationEl.appendChild(pageBtn);
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                const nextBtn = document.createElement('div');
+                nextBtn.className = 'pagination-item';
+                nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                nextBtn.addEventListener('click', () => {
+                    currentPage++;
+                    displayCampaigns();
+                });
+                paginationEl.appendChild(nextBtn);
+            }
+        }
+        
+        // แสดงหรือซ่อนรายละเอียดแคมเปญ
+        function toggleCampaignDetails(trackingKey) {
+            const detailsEl = document.getElementById(`details-${trackingKey}`);
+            
+            if (detailsEl.style.display === 'block') {
+                detailsEl.style.display = 'none';
+            } else {
+                // Hide all other details first
+                document.querySelectorAll('.campaign-details').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                // Show this one
+                detailsEl.style.display = 'block';
+                
+                // Update chevron icon
+                const detailBtns = document.querySelectorAll('.detail-btn i');
+                detailBtns.forEach(btn => {
+                    btn.className = 'fas fa-chevron-down';
+                });
+                
+                // Find the button that was clicked and update its icon
+                const btn = detailsEl.previousElementSibling.querySelector('.detail-btn i');
+                if (btn) {
+                    btn.className = 'fas fa-chevron-up';
+                }
+            }
+        }
+        
+        // ฟังก์ชันแสดง loader
+        function showLoader() {
+            document.getElementById('dataLoader').style.display = 'block';
+        }
+        
+        // ฟังก์ชันซ่อน loader
+        function hideLoader() {
+            document.getElementById('dataLoader').style.display = 'none';
+        }
+        
+        // ฟังก์ชัน Escape HTML เพื่อป้องกัน XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // เริ่มต้น DateRangePicker
+        function initializeDateRangePicker() {
+            // Configure date range picker
+            $('#dateRangeInput').daterangepicker({
+                opens: 'left',
+                autoUpdateInput: false,
+                locale: {
+                    format: 'DD/MM/YYYY',
+                    cancelLabel: 'ยกเลิก',
+                    applyLabel: 'ตกลง',
+                    daysOfWeek: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+                    monthNames: [
+                        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+                    ],
+                    firstDay: 0
+                }
+            });
+            
+            // Apply date range when selected
+            $('#dateRangeInput').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+            });
+            
+            // Clear date range when cancelled
+            $('#dateRangeInput').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+        }
+        
+        // ตั้งค่า Event Listeners
+        function setupEventListeners() {
+            // Apply filters when search button clicked
+            document.getElementById('applyFilterBtn').addEventListener('click', applyFilters);
+            
+            // Reset filters when reset button clicked
+            document.getElementById('resetFilterBtn').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('sortBy').value = 'newest';
+                $('#dateRangeInput').val('');
+                $('#dateRangeInput').data('daterangepicker').setStartDate(moment());
+                $('#dateRangeInput').data('daterangepicker').setEndDate(moment());
+                applyFilters();
+            });
+            
+            // Go to create campaign page
+            document.getElementById('createNewBtn').addEventListener('click', () => {
+                // Navigate to the image phishing creation page
+                window.location.href = 'liff.html';
+            });
+            
+            // Apply filters on search input enter key
+            document.getElementById('searchInput').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
