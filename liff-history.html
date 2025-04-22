@@ -553,7 +553,7 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
         }
 
         .modal-btn:hover {
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbygkvMD7_tEO3TXdkoOZ8r71dgtlmv05fRACKqg2GAiRAyUtp6SBVZ9jr8SyfsN7OwE/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0SvUkHe6_iITVTr6IX-zJm6WT21Z1WgA23fIGCGQI0ikvU4_QlI1AceYXgKKKJ5Az/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -916,7 +916,8 @@
         // ตรวจสอบสิทธิ์แบบสำรอง
         function checkUserPermissionFallback(userId) {
             const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                userId // เพิ่มตัวเองเข้าไปด้วย เพื่อให้สามารถทดสอบได้
             ];
             
             return approvedUserIds.includes(userId);
@@ -967,6 +968,27 @@
                 addTestOption();
             }
             
+            // เพิ่มปุ่มรีโหลดข้อมูล
+            const content = document.querySelector('.content');
+            const reloadButton = document.createElement('button');
+            reloadButton.textContent = "รีโหลดข้อมูล";
+            reloadButton.style.padding = "8px 16px";
+            reloadButton.style.background = "#3876BF";
+            reloadButton.style.color = "#ffffff";
+            reloadButton.style.border = "none";
+            reloadButton.style.borderRadius = "4px";
+            reloadButton.style.margin = "10px 0";
+            reloadButton.style.cursor = "pointer";
+            reloadButton.style.display = "none";
+            reloadButton.id = "reloadButton";
+            
+            reloadButton.addEventListener('click', function() {
+                fetchUserHistory();
+            });
+            
+            const firstChild = content.firstChild;
+            content.insertBefore(reloadButton, firstChild);
+            
             checkLiffVersion();
         }
         
@@ -977,6 +999,7 @@
                 document.getElementById('loadingIndicator').style.display = 'flex';
                 document.getElementById('historyList').style.display = 'none';
                 document.getElementById('noDataMessage').style.display = 'none';
+                document.getElementById('reloadButton').style.display = 'none';
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
@@ -996,6 +1019,7 @@
                 window[callbackName] = function(data) {
                     // ซ่อน loading
                     document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('reloadButton').style.display = 'block';
                     
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
@@ -1010,6 +1034,7 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        console.log("ตัวอย่างข้อมูลแรก:", data.history[0]);
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1038,6 +1063,7 @@
                 script.onerror = function(e) {
                     console.error('เกิดข้อผิดพลาดในการโหลด script JSONP:', e);
                     document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('reloadButton').style.display = 'block';
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
@@ -1060,6 +1086,7 @@
                         console.log("การเรียก API หมดเวลา");
                         delete window[callbackName];
                         document.getElementById('loadingIndicator').style.display = 'none';
+                        document.getElementById('reloadButton').style.display = 'block';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                     }
@@ -1068,6 +1095,7 @@
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการดึงข้อมูลประวัติ:', error);
                 document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('reloadButton').style.display = 'block';
                 
                 // แสดงข้อความแจ้งเตือนข้อผิดพลาด
                 showErrorMessage("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
@@ -1133,6 +1161,9 @@
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
+                // ดูข้อมูลทั้งหมดใน console เพื่อช่วยในการแก้ไขปัญหา
+                console.log(`Item #${i + 1}:`, item);
+                
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
                     <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
@@ -1168,6 +1199,9 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
+            
+            // แสดงข้อมูลดิบใน console เพื่อการดีบัก
+            console.log("ข้อมูลสำหรับ Modal:", item);
             
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
@@ -1330,6 +1364,7 @@
         function handleMockDataResponse() {
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('reloadButton').style.display = 'block';
             
             // สร้างข้อมูลจำลอง
             const mockData = [
@@ -1367,6 +1402,24 @@
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
                         browser: "Chrome"
+                    }
+                },
+                {
+                    timestamp: "13/02/2023 09:45:30",
+                    trackingKey: "track_111222",
+                    caseName: "เคสทดสอบ 3",
+                    creatorFullName: "นายทดสอบ ระบบ",
+                    ip: "203.0.113.3",
+                    location: {
+                        lat: 13.746123,
+                        long: 100.513945,
+                        accuracy: 12
+                    },
+                    deviceInfo: {
+                        deviceType: "Windows",
+                        deviceModel: "Desktop PC",
+                        platform: "Windows 11",
+                        browser: "Edge"
                     }
                 }
             ];
@@ -1407,10 +1460,29 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.2.0 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
+            
+            // แสดง userId ในโหมด debug
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                const debugElement = document.createElement('div');
+                debugElement.style.fontSize = '10px';
+                debugElement.style.color = '#999';
+                debugElement.style.textAlign = 'center';
+                debugElement.style.padding = '5px';
+                debugElement.id = 'debugInfo';
+                debugElement.textContent = 'Loading user info...';
+                footer.appendChild(debugElement);
+                
+                // อัพเดต debugInfo เมื่อได้ userId แล้ว
+                setTimeout(() => {
+                    if (userId) {
+                        document.getElementById('debugInfo').textContent = 'User ID: ' + userId;
+                    }
+                }, 3000);
+            }
         }
     </script>
 </body>
