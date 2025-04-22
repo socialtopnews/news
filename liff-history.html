@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyguxrFzT34UfFWQFiCxgF4b7QFeigQdxFJGe8QJi_gjwP1rlaujeo8GgQoQeH-1Ez9/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxtWWWU5HTpEdaYAgfvnOAeQak61oLSrBaW8986Yw3m7VD6yVvkL6tytIqCv-1TT_pm/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1008,14 +1008,8 @@
                         return;
                     }
                     
-                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
+                    if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        
-                        // แสดงข้อมูลในคอนโซลสำหรับการตรวจสอบ
-                        if (data.history.length > 0) {
-                            console.log("ตัวอย่างข้อมูลแรก:", data.history[0]);
-                        }
-                        
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1138,10 +1132,7 @@
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-                const platform = deviceInfo.platform || "ไม่ทราบ";
-                const browser = deviceInfo.browser || "ไม่ทราบ";
                 
-                // ปรับปรุงการแสดงข้อมูลเพื่อให้มีรายละเอียดมากขึ้น
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
                     <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
@@ -1151,7 +1142,6 @@
                         <div class="history-stats">
                             <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            <div><i class="fas fa-globe"></i> ${platform}</div>
                         </div>
                     </div>
                 `;
@@ -1237,7 +1227,7 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-laptop"></i> ข้อมูลอุปกรณ์</h3>
+                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
@@ -1255,6 +1245,37 @@
                         <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
                     </div>
                 </div>
+                
+                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเภทเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">คุณภาพเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
+                    </div>
+                    ${connectionInfo.downlink ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความเร็ว</div>
+                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
+                    </div>` : ''}
+                </div>` : ''}
+                
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ระดับแบตเตอรี่</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">สถานะการชาร์จ</div>
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
+                    </div>
+                </div>` : ''}
             `;
             
             modal.style.display = 'block';
