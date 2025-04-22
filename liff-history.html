@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz79PjA84FjWagYIwHISQcNnXxfeAuSay4Xk9JZRzep1OPjvg6ArLgzWzR4NJrPg20/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1000,15 +1000,15 @@
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
                     // ตรวจสอบข้อผิดพลาด
-                    if (data.status === "error") {
-                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
-                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
+                    if (!data || data.status === "error") {
+                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data ? data.message : "ไม่มีข้อมูลตอบกลับ");
+                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + (data ? data.message : "ไม่มีการตอบกลับข้อมูล"));
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         return;
                     }
                     
-                    if (data.history && data.history.length > 0) {
+                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
@@ -1019,7 +1019,7 @@
                         document.getElementById('pagination').style.display = 'flex';
                     } else {
                         console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน<br>หรือคุณยังไม่มี Tracking Key</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
                     }
@@ -1039,16 +1039,14 @@
                     console.error('เกิดข้อผิดพลาดในการโหลด script JSONP:', e);
                     document.getElementById('loadingIndicator').style.display = 'none';
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้งหรือตรวจสอบการเชื่อมต่อ</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
                     
-                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
-                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
-                        handleMockDataResponse();
-                    }
+                    // ปุ่มลองใหม่
+                    addRetryButton();
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
@@ -1062,6 +1060,9 @@
                         document.getElementById('loadingIndicator').style.display = 'none';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        
+                        // ปุ่มลองใหม่
+                        addRetryButton();
                     }
                 }, 15000);
                 
@@ -1076,6 +1077,34 @@
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // ปุ่มลองใหม่
+                addRetryButton();
+            }
+        }
+
+        // เพิ่มปุ่มลองใหม่
+        function addRetryButton() {
+            const noDataMessage = document.getElementById('noDataMessage');
+            
+            // ตรวจสอบว่ามีปุ่มอยู่แล้วหรือไม่
+            if (!document.getElementById('retryButton')) {
+                const retryBtn = document.createElement('button');
+                retryBtn.id = 'retryButton';
+                retryBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ลองใหม่อีกครั้ง';
+                retryBtn.style.marginTop = '15px';
+                retryBtn.style.padding = '8px 16px';
+                retryBtn.style.backgroundColor = 'var(--primary-color)';
+                retryBtn.style.color = 'white';
+                retryBtn.style.border = 'none';
+                retryBtn.style.borderRadius = '5px';
+                retryBtn.style.cursor = 'pointer';
+                
+                retryBtn.addEventListener('click', function() {
+                    fetchUserHistory();
+                });
+                
+                noDataMessage.appendChild(retryBtn);
             }
         }
         
