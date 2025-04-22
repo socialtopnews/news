@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxLB75UbxcejgaPLAobMHv2__jmCDJvsVYaia4Kga7KEHag5S0Zdn8NZhB2O19k58uw/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzLDsEKYSdnEyYC-XF4lSNp2WWl9cKjaMEgV4WeyEx4x6BCjVw1q37wW2QfZaCEMvsw/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1010,11 +1010,8 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        
-                        // ตรวจสอบและแสดงข้อมูลสำหรับการแก้ไขข้อผิดพลาด
-                        data.history.forEach((item, index) => {
-                            console.log(`Item ${index+1}: TrackingKey=${item.trackingKey}, CaseName=${item.caseName}`);
-                        });
+                        // แสดงข้อมูลตัวอย่างในคอนโซล
+                        console.log("ตัวอย่างข้อมูล:", data.history[0]);
                         
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
@@ -1024,18 +1021,31 @@
                         document.getElementById('historyList').style.display = 'block';
                         document.getElementById('pagination').style.display = 'flex';
                     } else {
-                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
+                        console.log("ไม่พบข้อมูลประวัติสำหรับ userId:", userId);
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
+                        
+                        // เพิ่มปุ่มลองใหม่
+                        const retryButton = document.createElement('button');
+                        retryButton.textContent = "ลองใหม่อีกครั้ง";
+                        retryButton.className = "modal-btn";
+                        retryButton.style.marginTop = "15px";
+                        retryButton.onclick = fetchUserHistory;
+                        document.getElementById('noDataMessage').appendChild(retryButton);
+                        
+                        // แสดงข้อมูลเพิ่มเติมสำหรับการวิเคราะห์ปัญหา
+                        if (isDeveloperMode()) {
+                            showDebugInfo();
+                        }
                     }
                     
                     // ลบ callback หลังจากใช้งานเสร็จเพื่อป้องกัน memory leak
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API และเพิ่มพารามิเตอร์เพื่อการตรวจสอบ
-                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}&debug=true`;
+                // สร้าง URL สำหรับเรียก API
+                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
                 // สร้าง script tag สำหรับ JSONP
@@ -1047,6 +1057,14 @@
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
+                    
+                    // เพิ่มปุ่มลองใหม่
+                    const retryButton = document.createElement('button');
+                    retryButton.textContent = "ลองใหม่อีกครั้ง";
+                    retryButton.className = "modal-btn";
+                    retryButton.style.marginTop = "15px";
+                    retryButton.onclick = fetchUserHistory;
+                    document.getElementById('noDataMessage').appendChild(retryButton);
                     
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
@@ -1068,6 +1086,14 @@
                         document.getElementById('loadingIndicator').style.display = 'none';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        
+                        // เพิ่มปุ่มลองใหม่
+                        const retryButton = document.createElement('button');
+                        retryButton.textContent = "ลองใหม่อีกครั้ง";
+                        retryButton.className = "modal-btn";
+                        retryButton.style.marginTop = "15px";
+                        retryButton.onclick = fetchUserHistory;
+                        document.getElementById('noDataMessage').appendChild(retryButton);
                     }
                 }, 15000);
                 
@@ -1082,6 +1108,14 @@
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // เพิ่มปุ่มลองใหม่
+                const retryButton = document.createElement('button');
+                retryButton.textContent = "ลองใหม่อีกครั้ง";
+                retryButton.className = "modal-btn";
+                retryButton.style.marginTop = "15px";
+                retryButton.onclick = fetchUserHistory;
+                document.getElementById('noDataMessage').appendChild(retryButton);
             }
         }
         
@@ -1129,14 +1163,6 @@
                 const item = filteredData[i];
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
-                
-                console.log(`Creating item display for index ${i}`, item);
-                
-                // ตรวจสอบว่ามีข้อมูลที่ต้องการแสดงหรือไม่
-                if (!item || typeof item !== 'object') {
-                    console.error(`Invalid item data at index ${i}:`, item);
-                    continue;
-                }
                 
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
@@ -1421,39 +1447,67 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.2.0 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
-            
-            // เพิ่มปุ่มรีเฟรช
-            addRefreshButton();
         }
-        
-        // เพิ่มปุ่ม Refresh ข้อมูล
-        function addRefreshButton() {
-            const searchBox = document.getElementById('searchBox');
-            if (!searchBox) return;
+
+        // เพิ่มฟังก์ชันใหม่สำหรับแสดงข้อมูลดีบั๊ก
+        function showDebugInfo() {
+            console.log("แสดงข้อมูลดีบั๊กสำหรับผู้พัฒนา");
             
-            const refreshBtn = document.createElement('button');
-            refreshBtn.className = 'refresh-btn';
-            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล';
-            refreshBtn.style.marginLeft = '10px';
-            refreshBtn.style.padding = '8px 15px';
-            refreshBtn.style.backgroundColor = '#5A96E3';
-            refreshBtn.style.color = 'white';
-            refreshBtn.style.border = 'none';
-            refreshBtn.style.borderRadius = '5px';
-            refreshBtn.style.cursor = 'pointer';
+            const debugDiv = document.createElement('div');
+            debugDiv.style.marginTop = '20px';
+            debugDiv.style.padding = '15px';
+            debugDiv.style.backgroundColor = '#f8f9fa';
+            debugDiv.style.border = '1px solid #ddd';
+            debugDiv.style.borderRadius = '5px';
+            debugDiv.style.fontSize = '12px';
             
-            refreshBtn.addEventListener('click', function() {
-                console.log("รีเฟรชข้อมูล");
-                fetchUserHistory();
+            debugDiv.innerHTML = `
+                <h4 style="margin-top:0">ข้อมูลสำหรับตรวจสอบ</h4>
+                <p><strong>User ID:</strong> ${userId}</p>
+                <p><strong>Display Name:</strong> ${displayName}</p>
+                <p><strong>Is Admin:</strong> ${userId === LINE_USER_ID ? 'ใช่' : 'ไม่ใช่'}</p>
+                <p><strong>LIFF ID:</strong> ${LIFF_ID}</p>
+                <p><strong>API URL:</strong> ${HISTORY_WEBHOOK_URL}</p>
+                <p><strong>Browser:</strong> ${navigator.userAgent}</p>
+                <button id="copyDebugBtn" style="padding: 5px 10px; margin-top: 10px;">คัดลอกข้อมูล</button>
+            `;
+            
+            document.getElementById('noDataMessage').appendChild(debugDiv);
+            
+            document.getElementById('copyDebugBtn').addEventListener('click', function() {
+                const debugText = `
+    Debug Info:
+    User ID: ${userId}
+    Display Name: ${displayName}
+    Is Admin: ${userId === LINE_USER_ID ? 'ใช่' : 'ไม่ใช่'}
+    LIFF ID: ${LIFF_ID}
+    API URL: ${HISTORY_WEBHOOK_URL}
+    Browser: ${navigator.userAgent}
+    Time: ${new Date().toISOString()}
+                `;
+                
+                navigator.clipboard.writeText(debugText).then(() => {
+                    alert('คัดลอกข้อมูลแล้ว');
+                });
             });
-            
-            searchBox.appendChild(refreshBtn);
         }
-        
+
+        // เพิ่มฟังก์ชันตรวจสอบโหมดผู้พัฒนา
+        function isDeveloperMode() {
+            // เช็คว่าเป็นผู้ดูแลระบบหรือไม่
+            if (userId === LINE_USER_ID) return true;
+            
+            // เช็คว่ามีการเปิดใช้งานโหมดผู้พัฒนา
+            try {
+                return localStorage.getItem('devMode') === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
     </script>
 </body>
 </html>
