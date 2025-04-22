@@ -786,7 +786,7 @@
         const LIFF_ID = '2007293657-Lw86gYw1';
         
         // URL สำหรับ webhook - ปรับเป็น URL ที่มีพารามิเตอร์ action แทนการใช้ POST
-        const WEBHOOK_BASE_URL = 'https://script.google.com/macros/s/AKfycbzHoQp-m4FYupZOjOgjSiMHezkpyYpXLeqH2Tnf1xoFHghjXJ63IdPAs6uUTlK9GK8h/exec';
+        const WEBHOOK_BASE_URL = 'https://script.google.com/macros/s/AKfycbyvrcwmaraz71WAs1JTLNk3mfxl2QeBd4mZ9mTThxI81XqWC7VkngVZHd7YRBhsbo1k/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -863,19 +863,25 @@
                 
                 console.log("เรียกใช้ API:", urlWithCache);
                 
-                const response = await fetch(urlWithCache);
-                
-                if (!response.ok) {
-                    console.error("API ตอบกลับสถานะไม่สำเร็จ:", response.status);
-                    return checkUserPermissionFallback(userId);
-                }
-                
                 try {
+                    const response = await fetch(urlWithCache, {
+                        method: 'GET',
+                        mode: 'cors', // เพิ่ม CORS mode
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        console.error("API ตอบกลับสถานะไม่สำเร็จ:", response.status);
+                        return checkUserPermissionFallback(userId);
+                    }
+                    
                     const data = await response.json();
                     console.log("ผลการตรวจสอบสิทธิ์:", data);
                     return data.hasPermission === true;
                 } catch (e) {
-                    console.error("ไม่สามารถแปลง response เป็น JSON:", e);
+                    console.error("ไม่สามารถเรียกใช้ API หรือแปลง response เป็น JSON:", e);
                     return checkUserPermissionFallback(userId);
                 }
             } catch (error) {
@@ -884,10 +890,12 @@
             }
         }
         
-        // ตรวจสอบสิทธิ์แบบสำรอง
+        // ตรวจสอบสิทธิ์แบบสำรอง - เพิ่มฟังก์ชันที่ขาดหายไป
         function checkUserPermissionFallback(userId) {
+            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง สำหรับ userId:", userId);
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+                // เพิ่ม userId ที่อนุญาตเพิ่มเติมได้ที่นี่
             ];
             
             return approvedUserIds.includes(userId);
@@ -954,7 +962,11 @@
                 console.log("เรียกใช้ API:", urlWithCache);
                 
                 const response = await fetch(urlWithCache, {
-                    method: 'GET' // ระบุให้ชัดเจนว่าใช้ GET
+                    method: 'GET', // ระบุให้ชัดเจนว่าใช้ GET
+                    mode: 'cors', // เพิ่ม CORS mode
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 // ซ่อน loading
