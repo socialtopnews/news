@@ -474,7 +474,7 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxW8nn1pExWX1K1icUtCeL1TXgIxE6ZPdjx14AzGppINub6WesjoIgDnilZV0LtEguD/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1008,8 +1008,13 @@
                         return;
                     }
                     
-                    if (data.history && data.history.length > 0) {
+                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        
+                        // ตรวจสอบโครงสร้างข้อมูลที่ได้รับเพื่อการ debug
+                        const sampleItem = data.history[0];
+                        console.log("ตัวอย่างข้อมูลรายการแรก:", sampleItem);
+                        
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1028,7 +1033,7 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API
+                // สร้าง URL สำหรับเรียก API พร้อมระบุ userId ให้ชัดเจน
                 const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
@@ -1039,8 +1044,11 @@
                     console.error('เกิดข้อผิดพลาดในการโหลด script JSONP:', e);
                     document.getElementById('loadingIndicator').style.display = 'none';
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p><button id="retryButton" class="modal-btn" style="margin-top:15px;display:inline-block;">ลองใหม่</button>';
                     document.getElementById('noDataMessage').style.display = 'block';
+                    
+                    // เพิ่มปุ่มลองใหม่
+                    document.getElementById('retryButton').addEventListener('click', fetchUserHistory);
                     
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
@@ -1060,8 +1068,11 @@
                         console.log("การเรียก API หมดเวลา");
                         delete window[callbackName];
                         document.getElementById('loadingIndicator').style.display = 'none';
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p><button id="retryButton" class="modal-btn" style="margin-top:15px;display:inline-block;">ลองใหม่</button>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        
+                        // เพิ่มปุ่มลองใหม่
+                        document.getElementById('retryButton').addEventListener('click', fetchUserHistory);
                     }
                 }, 15000);
                 
@@ -1073,9 +1084,12 @@
                 showErrorMessage("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message);
                 
                 // แสดงข้อความว่าไม่มีข้อมูล
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p><button id="retryButton" class="modal-btn" style="margin-top:15px;display:inline-block;">ลองใหม่</button>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // เพิ่มปุ่มลองใหม่
+                document.getElementById('retryButton').addEventListener('click', fetchUserHistory);
             }
         }
         
@@ -1104,7 +1118,7 @@
             historyList.innerHTML = '';
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
-            if (filteredData.length === 0) {
+            if (!filteredData || filteredData.length === 0) {
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
@@ -1124,15 +1138,22 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
+                // ตรวจสอบข้อมูลพิกัด
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
+                if (item.location && typeof item.location === "object") {
+                    if (item.location.lat && item.location.long) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                    } else {
+                        console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
+                    }
                 }
                 
+                // ตรวจสอบข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
+                // สร้าง HTML
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
                     <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
@@ -1140,7 +1161,7 @@
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText === "ไม่มีข้อมูล" ? locationText : (locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText)}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
                     </div>
@@ -1158,10 +1179,10 @@
             
             // อัปเดต pagination UI
             document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
+            document.getElementById('totalPages').textContent = totalPages || 1;
             
             document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
         }
         
         // แสดง Modal รายละเอียด
