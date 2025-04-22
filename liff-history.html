@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwaMaOsj8bn52DJaePDEGfuObpEqpDSaXvxsidnRbARPX2JUSC2JogK66x7DS20pUq_/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwxI88ETnYgKCnVws6L4xoVMH3ZHlaotBRWTt4HSI5XYYzi2sRKUsX2sN6RTbWWMyZX/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -999,11 +999,25 @@
                     
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
-                    // ตรวจสอบข้อผิดพลาด
+                    // เพิ่มการแสดงข้อมูล debugging
+                    console.log("สถานะ API:", data.status);
+                    console.log("ข้อความ:", data.message);
+                    console.log("จำนวนข้อมูล:", data.history ? data.history.length : 0);
+
+                    // แสดงข้อมูล debug ถ้ามีข้อผิดพลาด
                     if (data.status === "error") {
                         console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
+                        showDebugMessage("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด: " + data.message);
                         showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
+                        document.getElementById('noDataMessage').style.display = 'block';
+                        return;
+                    }
+                    
+                    // ตรวจสอบว่าข้อมูล history มาครบถ้วนหรือไม่
+                    if (!data.history) {
+                        showDebugMessage("ไม่พบข้อมูล history ในการตอบกลับ");
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>รูปแบบข้อมูลไม่ถูกต้อง<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         return;
                     }
@@ -1011,36 +1025,12 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // แสดงรายละเอียดข้อมูลแรกเพื่อการตรวจสอบ
+                        // แสดงข้อมูล debug รายการแรกเพื่อตรวจสอบ
                         console.log("ตัวอย่างข้อมูลแรก:", data.history[0]);
                         
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        
-                        // เพิ่มการตรวจสอบและแปลงข้อมูลที่จำเป็น
-                        for (let i = 0; i < currentHistoryData.length; i++) {
-                            // ตรวจสอบว่ามี location และมีโครงสร้างถูกต้อง
-                            if (currentHistoryData[i].location && 
-                                typeof currentHistoryData[i].location === 'string' &&
-                                currentHistoryData[i].location.includes(',')) {
-                                
-                                // แปลงจาก string เป็น object
-                                const parts = currentHistoryData[i].location.split(',');
-                                currentHistoryData[i].location = {
-                                    lat: parseFloat(parts[0].trim()),
-                                    long: parseFloat(parts[1].trim())
-                                };
-                            }
-                            
-                            // ตรวจสอบว่ามี deviceInfo
-                            if (!currentHistoryData[i].deviceInfo || typeof currentHistoryData[i].deviceInfo !== 'object') {
-                                currentHistoryData[i].deviceInfo = {
-                                    deviceType: "ไม่ทราบ",
-                                    deviceModel: "ไม่ทราบ"
-                                };
-                            }
-                        }
                         
                         displayHistoryData();
                         document.getElementById('historyList').style.display = 'block';
@@ -1056,9 +1046,8 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API และแนบ timestamp เพื่อป้องกัน cache
-                const timestamp = new Date().getTime();
-                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
+                // สร้าง URL สำหรับเรียก API
+                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
                 // สร้าง script tag สำหรับ JSONP
@@ -1153,42 +1142,19 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบและจัดการข้อมูลตำแหน่ง
+                // ตรวจสอบและแสดงข้อมูลตำแหน่ง
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location) {
-                    if (typeof item.location === "object" && item.location.lat && item.location.long) {
-                        locationText = `${item.location.lat}, ${item.location.long}`;
-                    } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล") {
-                        locationText = item.location;
-                    }
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // ตรวจสอบและจัดการข้อมูลอุปกรณ์
+                // ตรวจสอบและแสดงข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // จัดรูปแบบวันที่ให้แสดงผลสวยงาม
-                let formattedDate = item.timestamp || "ไม่ระบุเวลา";
-                try {
-                    // พยายามแปลงเป็น Date object และจัดรูปแบบใหม่
-                    const dateObj = new Date(item.timestamp);
-                    if (!isNaN(dateObj)) {
-                        formattedDate = dateObj.toLocaleString('th-TH', { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit', 
-                            minute: '2-digit'
-                        });
-                    }
-                } catch (e) {
-                    // ถ้าแปลงไม่สำเร็จ ใช้ค่าเดิม
-                    console.log("ไม่สามารถแปลงวันที่:", e);
-                }
-                
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${formattedDate}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
                     <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
                     <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
@@ -1223,34 +1189,24 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
-            console.log("กำลังแสดงรายละเอียดข้อมูล:", item);
-            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            
-            if (item.location) {
-                if (typeof item.location === "object" && item.location.lat && item.location.long) {
+            if (item.location && typeof item.location === "object") {
+                if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล") {
-                    // กรณีที่ location เป็น string ที่มีรูปแบบ "lat, long"
-                    locationText = item.location;
-                    if (item.location.includes(',')) {
-                        const coords = item.location.split(',').map(c => c.trim());
-                        if (coords.length === 2) {
-                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
-                        }
-                    }
+                } else {
+                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
+            } else {
+                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
-            // จัดการข้อมูลอุปกรณ์
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            // สร้างเนื้อหา Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
@@ -1265,6 +1221,10 @@
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
@@ -1475,6 +1435,44 @@
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
+        }
+
+        // เพิ่มฟังก์ชันสำหรับ debugging
+        function showDebugMessage(message) {
+            if (isLimitedBrowser() || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                console.log("DEBUG: " + message);
+                
+                // สร้างแถบ debug ถ้ายังไม่มี
+                let debugArea = document.getElementById('debugArea');
+                if (!debugArea) {
+                    debugArea = document.createElement('div');
+                    debugArea.id = 'debugArea';
+                    debugArea.style.backgroundColor = '#f8f9fa';
+                    debugArea.style.border = '1px solid #ddd';
+                    debugArea.style.borderRadius = '4px';
+                    debugArea.style.padding = '10px';
+                    debugArea.style.margin = '10px 0';
+                    debugArea.style.fontSize = '12px';
+                    debugArea.style.color = '#666';
+                    debugArea.style.maxHeight = '150px';
+                    debugArea.style.overflow = 'auto';
+                    debugArea.innerHTML = '<strong>Debug Messages:</strong>';
+                    
+                    // เพิ่ม debug area ลงในหน้า
+                    const content = document.querySelector('.content');
+                    content.insertBefore(debugArea, content.firstChild);
+                }
+                
+                // เพิ่มข้อความ
+                const debugMsg = document.createElement('div');
+                debugMsg.textContent = message;
+                debugMsg.style.borderBottom = '1px solid #eee';
+                debugMsg.style.padding = '3px 0';
+                debugArea.appendChild(debugMsg);
+                
+                // เลื่อนไปที่ข้อความล่าสุด
+                debugArea.scrollTop = debugArea.scrollHeight;
+            }
         }
     </script>
 </body>
