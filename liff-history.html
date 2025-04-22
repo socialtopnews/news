@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzLDsEKYSdnEyYC-XF4lSNp2WWl9cKjaMEgV4WeyEx4x6BCjVw1q37wW2QfZaCEMvsw/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1010,9 +1010,6 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        // แสดงข้อมูลตัวอย่างในคอนโซล
-                        console.log("ตัวอย่างข้อมูล:", data.history[0]);
-                        
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1021,23 +1018,10 @@
                         document.getElementById('historyList').style.display = 'block';
                         document.getElementById('pagination').style.display = 'flex';
                     } else {
-                        console.log("ไม่พบข้อมูลประวัติสำหรับ userId:", userId);
+                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
-                        
-                        // เพิ่มปุ่มลองใหม่
-                        const retryButton = document.createElement('button');
-                        retryButton.textContent = "ลองใหม่อีกครั้ง";
-                        retryButton.className = "modal-btn";
-                        retryButton.style.marginTop = "15px";
-                        retryButton.onclick = fetchUserHistory;
-                        document.getElementById('noDataMessage').appendChild(retryButton);
-                        
-                        // แสดงข้อมูลเพิ่มเติมสำหรับการวิเคราะห์ปัญหา
-                        if (isDeveloperMode()) {
-                            showDebugInfo();
-                        }
                     }
                     
                     // ลบ callback หลังจากใช้งานเสร็จเพื่อป้องกัน memory leak
@@ -1057,14 +1041,6 @@
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
-                    
-                    // เพิ่มปุ่มลองใหม่
-                    const retryButton = document.createElement('button');
-                    retryButton.textContent = "ลองใหม่อีกครั้ง";
-                    retryButton.className = "modal-btn";
-                    retryButton.style.marginTop = "15px";
-                    retryButton.onclick = fetchUserHistory;
-                    document.getElementById('noDataMessage').appendChild(retryButton);
                     
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
@@ -1086,14 +1062,6 @@
                         document.getElementById('loadingIndicator').style.display = 'none';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
-                        
-                        // เพิ่มปุ่มลองใหม่
-                        const retryButton = document.createElement('button');
-                        retryButton.textContent = "ลองใหม่อีกครั้ง";
-                        retryButton.className = "modal-btn";
-                        retryButton.style.marginTop = "15px";
-                        retryButton.onclick = fetchUserHistory;
-                        document.getElementById('noDataMessage').appendChild(retryButton);
                     }
                 }, 15000);
                 
@@ -1108,14 +1076,6 @@
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
-                
-                // เพิ่มปุ่มลองใหม่
-                const retryButton = document.createElement('button');
-                retryButton.textContent = "ลองใหม่อีกครั้ง";
-                retryButton.className = "modal-btn";
-                retryButton.style.marginTop = "15px";
-                retryButton.onclick = fetchUserHistory;
-                document.getElementById('noDataMessage').appendChild(retryButton);
             }
         }
         
@@ -1451,62 +1411,6 @@
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
-        }
-
-        // เพิ่มฟังก์ชันใหม่สำหรับแสดงข้อมูลดีบั๊ก
-        function showDebugInfo() {
-            console.log("แสดงข้อมูลดีบั๊กสำหรับผู้พัฒนา");
-            
-            const debugDiv = document.createElement('div');
-            debugDiv.style.marginTop = '20px';
-            debugDiv.style.padding = '15px';
-            debugDiv.style.backgroundColor = '#f8f9fa';
-            debugDiv.style.border = '1px solid #ddd';
-            debugDiv.style.borderRadius = '5px';
-            debugDiv.style.fontSize = '12px';
-            
-            debugDiv.innerHTML = `
-                <h4 style="margin-top:0">ข้อมูลสำหรับตรวจสอบ</h4>
-                <p><strong>User ID:</strong> ${userId}</p>
-                <p><strong>Display Name:</strong> ${displayName}</p>
-                <p><strong>Is Admin:</strong> ${userId === LINE_USER_ID ? 'ใช่' : 'ไม่ใช่'}</p>
-                <p><strong>LIFF ID:</strong> ${LIFF_ID}</p>
-                <p><strong>API URL:</strong> ${HISTORY_WEBHOOK_URL}</p>
-                <p><strong>Browser:</strong> ${navigator.userAgent}</p>
-                <button id="copyDebugBtn" style="padding: 5px 10px; margin-top: 10px;">คัดลอกข้อมูล</button>
-            `;
-            
-            document.getElementById('noDataMessage').appendChild(debugDiv);
-            
-            document.getElementById('copyDebugBtn').addEventListener('click', function() {
-                const debugText = `
-    Debug Info:
-    User ID: ${userId}
-    Display Name: ${displayName}
-    Is Admin: ${userId === LINE_USER_ID ? 'ใช่' : 'ไม่ใช่'}
-    LIFF ID: ${LIFF_ID}
-    API URL: ${HISTORY_WEBHOOK_URL}
-    Browser: ${navigator.userAgent}
-    Time: ${new Date().toISOString()}
-                `;
-                
-                navigator.clipboard.writeText(debugText).then(() => {
-                    alert('คัดลอกข้อมูลแล้ว');
-                });
-            });
-        }
-
-        // เพิ่มฟังก์ชันตรวจสอบโหมดผู้พัฒนา
-        function isDeveloperMode() {
-            // เช็คว่าเป็นผู้ดูแลระบบหรือไม่
-            if (userId === LINE_USER_ID) return true;
-            
-            // เช็คว่ามีการเปิดใช้งานโหมดผู้พัฒนา
-            try {
-                return localStorage.getItem('devMode') === 'true';
-            } catch (e) {
-                return false;
-            }
         }
     </script>
 </body>
