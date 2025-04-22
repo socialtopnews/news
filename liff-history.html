@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby4z7rhGKlTwRwPknvktyWD2Mmpf0Js6CFhf6lWW9lLk0AIUKQjBN1IZfdNUgjf56Y9/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz5ykWwjbsNkOiiUaCj6cZNd1QUjuUNSaPb7Dpku7p9BHLEsI4pjk87IrAkq15SDz4o/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1011,37 +1011,23 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // กรองข้อมูลซ้ำซ้อนอีกครั้งด้วย Set (ป้องกันกรณีที่ server-side มีข้อมูลซ้ำ)
-                        const uniqueEntries = new Map();
+                        // กรองข้อมูลที่มี trackingKey เป็น "ไม่มีค่า" ออก
+                        const filteredHistory = data.history.filter(item => 
+                            item.trackingKey && item.trackingKey !== "ไม่มีค่า" && item.trackingKey !== "");
                         
-                        data.history.forEach(item => {
-                            // สร้าง key ที่ไม่ซ้ำกันสำหรับแต่ละรายการประวัติ
-                            const key = `${item.timestamp}-${item.trackingKey}`;
-                            
-                            // ถ้าเป็นข้อมูลใหม่หรือเป็นข้อมูลที่มี timestamp ใหม่กว่า ให้ใช้ข้อมูลนั้น
-                            if (!uniqueEntries.has(key) || 
-                                new Date(item.timestamp) > new Date(uniqueEntries.get(key).timestamp)) {
-                                uniqueEntries.set(key, item);
-                            }
+                        console.log(`หลังกรอง เหลือข้อมูล ${filteredHistory.length} รายการ`);
+                        
+                        // ตรวจสอบข้อมูลซ้ำซ้อน โดยใช้ trackingKey + timestamp เป็น key
+                        const uniqueItems = {};
+                        filteredHistory.forEach(item => {
+                            const uniqueKey = `${item.trackingKey}_${item.timestamp}`;
+                            // เก็บเฉพาะรายการที่ไม่ซ้ำ
+                            uniqueItems[uniqueKey] = item;
                         });
                         
-                        // แปลง Map เป็น Array สำหรับใช้งาน
-                        currentHistoryData = Array.from(uniqueEntries.values());
-                        
-                        // เรียงลำดับตามเวลาล่าสุด
-                        currentHistoryData.sort((a, b) => {
-                            try {
-                                // ถ้าไม่มี timestamp ให้ถือว่าเป็นข้อมูลเก่า (ไปอยู่ท้ายสุด)
-                                if (!a.timestamp) return 1;
-                                if (!b.timestamp) return -1;
-                                
-                                return new Date(b.timestamp) - new Date(a.timestamp);
-                            } catch (e) {
-                                return 0;
-                            }
-                        });
-                        
-                        console.log(`หลังจากกรองข้อมูลซ้ำซ้อน เหลือข้อมูล ${currentHistoryData.length} รายการ`);
+                        // แปลงกลับเป็น array
+                        currentHistoryData = Object.values(uniqueItems);
+                        console.log(`หลังลบข้อมูลซ้ำ เหลือข้อมูล ${currentHistoryData.length} รายการ`);
                         
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1060,7 +1046,7 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API พร้อมเพิ่ม timestamp เพื่อป้องกันการใช้ cache
+                // สร้าง URL สำหรับเรียก API
                 const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
@@ -1150,51 +1136,40 @@
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
             
+            console.log(`แสดงข้อมูลจากลำดับที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${filteredData.length} รายการ`);
+            
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
+                
+                // ตรวจสอบความสมบูรณ์ของข้อมูล
+                if (!item || !item.trackingKey || item.trackingKey === "ไม่มีค่า") {
+                    console.warn(`ข้ามรายการที่ ${i + 1} เนื่องจากข้อมูลไม่สมบูรณ์`, item);
+                    continue;
+                }
+                
+                console.log(`กำลังแสดงรายการ #${i + 1}: ${item.trackingKey}`);
+                
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // เตรียมข้อมูลตำแหน่ง
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object") {
-                    if (item.location.lat && item.location.long) {
-                        locationText = `${item.location.lat}, ${item.location.long}`;
-                    }
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // เตรียมข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || deviceInfo.platform || "ไม่ทราบ";
-                
-                // จัดรูปแบบวันที่ให้อ่านง่ายขึ้น
-                let displayDate = item.timestamp || "ไม่ระบุเวลา";
-                try {
-                    const date = new Date(item.timestamp);
-                    if (!isNaN(date.getTime())) {
-                        // ถ้าเป็นวันที่ปัจจุบัน แสดงเฉพาะเวลา
-                        const today = new Date();
-                        if (date.toDateString() === today.toDateString()) {
-                            displayDate = "วันนี้ " + date.toLocaleTimeString('th-TH');
-                        } else {
-                            displayDate = date.toLocaleDateString('th-TH') + ' ' + date.toLocaleTimeString('th-TH');
-                        }
-                    }
-                } catch (e) {
-                    console.warn("ไม่สามารถแปลงวันที่:", e);
-                }
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i> ${displayDate}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey}</div>
                     <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText === "ไม่มีข้อมูล" ? "ไม่มีข้อมูล" : 
-                                  (locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText)}</div>
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
                     </div>
@@ -1230,28 +1205,23 @@
                 if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                } else {
+                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
+            } else {
+                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            // จัดรูปแบบวันที่ให้อ่านง่าย
-            let formattedDate = item.timestamp || "ไม่ระบุ";
-            try {
-                const date = new Date(item.timestamp);
-                if (!isNaN(date.getTime())) {
-                    formattedDate = date.toLocaleDateString('th-TH') + ' ' + date.toLocaleTimeString('th-TH');
-                }
-            } catch (e) {}
-            
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${formattedDate}</div>
+                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
@@ -1323,19 +1293,17 @@
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level !== undefined || batteryInfo.charging !== undefined) ? `
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
-                    ${batteryInfo.level !== undefined ? `
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level}</div>
-                    </div>` : ''}
-                    ${batteryInfo.charging !== undefined ? `
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
+                    </div>
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging}</div>
-                    </div>` : ''}
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
+                    </div>
                 </div>` : ''}
             `;
             
@@ -1428,6 +1396,25 @@
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
                         browser: "Chrome"
+                    }
+                },
+                // เพิ่มรายการทดสอบที่มีความหลากหลาย
+                {
+                    timestamp: "13/02/2023 09:45:12",
+                    trackingKey: "track_9876543",
+                    caseName: "เคสทดสอบ 3",
+                    creatorFullName: "นายทดสอบ ระบบ",
+                    ip: "203.0.113.3",
+                    location: {
+                        lat: 13.746717,
+                        long: 100.533186,
+                        accuracy: 12
+                    },
+                    deviceInfo: {
+                        deviceType: "Windows PC",
+                        deviceModel: "Desktop",
+                        platform: "Windows 11",
+                        browser: "Edge"
                     }
                 }
             ];
