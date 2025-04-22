@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwq9aEGeHY2cCZfvz-hM-Z-thstaz-LVDoJYLkuaOPmOIIRPCKjGNrrBOyDur9wSltV/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxLB75UbxcejgaPLAobMHv2__jmCDJvsVYaia4Kga7KEHag5S0Zdn8NZhB2O19k58uw/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -842,21 +842,6 @@
                 }
                 
                 isLiffInitialized = true;
-                
-                // เพิ่ม: แสดง userId สำหรับการดีบัก
-                if (isDevelopmentMode()) {
-                    const userDebugInfo = document.createElement('div');
-                    userDebugInfo.style.padding = '10px';
-                    userDebugInfo.style.margin = '10px 0';
-                    userDebugInfo.style.backgroundColor = '#f8f9fa';
-                    userDebugInfo.style.border = '1px solid #ddd';
-                    userDebugInfo.style.borderRadius = '4px';
-                    userDebugInfo.style.fontSize = '12px';
-                    userDebugInfo.innerHTML = `<strong>Debug - User ID:</strong> ${userId}`;
-                    
-                    const content = document.querySelector('.content');
-                    content.insertBefore(userDebugInfo, content.firstChild);
-                }
                 
                 // ซ่อนหน้าโหลดดิ้ง
                 document.getElementById('loadingScreen').style.display = 'none';
@@ -1023,13 +1008,14 @@
                         return;
                     }
                     
-                    // เพิ่ม: แสดงข้อมูลดีบั๊กสำหรับการตรวจสอบ
-                    if (isDevelopmentMode() && data.history) {
-                        showDebugInfo(data.history);
-                    }
-                    
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        
+                        // ตรวจสอบและแสดงข้อมูลสำหรับการแก้ไขข้อผิดพลาด
+                        data.history.forEach((item, index) => {
+                            console.log(`Item ${index+1}: TrackingKey=${item.trackingKey}, CaseName=${item.caseName}`);
+                        });
+                        
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1048,11 +1034,8 @@
                     delete window[callbackName];
                 };
                 
-                // เพิ่มพารามิเตอร์ debug=1 เพื่อให้เซิร์ฟเวอร์ล็อกข้อมูลมากขึ้น
-                const debugParam = isDevelopmentMode() ? '&debug=1' : '';
-                
-                // สร้าง URL สำหรับเรียก API
-                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}${debugParam}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
+                // สร้าง URL สำหรับเรียก API และเพิ่มพารามิเตอร์เพื่อการตรวจสอบ
+                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}&debug=true`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
                 // สร้าง script tag สำหรับ JSONP
@@ -1146,6 +1129,14 @@
                 const item = filteredData[i];
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
+                
+                console.log(`Creating item display for index ${i}`, item);
+                
+                // ตรวจสอบว่ามีข้อมูลที่ต้องการแสดงหรือไม่
+                if (!item || typeof item !== 'object') {
+                    console.error(`Invalid item data at index ${i}:`, item);
+                    continue;
+                }
                 
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
@@ -1354,7 +1345,7 @@
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลอง - เพิ่มให้มีความหลากหลายมากขึ้น
+            // สร้างข้อมูลจำลอง
             const mockData = [
                 {
                     timestamp: "15/02/2023 14:32:21",
@@ -1391,31 +1382,8 @@
                         platform: "Android 13",
                         browser: "Chrome"
                     }
-                },
-                {
-                    timestamp: "13/02/2023 16:45:12",
-                    trackingKey: "track_789012",
-                    caseName: "เคสทดสอบ 3",
-                    creatorFullName: "นายทดสอบ ระบบ",
-                    ip: "203.0.113.3",
-                    location: {
-                        lat: 13.746717,
-                        long: 100.533186,
-                        accuracy: 10
-                    },
-                    deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC",
-                        platform: "Windows 11",
-                        browser: "Edge"
-                    }
                 }
             ];
-            
-            // แสดงข้อมูลดีบั๊กเพิ่มเติม
-            if (isDevelopmentMode()) {
-                showDebugInfo(mockData);
-            }
             
             currentHistoryData = mockData;
             filteredData = [...mockData];
@@ -1457,73 +1425,35 @@
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
+            
+            // เพิ่มปุ่มรีเฟรช
+            addRefreshButton();
         }
-
-        // เพิ่มฟังก์ชันเพื่อตรวจสอบว่าอยู่ในโหมดพัฒนาหรือไม่
-        function isDevelopmentMode() {
-            return isLimitedBrowser() || 
-                   location.hostname === 'localhost' || 
-                   location.hostname === '127.0.0.1' ||
-                   location.search.includes('debug=1');
-        }
-
-        // เพิ่มฟังก์ชันแสดงข้อมูลดีบั๊ก
-        function showDebugInfo(historyData) {
-            // ลบข้อมูลดีบั๊กเก่า (ถ้ามี)
-            const oldDebug = document.getElementById('debugInfoBox');
-            if (oldDebug) oldDebug.remove();
+        
+        // เพิ่มปุ่ม Refresh ข้อมูล
+        function addRefreshButton() {
+            const searchBox = document.getElementById('searchBox');
+            if (!searchBox) return;
             
-            // สร้างกล่องแสดงข้อมูลดีบั๊ก
-            const debugBox = document.createElement('div');
-            debugBox.id = 'debugInfoBox';
-            debugBox.style.padding = '10px';
-            debugBox.style.margin = '10px 0';
-            debugBox.style.backgroundColor = '#f8f9fa';
-            debugBox.style.border = '1px solid #ddd';
-            debugBox.style.borderRadius = '4px';
-            debugBox.style.fontSize = '12px';
-            debugBox.style.whiteSpace = 'pre-wrap';
-            debugBox.style.maxHeight = '300px';
-            debugBox.style.overflow = 'auto';
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'refresh-btn';
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล';
+            refreshBtn.style.marginLeft = '10px';
+            refreshBtn.style.padding = '8px 15px';
+            refreshBtn.style.backgroundColor = '#5A96E3';
+            refreshBtn.style.color = 'white';
+            refreshBtn.style.border = 'none';
+            refreshBtn.style.borderRadius = '5px';
+            refreshBtn.style.cursor = 'pointer';
             
-            let debugContent = '<strong>Debug Information:</strong>\n';
-            debugContent += `Total Records: ${historyData.length}\n\n`;
-            
-            // แสดงข้อมูล 3 รายการแรก (หรือน้อยกว่าถ้ามีน้อยกว่า 3 รายการ)
-            const sampleSize = Math.min(3, historyData.length);
-            for (let i = 0; i < sampleSize; i++) {
-                const item = historyData[i];
-                debugContent += `Record ${i+1}:\n`;
-                debugContent += `- Tracking Key: ${item.trackingKey}\n`;
-                debugContent += `- Case Name: ${item.caseName}\n`;
-                debugContent += `- Timestamp: ${item.timestamp}\n`;
-                debugContent += `- Creator: ${item.creatorFullName}\n\n`;
-            }
-            
-            // แสดงปุ่มสำหรับโหลดข้อมูลใหม่หรือใช้ข้อมูลจำลอง
-            debugContent += `<div style="margin-top:10px;">
-                <button id="refreshHistoryBtn" style="margin-right:10px;">โหลดข้อมูลใหม่</button>
-                <button id="useMockDataBtn">ใช้ข้อมูลจำลอง</button>
-            </div>`;
-            
-            debugBox.innerHTML = debugContent;
-            
-            // เพิ่มกล่องดีบั๊กเข้าไปในหน้า
-            const historyList = document.getElementById('historyList');
-            if (historyList.parentNode) {
-                historyList.parentNode.insertBefore(debugBox, historyList);
-            }
-            
-            // เพิ่ม event listener สำหรับปุ่มโหลดข้อมูลใหม่
-            document.getElementById('refreshHistoryBtn').addEventListener('click', function() {
+            refreshBtn.addEventListener('click', function() {
+                console.log("รีเฟรชข้อมูล");
                 fetchUserHistory();
             });
             
-            // เพิ่ม event listener สำหรับปุ่มใช้ข้อมูลจำลอง
-            document.getElementById('useMockDataBtn').addEventListener('click', function() {
-                handleMockDataResponse();
-            });
+            searchBox.appendChild(refreshBtn);
         }
+        
     </script>
 </body>
 </html>
