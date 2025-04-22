@@ -787,7 +787,7 @@
         
         // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwV3sSqrxAU3ezen0KQr8pC2O2-IZrixaeFvqwo1i3bNXUd1wR-nM9BszXvX5j8ZqhR/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -980,16 +980,16 @@
                 
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
                 
-                // ถ้าเปิดทดสอบบนเครื่องโดยตรง ให้ใช้ข้อมูลจำลอง
-                if (window.location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-                    console.log("กำลังทดสอบในโหมดพัฒนา ใช้ข้อมูลจำลอง");
+                // ในกรณีที่คาดว่าจะมีปัญหาการเข้าถึง API ให้แสดงข้อมูลจำลองแทน
+                if (isLimitedBrowser()) {
+                    console.log("ตรวจพบว่าเบราว์เซอร์มีข้อจำกัด ใช้ข้อมูลจำลอง");
                     setTimeout(() => {
                         handleMockDataResponse();
-                    }, 1000);
+                    }, 1500);
                     return;
                 }
                 
-                // สร้าง unique callback name
+                // สร้าง unique callback name เพื่อป้องกันการชนกันของ callback
                 const callbackName = 'jsonpCallback_' + new Date().getTime();
                 
                 // สร้าง global callback function
@@ -999,32 +999,16 @@
                     
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
-                    // ตรวจสอบว่าข้อมูลถูกต้องหรือไม่
-                    if (!data) {
-                        console.error("ไม่ได้รับข้อมูลตอบกลับ (null/undefined)");
-                        showErrorMessage("เซิร์ฟเวอร์ไม่ส่งข้อมูลตอบกลับ กรุณาลองใหม่อีกครั้ง");
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
-                        document.getElementById('noDataMessage').style.display = 'block';
-                        
-                        // ปุ่มลองใหม่
-                        addRetryButton();
-                        return;
-                    }
-                    
                     // ตรวจสอบข้อผิดพลาด
                     if (data.status === "error") {
                         console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
                         showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
-                        
-                        // ปุ่มลองใหม่
-                        addRetryButton();
                         return;
                     }
                     
-                    // ตรวจสอบว่ามีข้อมูลประวัติหรือไม่
-                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
+                    if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
@@ -1035,15 +1019,12 @@
                         document.getElementById('pagination').style.display = 'flex';
                     } else {
                         console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน<br>หรือคุณยังไม่มี Tracking Key</p>';
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
-                        
-                        // เพิ่มปุ่มเรียกข้อมูลตัวอย่าง
-                        addDemoDataButton();
                     }
                     
-                    // ลบ callback เพื่อป้องกัน memory leak
+                    // ลบ callback หลังจากใช้งานเสร็จเพื่อป้องกัน memory leak
                     delete window[callbackName];
                 };
                 
@@ -1058,32 +1039,29 @@
                     console.error('เกิดข้อผิดพลาดในการโหลด script JSONP:', e);
                     document.getElementById('loadingIndicator').style.display = 'none';
                     showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต</p>';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
                     
-                    // เพิ่มปุ่มลองใหม่และปุ่มเรียกข้อมูลตัวอย่าง
-                    addRetryButton();
-                    addDemoDataButton();
+                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
+                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
+                        handleMockDataResponse();
+                    }
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
                 document.body.appendChild(script);
                 
-                // ตั้ง timeout 15 วินาที
+                // ตั้ง timeout เผื่อกรณีที่ไม่มีการตอบกลับ
                 setTimeout(() => {
                     if (window[callbackName]) {
-                        console.log("การเรียก API หมดเวลา (15 วินาที)");
+                        console.log("การเรียก API หมดเวลา");
                         delete window[callbackName];
                         document.getElementById('loadingIndicator').style.display = 'none';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
-                        
-                        // เพิ่มปุ่มลองใหม่และปุ่มเรียกข้อมูลตัวอย่าง
-                        addRetryButton();
-                        addDemoDataButton();
                     }
                 }, 15000);
                 
@@ -1098,10 +1076,6 @@
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
-                
-                // เพิ่มปุ่มลองใหม่และปุ่มเรียกข้อมูลตัวอย่าง
-                addRetryButton();
-                addDemoDataButton();
             }
         }
         
@@ -1356,69 +1330,43 @@
         function handleMockDataResponse() {
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('noDataMessage').style.display = 'none';
             
-            // สร้างข้อมูลจำลองที่สมจริงมากขึ้น
-            const currentDate = new Date();
-            const yesterday = new Date();
-            yesterday.setDate(currentDate.getDate() - 1);
-            
-            const twoDaysAgo = new Date();
-            twoDaysAgo.setDate(currentDate.getDate() - 2);
-            
+            // สร้างข้อมูลจำลอง
             const mockData = [
                 {
-                    timestamp: currentDate.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                    trackingKey: "track_" + Math.floor(100000 + Math.random() * 900000),
-                    caseName: "เป้าหมาย Line ID: lion1234",
-                    creatorFullName: displayName || "ผู้ใช้ปัจจุบัน",
-                    ip: "203.0.113." + Math.floor(Math.random() * 255),
+                    timestamp: "15/02/2023 14:32:21",
+                    trackingKey: "track_123456",
+                    caseName: "เคสทดสอบ 1",
+                    creatorFullName: "นายทดสอบ ระบบ",
+                    ip: "203.0.113.1",
                     location: {
-                        lat: 13.756331 + (Math.random() - 0.5) * 0.05,
-                        long: 100.501762 + (Math.random() - 0.5) * 0.05,
-                        accuracy: Math.floor(5 + Math.random() * 20)
+                        lat: 13.756331,
+                        long: 100.501762,
+                        accuracy: 15
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
-                        deviceModel: "iPhone 13 Pro Max",
-                        platform: "iOS 16.5",
+                        deviceModel: "iPhone 13",
+                        platform: "iOS 16.2",
                         browser: "Safari"
                     }
                 },
                 {
-                    timestamp: yesterday.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                    trackingKey: "track_" + Math.floor(100000 + Math.random() * 900000),
-                    caseName: "เป้าหมาย: นายแดง (แชทหลอกขายรองเท้า)",
-                    creatorFullName: displayName || "ผู้ใช้ปัจจุบัน",
-                    ip: "203.0.113." + Math.floor(Math.random() * 255),
+                    timestamp: "14/02/2023 10:15:03",
+                    trackingKey: "track_654321",
+                    caseName: "เคสทดสอบ 2",
+                    creatorFullName: "นางสาวทดสอบ ระบบ",
+                    ip: "203.0.113.2",
                     location: {
-                        lat: 13.736717 + (Math.random() - 0.5) * 0.05,
-                        long: 100.523186 + (Math.random() - 0.5) * 0.05,
-                        accuracy: Math.floor(5 + Math.random() * 20)
+                        lat: 13.736717,
+                        long: 100.523186,
+                        accuracy: 8
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
                         browser: "Chrome"
-                    }
-                },
-                {
-                    timestamp: twoDaysAgo.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                    trackingKey: "track_" + Math.floor(100000 + Math.random() * 900000),
-                    caseName: "หลอกเงิน IG: beauty_store99",
-                    creatorFullName: displayName || "ผู้ใช้ปัจจุบัน",
-                    ip: "203.0.113." + Math.floor(Math.random() * 255),
-                    location: {
-                        lat: 13.746717 + (Math.random() - 0.5) * 0.05,
-                        long: 100.513186 + (Math.random() - 0.5) * 0.05,
-                        accuracy: Math.floor(5 + Math.random() * 20)
-                    },
-                    deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC",
-                        platform: "Windows 11",
-                        browser: "Edge"
                     }
                 }
             ];
@@ -1430,105 +1378,40 @@
             displayHistoryData();
             document.getElementById('historyList').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
-            
-            // แสดงข้อความว่ากำลังใช้ข้อมูลจำลอง
-            showInfoMessage("กำลังแสดงข้อมูลตัวอย่าง ไม่ใช่ข้อมูลจริง");
         }
 
-        // เพิ่มปุ่มลองใหม่
-        function addRetryButton() {
-            const noDataMessage = document.getElementById('noDataMessage');
-            
-            // ตรวจสอบว่ามีปุ่มอยู่แล้วหรือไม่
-            if (!document.getElementById('retryButton')) {
-                const retryBtn = document.createElement('button');
-                retryBtn.id = 'retryButton';
-                retryBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ลองใหม่อีกครั้ง';
-                retryBtn.style.marginTop = '15px';
-                retryBtn.style.padding = '8px 16px';
-                retryBtn.style.backgroundColor = 'var(--primary-color)';
-                retryBtn.style.color = 'white';
-                retryBtn.style.border = 'none';
-                retryBtn.style.borderRadius = '5px';
-                retryBtn.style.cursor = 'pointer';
-                retryBtn.style.marginRight = '10px';
-                
-                retryBtn.addEventListener('click', function() {
-                    fetchUserHistory();
-                });
-                
-                noDataMessage.appendChild(retryBtn);
-            }
-        }
-        
-        // เพิ่มปุ่มแสดงข้อมูลตัวอย่าง
-        function addDemoDataButton() {
-            const noDataMessage = document.getElementById('noDataMessage');
-            
-            // ตรวจสอบว่ามีปุ่มอยู่แล้วหรือไม่
-            if (!document.getElementById('demoButton')) {
-                const demoBtn = document.createElement('button');
-                demoBtn.id = 'demoButton';
-                demoBtn.innerHTML = '<i class="fas fa-vial"></i> แสดงข้อมูลตัวอย่าง';
-                demoBtn.style.marginTop = '15px';
-                demoBtn.style.padding = '8px 16px';
-                demoBtn.style.backgroundColor = '#7367F0';
-                demoBtn.style.color = 'white';
-                demoBtn.style.border = 'none';
-                demoBtn.style.borderRadius = '5px';
-                demoBtn.style.cursor = 'pointer';
-                
-                demoBtn.addEventListener('click', function() {
-                    handleMockDataResponse();
-                });
-                
-                noDataMessage.appendChild(demoBtn);
-            }
-        }
-        
-        // แสดงข้อความแจ้งเตือนทั่วไป (สีฟ้า)
-        function showInfoMessage(message) {
-            const infoMessage = document.createElement('div');
-            infoMessage.className = 'message-box';
-            infoMessage.style.backgroundColor = 'rgba(0, 170, 255, 0.1)';
-            infoMessage.style.borderLeft = '4px solid var(--accent-color)';
-            infoMessage.innerHTML = `<p style="color: #0080bf;">${message}</p>`;
-            
+        // เพิ่มปุ่มทดสอบใช้ข้อมูลจำลอง
+        function addTestOption() {
             const content = document.querySelector('.content');
-            content.insertBefore(infoMessage, content.firstChild);
+            const testButton = document.createElement('button');
+            testButton.textContent = "ทดสอบด้วยข้อมูลจำลอง";
+            testButton.style.padding = "8px 16px";
+            testButton.style.background = "#f1f1f1";
+            testButton.style.border = "1px solid #ddd";
+            testButton.style.borderRadius = "4px";
+            testButton.style.margin = "10px 0";
+            testButton.style.cursor = "pointer";
             
-            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
-            setTimeout(() => {
-                infoMessage.remove();
-            }, 7000);
+            testButton.addEventListener('click', function() {
+                handleMockDataResponse();
+            });
+            
+            const firstChild = content.firstChild;
+            content.insertBefore(testButton, firstChild);
         }
-        
-        // ตรวจสอบการแสดงผล - เพิ่มตัวช่วยเพื่อดูการแสดงผลแบบละเอียด
-        // เรียกใช้งานฟังก์ชันนี้ได้จาก console ด้วยคำสั่ง checkDisplayStatus()
-        window.checkDisplayStatus = function() {
-            console.log("----- สถานะการแสดงผล -----");
-            console.log("userId:", userId);
-            console.log("displayName:", displayName);
-            console.log("userHasPermission:", userHasPermission);
-            console.log("จำนวนข้อมูลประวัติ:", currentHistoryData.length);
-            console.log("จำนวนข้อมูลที่กรอง:", filteredData.length);
-            console.log("หน้าปัจจุบัน:", currentPage);
-            console.log("จำนวนหน้าทั้งหมด:", totalPages);
+
+        // ตรวจสอบสถานะการอัพเดตโค้ด LIFF
+        function checkLiffVersion() {
+            const versionElement = document.createElement('div');
+            versionElement.style.fontSize = '10px';
+            versionElement.style.color = '#999';
+            versionElement.style.textAlign = 'center';
+            versionElement.style.padding = '5px';
+            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
-            if (currentHistoryData.length > 0) {
-                console.log("ตัวอย่างข้อมูลแรก:", currentHistoryData[0]);
-            }
-            
-            // ตรวจสอบสถานะการแสดงผลของแต่ละส่วน
-            console.log("สถานะการแสดงผล:");
-            console.log("- loadingIndicator:", document.getElementById('loadingIndicator').style.display);
-            console.log("- historyList:", document.getElementById('historyList').style.display);
-            console.log("- noDataMessage:", document.getElementById('noDataMessage').style.display);
-            console.log("- pagination:", document.getElementById('pagination').style.display);
-            console.log("- userInfoSection:", document.getElementById('userInfoSection').style.display);
-            
-            return "ตรวจสอบ console เพื่อดูผลลัพธ์";
-        };
+            const footer = document.querySelector('.footer');
+            footer.appendChild(versionElement);
+        }
     </script>
 </body>
 </html>
