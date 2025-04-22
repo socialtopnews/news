@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxe0C8xTKgYQOinGylWxpiQIAw8pgKb1LwNUp8xNW117z4OyfXGDdcDGpiJbJcwxsY1/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -838,9 +838,8 @@
                     // สร้าง script tag สำหรับ JSONP
                     const script = document.createElement('script');
                     
-                    // เปลี่ยนจาก LINE_OA_WEBHOOK_URL เป็น PHISHING_WEBHOOK_URL
-                    // และส่ง action เป็น checkUserPermissionFromSheet เพื่อให้ตรวจสอบจากชีต UserRegistration
-                    const url = new URL(PHISHING_WEBHOOK_URL);
+                    // เรียกใช้ AppScript โดยตรงเพื่อตรวจสอบสิทธิ์จากชีต UserRegistration
+                    const url = new URL('https://script.google.com/macros/s/AKfycbwLwlcSJcex_THbKsfGb8mtLfJo0aIA0scgSk2sPBpQbMF6xQ2tt0RfXmI1_i00VDg/exec');
                     url.searchParams.append('action', 'checkUserPermissionFromSheet');
                     url.searchParams.append('userId', userId);
                     url.searchParams.append('callback', callbackName);
