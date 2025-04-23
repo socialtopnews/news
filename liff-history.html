@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ประวัติการใช้งาน Phishing</title>
+    <title>ประวัติการใช้งาน | Phishing</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -787,8 +787,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -865,14 +865,14 @@
                     const originalText = statusEl.textContent;
                     statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
                     
-                    // ตรวจสอบใน localStorage ก่อนว่าเคยตรวจสอบสิทธิ์แล้วหรือไม่ (ภายใน 30 นาที)
+                    // ตรวจสอบใน localStorage ก่อนว่าเคยตรวจสอบสิทธิ์แล้วหรือไม่ (ภายใน 15 นาที)
                     try {
                         const savedPermission = localStorage.getItem('user_permission_' + userId);
                         const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
                         const currentTime = new Date().getTime();
                         
-                        // ถ้าข้อมูลไม่เกิน 30 นาที ให้ใช้ค่าจาก localStorage
-                        if (savedPermission && (currentTime - savedTime < 30 * 60 * 1000)) {
+                        // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาทีเหลือ 15 นาที)
+                        if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                             console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                             statusEl.textContent = originalText;
                             return resolve(savedPermission === 'true');
@@ -893,18 +893,28 @@
                         // คืนค่าข้อความเดิม
                         statusEl.textContent = originalText;
                         
-                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
-                            console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
-                            
-                            // บันทึกสิทธิ์ใน localStorage
-                            try {
-                                localStorage.setItem('user_permission_' + userId, data.hasPermission ? 'true' : 'false');
-                                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-                            } catch (e) {
-                                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+                        if (data && typeof data === 'object') {
+                            if (data.hasPermission !== undefined) {
+                                console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
+                                console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
+                                
+                                // บันทึกสิทธิ์ใน localStorage
+                                try {
+                                    localStorage.setItem('user_permission_' + userId, data.hasPermission ? 'true' : 'false');
+                                    localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
+                                    // บันทึกข้อความสถานะด้วยถ้ามี
+                                    if (data.userStatus) {
+                                        localStorage.setItem('user_status_' + userId, data.userStatus);
+                                    }
+                                } catch (e) {
+                                    console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+                                }
+                                
+                                resolve(data.hasPermission === true);
+                            } else {
+                                console.log("ข้อมูลสิทธิ์ไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
+                                resolve(checkUserPermissionFallback(userId));
                             }
-                            
-                            resolve(data.hasPermission === true);
                         } else {
                             console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
                             resolve(checkUserPermissionFallback(userId));
@@ -986,13 +996,27 @@
                 return true;
             }
             
+            // เพิ่มการตรวจสอบใน localStorage กรณีที่เคยมีการบันทึกไว้แล้ว
+            try {
+                const savedPermission = localStorage.getItem('user_permission_' + userId);
+                if (savedPermission === 'true') {
+                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ได้รับอนุมัติ");
+                    return true;
+                } else if (savedPermission === 'false') {
+                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ไม่ได้รับอนุมัติ");
+                    return false;
+                }
+            } catch (e) {
+                console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
+            }
+            
             const hasAccess = approvedUserIds.includes(userId);
             console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
             
             // บันทึกการตรวจสอบนี้ไว้ใน localStorage เพื่อลดการเรียกใช้งานซ้ำ
             try {
                 localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
-                localStorage.setItem('user_permission_time_' + userId, new Date().getTime());
+                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
             } catch (e) {
                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
             }
