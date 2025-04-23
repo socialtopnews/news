@@ -1403,35 +1403,17 @@
         function checkAppScriptAccess() {
             console.log("กำลังตรวจสอบการเข้าถึง App Script...");
             
-            // เพิ่มข้อความแสดงสถานะการตรวจสอบ
-            const statusMessage = document.createElement('div');
-            statusMessage.id = 'appscript-status';
-            statusMessage.style.position = 'fixed';
-            statusMessage.style.bottom = '10px';
-            statusMessage.style.left = '10px';
-            statusMessage.style.padding = '5px 10px';
-            statusMessage.style.fontSize = '12px';
-            statusMessage.style.backgroundColor = '#ffffcc';
-            statusMessage.style.border = '1px solid #ccc';
-            statusMessage.style.borderRadius = '3px';
-            statusMessage.style.zIndex = '1000';
-            statusMessage.textContent = 'กำลังตรวจสอบการเชื่อมต่อ...';
-            document.body.appendChild(statusMessage);
+            // สร้างตัวแปรสำหรับเก็บสถานะการเชื่อมต่อ
+            let connectionChecked = false;
             
             const img = new Image();
             img.onload = function() {
                 console.log("สามารถเข้าถึง App Script ได้!");
-                statusMessage.style.backgroundColor = '#ccffcc';
-                statusMessage.textContent = 'เชื่อมต่อ App Script สำเร็จ';
-                // ซ่อนข้อความหลัง 3 วินาที
-                setTimeout(() => {
-                    statusMessage.style.display = 'none';
-                }, 3000);
+                connectionChecked = true;
+                // ไม่แสดงข้อความใดๆ เมื่อเชื่อมต่อสำเร็จ
             };
             img.onerror = function() {
                 console.error("ไม่สามารถเข้าถึง App Script!");
-                statusMessage.style.backgroundColor = '#ffcccc';
-                statusMessage.textContent = 'ไม่สามารถเชื่อมต่อ App Script ได้';
                 
                 showErrorMessage("ไม่สามารถเข้าถึง Google Apps Script ได้ โปรดตรวจสอบว่า App Script ได้เผยแพร่เป็น Web App และอนุญาตให้เข้าถึงจากทุกคน");
                 
@@ -1442,7 +1424,7 @@
                     }
                 }, 500);
             };
-            // ใช้การเรียก favicon.ico เพื่อทดสอบการเข้าถึง (ถ้าเข้าถึงได้จะได้รับรูปภาพ ถ้าไม่ได้จะเกิด error)
+            // ใช้การเรียก favicon.ico เพื่อทดสอบการเข้าถึง
             img.src = `https://script.google.com/favicon.ico?${new Date().getTime()}`;
             
             // ตั้งเวลาหมดเวลา 5 วินาที
