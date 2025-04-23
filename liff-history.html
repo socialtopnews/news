@@ -1115,70 +1115,18 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // กรองเอาเฉพาะรายการที่ไม่ซ้ำกัน โดยตรวจสอบจาก timestamp + trackingKey
-                        const uniqueEntries = {};
-                        data.history.forEach(item => {
-                            const key = `${item.timestamp}_${item.trackingKey}`;
-                            // เก็บรายการล่าสุด (กรณีมีรายการซ้ำ)
-                            uniqueEntries[key] = item;
-                        });
+                        // บันทึกและแสดงข้อมูลดิบเพื่อการตรวจสอบ
+                        console.log("ตัวอย่างข้อมูลรายการแรก:", data.history[0]);
                         
-                        // แปลง object กลับเป็น array
-                        currentHistoryData = Object.values(uniqueEntries);
-                        
-                        // จัดรูปแบบข้อมูลก่อนแสดงผล
-                        currentHistoryData = currentHistoryData.map(item => {
-                            // จัดรูปแบบวันที่เวลาให้อ่านง่าย
-                            let formattedDate = item.timestamp;
-                            
-                            try {
-                                // ตรวจสอบรูปแบบวันที่
-                                if (typeof item.timestamp === 'string') {
-                                    // กรณีเป็นรูปแบบ ISO เช่น "2568-04-19T13:27:39.000Z"
-                                    if (item.timestamp.includes('T')) {
-                                        const date = new Date(item.timestamp);
-                                        if (!isNaN(date.getTime())) {
-                                            formattedDate = date.toLocaleString('th-TH', {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                second: '2-digit',
-                                                hour12: false
-                                            });
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                console.error("เกิดข้อผิดพลาดในการแปลงวันที่:", e);
-                            }
+                        // แปลงข้อมูลก่อนใช้งาน
+                        currentHistoryData = data.history.map(item => {
+                            // แปลงรูปแบบวันที่เวลา
+                            let formattedTimestamp = formatDateTime(item.timestamp);
                             
                             return {
                                 ...item,
-                                timestamp: formattedDate,
-                                // ตรวจสอบและกำหนดค่าเริ่มต้นสำหรับข้อมูลที่อาจไม่มี
-                                caseName: item.caseName || "ไม่ระบุชื่อเคส",
-                                trackingKey: item.trackingKey || "ไม่ระบุ",
-                                ip: item.ip || "ไม่ทราบ",
-                                location: item.location || null,
-                                deviceInfo: item.deviceInfo || {}
+                                formattedTimestamp: formattedTimestamp // เพิ่มฟิลด์ใหม่สำหรับเวลาที่จัดรูปแบบแล้ว
                             };
-                        });
-                        
-                        // เรียงลำดับตามวันที่ใหม่สุดก่อน
-                        currentHistoryData.sort((a, b) => {
-                            // พยายามแปลงกลับเป็น Date เพื่อเปรียบเทียบ
-                            try {
-                                const dateA = new Date(a.timestamp);
-                                const dateB = new Date(b.timestamp);
-                                if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-                                    return dateB - dateA;
-                                }
-                            } catch (e) {
-                                // กรณีแปลงไม่ได้ ใช้การเปรียบเทียบสตริง
-                            }
-                            return String(b.timestamp).localeCompare(String(a.timestamp));
                         });
                         
                         filteredData = [...currentHistoryData];
@@ -1267,6 +1215,40 @@
             }
         }
         
+        // เพิ่มฟังก์ชันแปลงรูปแบบวันที่เวลาให้อ่านง่ายขึ้น
+        function formatDateTime(dateTimeStr) {
+            try {
+                // ตรวจสอบรูปแบบวันที่ที่ได้รับ
+                if (!dateTimeStr) return "ไม่ระบุเวลา";
+                
+                // ถ้าเป็นรูปแบบ ISO (เช่น 2568-04-19T13:27:39.000Z)
+                if (dateTimeStr.includes('T') && (dateTimeStr.includes('Z') || dateTimeStr.includes('+'))) {
+                    const date = new Date(dateTimeStr);
+                    // ตรวจสอบว่าวันที่ถูกต้องหรือไม่
+                    if (isNaN(date.getTime())) {
+                        console.log("วันที่ไม่ถูกต้อง:", dateTimeStr);
+                        return dateTimeStr; // คืนค่าเดิมถ้าแปลงไม่ได้
+                    }
+                    
+                    // แปลงเป็นรูปแบบที่อ่านง่าย - วัน/เดือน/ปี เวลา
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    const seconds = String(date.getSeconds()).padStart(2, '0');
+                    
+                    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                }
+                
+                // กรณีที่เป็นรูปแบบอื่น (อาจเป็นรูปแบบที่จัดรูปแบบมาแล้ว)
+                return dateTimeStr;
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการแปลงรูปแบบวันที่:", error);
+                return dateTimeStr; // คืนค่าเดิมถ้ามีข้อผิดพลาด
+            }
+        }
+        
         // กรองข้อมูลตามการค้นหา
         function filterHistoryData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -1312,30 +1294,37 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบข้อมูลตำแหน่งและจัดการอย่างเหมาะสม
+                // ใช้ formattedTimestamp ที่จัดรูปแบบไว้แล้ว หรือใช้ฟังก์ชันแปลงอีกครั้งถ้ายังไม่มี
+                const displayTime = item.formattedTimestamp || formatDateTime(item.timestamp);
+                
+                // ข้อมูลตำแหน่ง GPS
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // ตรวจสอบข้อมูลอุปกรณ์และจัดการอย่างเหมาะสม
+                // ข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // ตรวจสอบชื่อเคสและ trackingKey
-                const caseName = item.caseName || "ไม่ระบุชื่อเคส";
-                const trackingKey = item.trackingKey || "ไม่ระบุ";
+                // ตรวจสอบและแสดงชื่อเคสหากมี หรือแสดง "ไม่ระบุชื่อเคส" หากไม่มี
+                const caseName = item.caseName && item.caseName !== "ไม่ระบุ" && item.caseName !== "ไม่มีค่า" ? 
+                    item.caseName : "ไม่ระบุชื่อเคส";
+                
+                // ตรวจสอบและแสดง Tracking Key หากมี หรือแสดง "ไม่ระบุ" หากไม่มี
+                const trackingKey = item.trackingKey && item.trackingKey !== "ไม่ระบุ" && item.trackingKey !== "ไม่มีค่า" ?
+                    item.trackingKey : "ไม่ระบุ";
                 
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${displayTime}</div>
                     <div class="history-key"><strong>Tracking Key:</strong> ${trackingKey}</div>
                     <div class="history-case">${caseName}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
-                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}${deviceModel !== "ไม่ทราบ" ? ` - ${deviceModel}` : ""}</div>
                         </div>
                     </div>
                 `;
@@ -1363,6 +1352,9 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
+            // ใช้เวลาที่จัดรูปแบบแล้ว หรือแปลงอีกครั้ง
+            const displayTime = item.formattedTimestamp || formatDateTime(item.timestamp);
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
@@ -1381,41 +1373,26 @@
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            // ตรวจสอบและจัดการรูปแบบวันที่
-            let formattedDate = item.timestamp;
-            if (typeof item.timestamp === 'string' && item.timestamp.includes('T')) {
-                try {
-                    const date = new Date(item.timestamp);
-                    if (!isNaN(date.getTime())) {
-                        formattedDate = date.toLocaleString('th-TH', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false
-                        });
-                    }
-                } catch (e) {
-                    console.error("ไม่สามารถแปลงวันที่ได้:", e);
-                }
-            }
+            // ตรวจสอบและแสดงชื่อเคสและ tracking key 
+            const caseName = item.caseName && item.caseName !== "ไม่ระบุ" && item.caseName !== "ไม่มีค่า" ? 
+                item.caseName : "ไม่ระบุ";
+            const trackingKey = item.trackingKey && item.trackingKey !== "ไม่ระบุ" && item.trackingKey !== "ไม่มีค่า" ? 
+                item.trackingKey : "ไม่ระบุ";
             
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${formattedDate || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${displayTime}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${trackingKey}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${caseName}</div>
                     </div>
                 </div>
                 
@@ -1442,7 +1419,7 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
+                    <h3><i class="fas fa-laptop"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
@@ -1491,11 +1468,20 @@
                         <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
                     </div>
                 </div>` : ''}
+
+                ${item.creatorFullName ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-user"></i> ข้อมูลผู้สร้าง</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ชื่อ-นามสกุล</div>
+                        <div class="detail-value">${item.creatorFullName}</div>
+                    </div>
+                </div>` : ''}
             `;
             
             modal.style.display = 'block';
         }
-        
+
         // ปิด Modal
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
@@ -1570,7 +1556,8 @@
             // สร้างข้อมูลจำลอง
             const mockData = [
                 {
-                    timestamp: "15/02/2023 14:32:21",
+                    timestamp: "2023-02-15T14:32:21.000Z",
+                    formattedTimestamp: "15/02/2023 14:32:21",
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
                     creatorFullName: "นายทดสอบ ระบบ",
@@ -1578,27 +1565,18 @@
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15,
-                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
+                        accuracy: 15
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
                         deviceModel: "iPhone 13",
                         platform: "iOS 16.2",
-                        browser: "Safari",
-                        connection: {
-                            networkType: "wifi",
-                            effectiveType: "4g",
-                            downlink: 10.2
-                        },
-                        battery: {
-                            level: "85%",
-                            charging: "กำลังชาร์จ"
-                        }
+                        browser: "Safari"
                     }
                 },
                 {
-                    timestamp: "14/02/2023 10:15:03",
+                    timestamp: "2023-02-14T10:15:03.000Z", 
+                    formattedTimestamp: "14/02/2023 10:15:03",
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
@@ -1606,23 +1584,32 @@
                     location: {
                         lat: 13.736717,
                         long: 100.523186,
-                        accuracy: 8,
-                        gmapLink: "https://www.google.com/maps?q=13.736717,100.523186"
+                        accuracy: 8
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
-                        browser: "Chrome",
-                        connection: {
-                            networkType: "cellular",
-                            effectiveType: "3g",
-                            downlink: 5.5
-                        },
-                        battery: {
-                            level: "45%",
-                            charging: "ไม่ได้ชาร์จ"
-                        }
+                        browser: "Chrome"
+                    }
+                },
+                {
+                    timestamp: "2023-02-13T08:45:00.000Z",
+                    formattedTimestamp: "13/02/2023 08:45:00",
+                    trackingKey: "track_abcdef",
+                    caseName: "เคสทดสอบ 3",
+                    creatorFullName: "นายระบบ ทดสอบ",
+                    ip: "203.0.113.3",
+                    location: {
+                        lat: 13.746731,
+                        long: 100.513762,
+                        accuracy: 10
+                    },
+                    deviceInfo: {
+                        deviceType: "Desktop",
+                        deviceModel: "Windows PC",
+                        platform: "Windows 10",
+                        browser: "Firefox"
                     }
                 }
             ];
@@ -1635,27 +1622,7 @@
             document.getElementById('historyList').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
         }
-
-        // เพิ่มปุ่มทดสอบใช้ข้อมูลจำลอง
-        function addTestOption() {
-            const content = document.querySelector('.content');
-            const testButton = document.createElement('button');
-            testButton.textContent = "ทดสอบด้วยข้อมูลจำลอง";
-            testButton.style.padding = "8px 16px";
-            testButton.style.background = "#f1f1f1";
-            testButton.style.border = "1px solid #ddd";
-            testButton.style.borderRadius = "4px";
-            testButton.style.margin = "10px 0";
-            testButton.style.cursor = "pointer";
-            
-            testButton.addEventListener('click', function() {
-                handleMockDataResponse();
-            });
-            
-            const firstChild = content.firstChild;
-            content.insertBefore(testButton, firstChild);
-        }
-
+        
         // ตรวจสอบสถานะการอัพเดตโค้ด LIFF
         function checkLiffVersion() {
             const versionElement = document.createElement('div');
@@ -1663,7 +1630,7 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.1.3 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
