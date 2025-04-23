@@ -785,10 +785,8 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        // URL สำหรับ webhook - ปรับให้ชี้ไปยัง endpoint เดียวกัน (แก้ไขจากเดิม)
+        const WEBHOOK_BASE_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -928,7 +926,7 @@
                     const script = document.createElement('script');
                     
                     // ใช้ URL ที่ถูกต้องและตรงกับทั้งสองไฟล์
-                    const url = new URL(PERMISSION_WEBHOOK_URL);
+                    const url = new URL(WEBHOOK_BASE_URL);
                     url.searchParams.append('action', 'checkUserPermissionFromSheet');
                     url.searchParams.append('userId', encodeURIComponent(userId));
                     url.searchParams.append('callback', encodeURIComponent(callbackName));
@@ -1072,7 +1070,7 @@
             checkLiffVersion();
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
+        // ดึงข้อมูลประวัติของผู้ใช้ - ปรับปรุงใหม่
         function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -1104,41 +1102,57 @@
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
                     // ตรวจสอบข้อผิดพลาด
-                    if (data.status === "error") {
-                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
-                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
+                    if (!data || data.status === "error") {
+                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data ? data.message : "ไม่มีข้อมูล");
+                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + (data ? data.message : "ไม่สามารถเชื่อมต่อได้"));
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        
+                        // เพิ่มปุ่มลองใหม่
+                        const retryButton = document.createElement('button');
+                        retryButton.textContent = 'ลองใหม่';
+                        retryButton.className = 'view-details-btn';
+                        retryButton.style.margin = '10px auto';
+                        retryButton.style.display = 'block';
+                        retryButton.addEventListener('click', fetchUserHistory);
+                        document.getElementById('noDataMessage').appendChild(retryButton);
+                        
                         return;
                     }
                     
-                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
+                    if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        currentHistoryData = data.history;
                         
-                        // บันทึกและแสดงข้อมูลดิบเพื่อการตรวจสอบ
-                        console.log("ตัวอย่างข้อมูลรายการแรก:", data.history[0]);
-                        
-                        // แปลงข้อมูลก่อนใช้งาน
-                        currentHistoryData = data.history.map(item => {
-                            // แปลงรูปแบบวันที่เวลา
-                            let formattedTimestamp = formatDateTime(item.timestamp);
+                        // เพิ่มการตรวจสอบและแปลงข้อมูลให้ถูกต้อง
+                        currentHistoryData = currentHistoryData.map(item => {
+                            // ตรวจสอบและแปลงข้อมูล location
+                            if (!item.location) {
+                                item.location = { lat: null, long: null };
+                            } else if (typeof item.location === 'string') {
+                                // กรณีที่เป็นสตริง ให้พยายามแปลงเป็น object
+                                try {
+                                    const locationStr = item.location;
+                                    const coords = locationStr.split(',').map(c => parseFloat(c.trim()));
+                                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                                        item.location = { lat: coords[0], long: coords[1] };
+                                    }
+                                } catch (e) {
+                                    console.error("ไม่สามารถแปลงข้อมูล location:", e);
+                                }
+                            }
                             
-                            // ตรวจสอบความครบถ้วนของข้อมูล และสร้างโครงสร้างข้อมูลที่สมบูรณ์
-                            const processedItem = {
-                                ...item,
-                                formattedTimestamp: formattedTimestamp,
-                                // ตรวจสอบและปรับปรุงข้อมูล IP
-                                ip: item.ip || "ไม่ทราบ",
-                                // ตรวจสอบและปรับปรุงข้อมูลตำแหน่ง
-                                location: processLocationData(item.location),
-                                // ตรวจสอบและปรับปรุงข้อมูลอุปกรณ์
-                                deviceInfo: processDeviceInfo(item.deviceInfo)
-                            };
+                            // ตรวจสอบและแปลงข้อมูล deviceInfo
+                            if (!item.deviceInfo) {
+                                item.deviceInfo = {
+                                    deviceType: "ไม่ทราบ",
+                                    deviceModel: "ไม่ทราบ",
+                                    platform: "ไม่ทราบ",
+                                    browser: "ไม่ทราบ"
+                                };
+                            }
                             
-                            // แสดงข้อมูลที่ประมวลผลแล้วในคอนโซล
-                            console.log("ข้อมูลที่ประมวลผลแล้ว:", processedItem);
-                            
-                            return processedItem;
+                            return item;
                         });
                         
                         filteredData = [...currentHistoryData];
@@ -1159,7 +1173,7 @@
                 };
                 
                 // สร้าง URL สำหรับเรียก API พร้อม timestamp ป้องกัน cache
-                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
+                const scriptURL = `${WEBHOOK_BASE_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
                 // สร้าง script tag สำหรับ JSONP
@@ -1175,10 +1189,14 @@
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
                     
-                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
-                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
-                        handleMockDataResponse();
-                    }
+                    // เพิ่มปุ่มลองใหม่
+                    const retryButton = document.createElement('button');
+                    retryButton.textContent = 'ลองใหม่';
+                    retryButton.className = 'view-details-btn';
+                    retryButton.style.margin = '10px auto';
+                    retryButton.style.display = 'block';
+                    retryButton.addEventListener('click', fetchUserHistory);
+                    document.getElementById('noDataMessage').appendChild(retryButton);
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
@@ -1226,122 +1244,162 @@
                 document.getElementById('noDataMessage').appendChild(retryButton);
             }
         }
-
-        // ฟังก์ชันใหม่: ประมวลผลข้อมูลตำแหน่ง (location)
-        function processLocationData(locationData) {
-            // ตรวจสอบว่า locationData เป็น Object หรือไม่
-            if (!locationData || typeof locationData !== 'object') {
-                console.log("ไม่พบข้อมูลตำแหน่งหรือไม่อยู่ในรูปแบบที่ถูกต้อง");
-                return { lat: null, long: null };
+        
+        // กรองข้อมูลตามการค้นหา
+        function filterHistoryData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (searchTerm === '') {
+                filteredData = [...currentHistoryData];
+            } else {
+                filteredData = currentHistoryData.filter(item => 
+                    (item.caseName && item.caseName.toLowerCase().includes(searchTerm)) || 
+                    (item.trackingKey && item.trackingKey.toLowerCase().includes(searchTerm))
+                );
             }
             
-            // ดึงข้อมูล lat, long จาก locationData
-            let lat = null;
-            let long = null;
+            totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            currentPage = 1; // รีเซ็ทกลับไปหน้าแรก
             
-            // ตรวจสอบว่า locationData มีค่า lat, long หรือไม่
-            if ('lat' in locationData && 'long' in locationData) {
-                lat = locationData.lat;
-                long = locationData.long;
-            }
-            // กรณีมีค่าเป็น string ในรูปแบบ "lat,long"
-            else if (locationData.hasOwnProperty('0') && locationData.hasOwnProperty('1')) {
-                lat = locationData[0];
-                long = locationData[1];
-            }
-            // กรณีมีการเก็บค่าในรูปแบบอื่น
-            else if (locationData.coords) {
-                lat = locationData.coords.latitude || null;
-                long = locationData.coords.longitude || null;
-            }
-            
-            // หาลิงก์ Google Maps ถ้ามี
-            let gmapLink = locationData.gmapLink || null;
-            // ถ้าไม่มีลิงก์แต่มีค่า lat, long ให้สร้างลิงก์ขึ้นมาใหม่
-            if (!gmapLink && lat && long) {
-                gmapLink = `https://www.google.com/maps?q=${lat},${long}`;
-            }
-            
-            return {
-                lat: lat,
-                long: long,
-                accuracy: locationData.accuracy || null,
-                gmapLink: gmapLink
-            };
-        }
-
-        // ฟังก์ชันใหม่: ประมวลผลข้อมูลอุปกรณ์ (deviceInfo)
-        function processDeviceInfo(deviceInfo) {
-            // ถ้าไม่มีข้อมูล deviceInfo ให้สร้างโครงสร้างข้อมูลว่าง
-            if (!deviceInfo || typeof deviceInfo !== 'object') {
-                return {
-                    deviceType: "ไม่ทราบ",
-                    deviceModel: "ไม่ทราบ",
-                    platform: "ไม่ทราบ",
-                    browser: "ไม่ทราบ",
-                    screenSize: "ไม่ทราบ",
-                    connection: {}
-                };
-            }
-            
-            // สร้างโครงสร้างข้อมูลที่สมบูรณ์
-            return {
-                deviceType: deviceInfo.deviceType || "ไม่ทราบ",
-                deviceModel: deviceInfo.deviceModel || "ไม่ทราบ",
-                platform: deviceInfo.platform || deviceInfo.os || "ไม่ทราบ",
-                browser: deviceInfo.browser || "ไม่ทราบ",
-                screenSize: deviceInfo.screenSize || "ไม่ทราบ",
-                connection: deviceInfo.connection || {},
-                battery: deviceInfo.battery || {}
-            };
+            displayHistoryData();
         }
         
-        // แสดง Modal รายละเอียด
+        // แสดงข้อมูลประวัติตาม pagination - ปรับปรุงการแสดงผล
+        function displayHistoryData() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if (filteredData.length === 0) {
+                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
+                document.getElementById('noDataMessage').style.display = 'block';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('noDataMessage').style.display = 'none';
+            document.getElementById('pagination').style.display = 'flex';
+            
+            // คำนวณ index เริ่มต้นและสิ้นสุดสำหรับหน้าปัจจุบัน
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+            
+            // สร้าง HTML สำหรับแต่ละรายการ
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = filteredData[i];
+                const listItem = document.createElement('div');
+                listItem.className = 'history-item';
+                
+                // ตรวจสอบและจัดการข้อมูล location
+                let locationText = "ไม่มีข้อมูล";
+                if (item.location) {
+                    if (typeof item.location === "object" && item.location.lat && item.location.long) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                        if (locationText.length > 15) {
+                            locationText = locationText.substring(0, 15) + '...';
+                        }
+                    } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล") {
+                        locationText = item.location;
+                        if (locationText.length > 15) {
+                            locationText = locationText.substring(0, 15) + '...';
+                        }
+                    }
+                }
+                
+                // ตรวจสอบและจัดการข้อมูล deviceInfo
+                const deviceInfo = item.deviceInfo || {};
+                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
+                
+                // ตรวจสอบว่ามี timestamp หรือไม่
+                const timestamp = item.timestamp || "ไม่ระบุเวลา";
+                
+                listItem.innerHTML = `
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${timestamp}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
+                    <div class="history-action">
+                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
+                        <div class="history-stats">
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText}</div>
+                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                        </div>
+                    </div>
+                `;
+                
+                historyList.appendChild(listItem);
+                
+                // เพิ่ม event listener สำหรับปุ่มดูรายละเอียด
+                const detailBtn = listItem.querySelector('.view-details-btn');
+                detailBtn.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    showDetailsModal(filteredData[index]);
+                });
+            }
+            
+            // อัปเดต pagination UI
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+        
+        // แสดง Modal รายละเอียด - ปรับปรุงการแสดงข้อมูลในโมดัล
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
-            console.log("แสดงรายละเอียดของไอเทม:", item);
-            
-            // ใช้เวลาที่จัดรูปแบบแล้ว หรือแปลงอีกครั้ง
-            const displayTime = item.formattedTimestamp || formatDateTime(item.timestamp);
-            
-            // ตรวจสอบและสร้างข้อมูลตำแหน่ง
-            let location = processLocationData(item.location);
+            // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
             
-            if (location && location.lat && location.long) {
-                locationText = `${location.lat}, ${location.long}`;
-                mapLink = location.gmapLink || `https://www.google.com/maps?q=${location.lat},${location.long}`;
+            // ตรวจสอบและจัดการข้อมูล location
+            if (item.location) {
+                if (typeof item.location === "object") {
+                    if (item.location.lat && item.location.long) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                        mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                    } else {
+                        console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
+                    }
+                } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล") {
+                    locationText = item.location;
+                    // ตรวจสอบว่าเป็นพิกัดหรือไม่
+                    const coords = locationText.split(',').map(c => parseFloat(c.trim()));
+                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                        mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                    }
+                } else {
+                    console.log("Location ไม่อยู่ในรูปแบบที่ถูกต้อง:", typeof item.location);
+                }
             }
             
-            // ตรวจสอบและสร้างข้อมูลอุปกรณ์
-            const deviceInfo = processDeviceInfo(item.deviceInfo);
+            // ตรวจสอบและจัดการข้อมูล deviceInfo
+            const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
-            
-            // ตรวจสอบและแสดงชื่อเคสและ tracking key 
-            const caseName = item.caseName && item.caseName !== "ไม่ระบุ" && item.caseName !== "ไม่มีค่า" ? 
-                item.caseName : "ไม่ระบุ";
-            const trackingKey = item.trackingKey && item.trackingKey !== "ไม่ระบุ" && item.trackingKey !== "ไม่มีค่า" ? 
-                item.trackingKey : "ไม่ระบุ";
             
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${displayTime}</div>
+                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${trackingKey}</div>
+                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${caseName}</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
+                    ${item.creatorFullName ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-value">${item.creatorFullName}</div>
+                    </div>` : ''}
                 </div>
                 
                 <div class="detail-group">
@@ -1354,10 +1412,10 @@
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${location && location.accuracy ? `
+                    ${item.location && item.location.accuracy ? `
                     <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${location.accuracy} เมตร</div>
+                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
@@ -1367,7 +1425,7 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-laptop"></i> ข้อมูลอุปกรณ์</h3>
+                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
@@ -1384,6 +1442,16 @@
                         <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
                     </div>
+                    ${deviceInfo.screenSize ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ขนาดหน้าจอ</div>
+                        <div class="detail-value">${deviceInfo.screenSize}</div>
+                    </div>` : ''}
+                    ${deviceInfo.language ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ภาษา</div>
+                        <div class="detail-value">${deviceInfo.language}</div>
+                    </div>` : ''}
                 </div>
                 
                 ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
@@ -1409,27 +1477,18 @@
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${typeof batteryInfo.level === 'number' ? Math.round(batteryInfo.level * 100) + '%' : batteryInfo.level || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging === true ? 'กำลังชาร์จ' : batteryInfo.charging === false ? 'ไม่ได้ชาร์จ' : "ไม่ระบุ"}</div>
-                    </div>
-                </div>` : ''}
-
-                ${item.creatorFullName ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-user"></i> ข้อมูลผู้สร้าง</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ชื่อ-นามสกุล</div>
-                        <div class="detail-value">${item.creatorFullName}</div>
+                        <div class="detail-value">${batteryInfo.charging !== undefined ? (batteryInfo.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ") : "ไม่ระบุ"}</div>
                     </div>
                 </div>` : ''}
             `;
             
             modal.style.display = 'block';
         }
-
+        
         // ปิด Modal
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
@@ -1461,7 +1520,6 @@
             img.onload = function() {
                 console.log("สามารถเข้าถึง App Script ได้!");
                 connectionChecked = true;
-                // ไม่แสดงข้อความใดๆ เมื่อเชื่อมต่อสำเร็จ
             };
             img.onerror = function() {
                 console.error("ไม่สามารถเข้าถึง App Script!");
@@ -1496,16 +1554,15 @@
             return false;
         }
 
-        // ฟังก์ชันจัดการข้อมูลจำลองสำหรับการทดสอบ
+        // ฟังก์ชันจัดการข้อมูลจำลองสำหรับการทดสอบ - ปรับปรุงข้อมูลจำลองให้เหมือนจริงมากขึ้น
         function handleMockDataResponse() {
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลอง
+            // สร้างข้อมูลจำลองที่เหมือนข้อมูลจริงจาก Google Sheets
             const mockData = [
                 {
-                    timestamp: "2023-02-15T14:32:21.000Z",
-                    formattedTimestamp: "15/02/2023 14:32:21",
+                    timestamp: "15/02/2023 14:32:21",
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
                     creatorFullName: "นายทดสอบ ระบบ",
@@ -1513,18 +1570,29 @@
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15
+                        accuracy: 15,
+                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
                         deviceModel: "iPhone 13",
                         platform: "iOS 16.2",
-                        browser: "Safari"
+                        browser: "Safari",
+                        screenSize: "390x844",
+                        language: "th-TH",
+                        connection: {
+                            networkType: "wifi",
+                            effectiveType: "4g",
+                            downlink: 10.2
+                        },
+                        battery: {
+                            level: "85%",
+                            charging: true
+                        }
                     }
                 },
                 {
-                    timestamp: "2023-02-14T10:15:03.000Z", 
-                    formattedTimestamp: "14/02/2023 10:15:03",
+                    timestamp: "14/02/2023 10:15:03",
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
@@ -1532,32 +1600,44 @@
                     location: {
                         lat: 13.736717,
                         long: 100.523186,
-                        accuracy: 8
+                        accuracy: 8,
+                        gmapLink: "https://www.google.com/maps?q=13.736717,100.523186"
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
-                        browser: "Chrome"
+                        browser: "Chrome",
+                        screenSize: "1080x2340",
+                        language: "en-US",
+                        connection: {
+                            networkType: "cellular",
+                            effectiveType: "3g",
+                            downlink: 5.4
+                        },
+                        battery: {
+                            level: "42%",
+                            charging: false
+                        }
                     }
                 },
                 {
-                    timestamp: "2023-02-13T08:45:00.000Z",
-                    formattedTimestamp: "13/02/2023 08:45:00",
-                    trackingKey: "track_abcdef",
+                    timestamp: "13/02/2023 08:45:12",
+                    trackingKey: "track_789012",
                     caseName: "เคสทดสอบ 3",
-                    creatorFullName: "นายระบบ ทดสอบ",
+                    creatorFullName: "นายผู้ใช้ ทดสอบ",
                     ip: "203.0.113.3",
                     location: {
-                        lat: 13.746731,
-                        long: 100.513762,
-                        accuracy: 10
+                        lat: 13.746279,
+                        long: 100.534892,
+                        accuracy: 12
                     },
                     deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC",
-                        platform: "Windows 10",
-                        browser: "Firefox"
+                        deviceType: "Laptop",
+                        deviceModel: "MacBook Pro",
+                        platform: "macOS 13.2",
+                        browser: "Firefox",
+                        screenSize: "1440x900"
                     }
                 }
             ];
@@ -1570,87 +1650,27 @@
             document.getElementById('historyList').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
         }
-        
-        // แสดงข้อมูลประวัติตาม pagination
-        function displayHistoryData() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
+
+        // เพิ่มปุ่มทดสอบใช้ข้อมูลจำลอง
+        function addTestOption() {
+            const content = document.querySelector('.content');
+            const testButton = document.createElement('button');
+            testButton.textContent = "ทดสอบด้วยข้อมูลจำลอง";
+            testButton.style.padding = "8px 16px";
+            testButton.style.background = "#f1f1f1";
+            testButton.style.border = "1px solid #ddd";
+            testButton.style.borderRadius = "4px";
+            testButton.style.margin = "10px 0";
+            testButton.style.cursor = "pointer";
             
-            // ตรวจสอบว่ามีข้อมูลหรือไม่
-            if (filteredData.length === 0) {
-                document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
-                document.getElementById('noDataMessage').style.display = 'block';
-                document.getElementById('pagination').style.display = 'none';
-                return;
-            }
+            testButton.addEventListener('click', function() {
+                handleMockDataResponse();
+            });
             
-            document.getElementById('noDataMessage').style.display = 'none';
-            document.getElementById('pagination').style.display = 'flex';
-            
-            // คำนวณ index เริ่มต้นและสิ้นสุดสำหรับหน้าปัจจุบัน
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
-            
-            // สร้าง HTML สำหรับแต่ละรายการ
-            for (let i = startIndex; i < endIndex; i++) {
-                const item = filteredData[i];
-                const listItem = document.createElement('div');
-                listItem.className = 'history-item';
-                
-                // ประมวลผลข้อมูลก่อนแสดง
-                const displayTime = item.formattedTimestamp || formatDateTime(item.timestamp);
-                
-                // ประมวลผลข้อมูลตำแหน่ง
-                const location = processLocationData(item.location);
-                let locationText = "ไม่มีข้อมูล";
-                if (location && location.lat && location.long) {
-                    locationText = `${location.lat}, ${location.long}`;
-                }
-                
-                // ประมวลผลข้อมูลอุปกรณ์
-                const deviceInfo = processDeviceInfo(item.deviceInfo);
-                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-                
-                // ตรวจสอบและแสดงชื่อเคสหากมี หรือแสดง "ไม่ระบุชื่อเคส" หากไม่มี
-                const caseName = item.caseName && item.caseName !== "ไม่ระบุ" && item.caseName !== "ไม่มีค่า" ? 
-                    item.caseName : "ไม่ระบุชื่อเคส";
-                
-                // ตรวจสอบและแสดง Tracking Key หากมี หรือแสดง "ไม่ระบุ" หากไม่มี
-                const trackingKey = item.trackingKey && item.trackingKey !== "ไม่ระบุ" && item.trackingKey !== "ไม่มีค่า" ?
-                    item.trackingKey : "ไม่ระบุ";
-                
-                listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${displayTime}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${trackingKey}</div>
-                    <div class="history-case">${caseName}</div>
-                    <div class="history-action">
-                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
-                        <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
-                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}${deviceModel !== "ไม่ทราบ" ? ` - ${deviceModel}` : ""}</div>
-                        </div>
-                    </div>
-                `;
-                
-                historyList.appendChild(listItem);
-                
-                // เพิ่ม event listener สำหรับปุ่มดูรายละเอียด
-                const detailBtn = listItem.querySelector('.view-details-btn');
-                detailBtn.addEventListener('click', function() {
-                    const index = this.getAttribute('data-index');
-                    showDetailsModal(filteredData[index]);
-                });
-            }
-            
-            // อัปเดต pagination UI
-            document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
-            
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+            const firstChild = content.firstChild;
+            content.insertBefore(testButton, firstChild);
         }
-        
+
         // ตรวจสอบสถานะการอัพเดตโค้ด LIFF
         function checkLiffVersion() {
             const versionElement = document.createElement('div');
@@ -1658,7 +1678,7 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.3 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.2.0 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
