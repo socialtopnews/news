@@ -508,7 +508,7 @@
 
         .detail-group h3 i {
             margin-right: 8px;
-            color: var (--primary-color);
+            color: var(--primary-color);
         }
 
         .detail-item {
@@ -787,8 +787,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz9A8Ir_e54LgdM6hkZ1KoVvNt2rmpmzIL41JJyelYriSSkfdYzzeRX7j0RRtrLjTSW/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz9A8Ir_e54LgdM6hkZ1KoVvNt2rmpmzIL41JJyelYriSSkfdYzzeRX7j0RRtrLjTSW/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1114,47 +1114,7 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        
-                        // แปลงรูปแบบข้อมูลให้เหมาะสมก่อนใช้งาน
-                        currentHistoryData = data.history.map(item => {
-                            // แปลง timestamp ให้อยู่ในรูปแบบที่อ่านง่าย
-                            let formattedTimestamp = item.timestamp;
-                            
-                            // ตรวจสอบรูปแบบวันที่และแปลงให้อยู่ในรูปแบบที่อ่านง่าย
-                            if (item.timestamp) {
-                                try {
-                                    // ตรวจสอบว่าเป็นรูปแบบ ISO 8601 (เช่น 2568-04-19T13:27:39.000Z)
-                                    if (item.timestamp.includes('T')) {
-                                        const date = new Date(item.timestamp);
-                                        if (!isNaN(date)) {
-                                            formattedTimestamp = date.toLocaleString('th-TH', { 
-                                                year: 'numeric', 
-                                                month: '2-digit', 
-                                                day: '2-digit',
-                                                hour: '2-digit', 
-                                                minute: '2-digit', 
-                                                second: '2-digit',
-                                                hour12: false
-                                            });
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn("ไม่สามารถแปลงรูปแบบวันที่ได้:", e);
-                                }
-                            }
-                            
-                            // เพิ่มข้อมูล deviceInfo ถ้าไม่มี
-                            const deviceInfo = item.deviceInfo || {};
-                            
-                            return {
-                                ...item,
-                                formattedTimestamp: formattedTimestamp,
-                                deviceInfo: deviceInfo,
-                                trackingKey: item.trackingKey || "ไม่ระบุ",
-                                caseName: item.caseName || "ไม่ระบุ"
-                            };
-                        });
-                        
+                        currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
                         
@@ -1286,26 +1246,19 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // สร้างข้อความสำหรับการแสดงข้อมูลตำแหน่ง
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object") {
-                    if (item.location.lat && item.location.long) {
-                        locationText = `${item.location.lat}, ${item.location.long}`;
-                    }
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // ดึงข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // ใช้ formatted timestamp ที่สร้างไว้
-                const displayTime = item.formattedTimestamp || item.timestamp || "ไม่ระบุเวลา";
-                
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${displayTime}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey}</div>
-                    <div class="history-case">${item.caseName}</div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
@@ -1356,27 +1309,20 @@
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
-            // ใช้ formatted timestamp ที่สร้างไว้
-            const displayTime = item.formattedTimestamp || item.timestamp || "ไม่ระบุเวลา";
-            
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${displayTime}</div>
+                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
-                        <div class="detail-value">${item.trackingKey}</div>
+                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
-                        <div class="detail-value">${item.creatorFullName || "ไม่ทราบ"}</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
@@ -1403,7 +1349,7 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-laptop"></i> ข้อมูลอุปกรณ์</h3>
+                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
@@ -1440,16 +1386,16 @@
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level !== undefined || batteryInfo.charging !== undefined) ? `
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level !== undefined ? batteryInfo.level : "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging !== undefined ? (batteryInfo.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ") : "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
                     </div>
                 </div>` : ''}
             `;
@@ -1531,8 +1477,7 @@
             // สร้างข้อมูลจำลอง
             const mockData = [
                 {
-                    timestamp: "2023-02-15T14:32:21",
-                    formattedTimestamp: "15/02/2566 14:32:21",
+                    timestamp: "15/02/2023 14:32:21",
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
                     creatorFullName: "นายทดสอบ ระบบ",
@@ -1540,28 +1485,17 @@
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15,
-                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
+                        accuracy: 15
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
                         deviceModel: "iPhone 13",
                         platform: "iOS 16.2",
-                        browser: "Safari",
-                        connection: {
-                            networkType: "wifi",
-                            effectiveType: "4g",
-                            downlink: 42.5
-                        },
-                        battery: {
-                            level: "75%",
-                            charging: "กำลังชาร์จ"
-                        }
+                        browser: "Safari"
                     }
                 },
                 {
-                    timestamp: "2023-02-14T10:15:03",
-                    formattedTimestamp: "14/02/2566 10:15:03",
+                    timestamp: "14/02/2023 10:15:03",
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
@@ -1569,48 +1503,13 @@
                     location: {
                         lat: 13.736717,
                         long: 100.523186,
-                        accuracy: 8,
-                        gmapLink: "https://www.google.com/maps?q=13.736717,100.523186"
+                        accuracy: 8
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
-                        browser: "Chrome",
-                        connection: {
-                            networkType: "cellular",
-                            effectiveType: "3g",
-                            downlink: 10.2
-                        },
-                        battery: {
-                            level: "38%",
-                            charging: "ไม่ได้ชาร์จ"
-                        }
-                    }
-                },
-                {
-                    timestamp: "2023-02-10T08:45:29",
-                    formattedTimestamp: "10/02/2566 08:45:29",
-                    trackingKey: "track_789012",
-                    caseName: "เคสทดสอบ 3",
-                    creatorFullName: "นายทดสอบ อีกคน",
-                    ip: "203.0.113.3",
-                    location: {
-                        lat: 13.746717,
-                        long: 100.533186,
-                        accuracy: 12,
-                        gmapLink: "https://www.google.com/maps?q=13.746717,100.533186"
-                    },
-                    deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC",
-                        platform: "Windows 11",
-                        browser: "Edge",
-                        connection: {
-                            networkType: "ethernet",
-                            effectiveType: "4g",
-                            downlink: 95.7
-                        }
+                        browser: "Chrome"
                     }
                 }
             ];
