@@ -787,8 +787,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwbxueHeb0vnlqVTRi7rHVKZB1HuwLsi9Q1u4CnsxCAFduZ2313v8GXVfCJV7RMBd2y/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwbxueHeb0vnlqVTRi7rHVKZB1HuwLsi9Q1u4CnsxCAFduZ2313v8GXVfCJV7RMBd2y/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1109,43 +1109,13 @@
                         showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
-                        
-                        // เพิ่มปุ่มลองอีกครั้ง
-                        const retryBtn = document.createElement('button');
-                        retryBtn.textContent = 'ลองอีกครั้ง';
-                        retryBtn.className = 'view-details-btn';
-                        retryBtn.style.margin = '10px auto';
-                        retryBtn.style.display = 'block';
-                        retryBtn.addEventListener('click', fetchUserHistory);
-                        document.getElementById('noDataMessage').appendChild(retryBtn);
                         return;
                     }
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        
-                        // ตรวจสอบและปรับปรุงข้อมูลก่อนแสดงผล
-                        const processedData = data.history.map(item => {
-                            // ตรวจสอบและปรับปรุงพิกัด GPS
-                            if (!item.location) {
-                                item.location = { lat: null, long: null };
-                            }
-                            
-                            // ตรวจสอบและปรับปรุงข้อมูลอุปกรณ์
-                            if (!item.deviceInfo) {
-                                item.deviceInfo = { deviceType: "ไม่ทราบ", deviceModel: "ไม่ทราบ" };
-                            }
-                            
-                            // ตรวจสอบว่ามีค่า timestamp หรือไม่
-                            if (!item.timestamp) {
-                                item.timestamp = "ไม่ระบุเวลา";
-                            }
-                            
-                            return item;
-                        });
-                        
-                        currentHistoryData = processedData;
-                        filteredData = [...processedData];
+                        currentHistoryData = data.history;
+                        filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
                         
                         displayHistoryData();
@@ -1162,7 +1132,7 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API แบบ JSONP ด้วย timestamp ป้องกัน cache
+                // สร้าง URL สำหรับเรียก API พร้อม timestamp ป้องกัน cache
                 const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
@@ -1176,17 +1146,13 @@
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                     document.getElementById('noDataMessage').style.display = 'block';
                     
-                    // เพิ่มปุ่มลองอีกครั้ง
-                    const retryBtn = document.createElement('button');
-                    retryBtn.textContent = 'ลองอีกครั้ง';
-                    retryBtn.className = 'view-details-btn';
-                    retryBtn.style.margin = '10px auto';
-                    retryBtn.style.display = 'block';
-                    retryBtn.addEventListener('click', fetchUserHistory);
-                    document.getElementById('noDataMessage').appendChild(retryBtn);
-                    
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
+                    
+                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
+                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
+                        handleMockDataResponse();
+                    }
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
