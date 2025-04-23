@@ -508,7 +508,7 @@
 
         .detail-group h3 i {
             margin-right: 8px;
-            color: var (--primary-color);
+            color: var(--primary-color);
         }
 
         .detail-item {
@@ -1115,40 +1115,70 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // แปลงรูปแบบวันที่เวลาให้อ่านง่าย และตรวจสอบข้อมูลให้ครบถ้วน
-                        currentHistoryData = data.history.map(item => {
-                            // จัดการกับวันที่เวลา
+                        // กรองเอาเฉพาะรายการที่ไม่ซ้ำกัน โดยตรวจสอบจาก timestamp + trackingKey
+                        const uniqueEntries = {};
+                        data.history.forEach(item => {
+                            const key = `${item.timestamp}_${item.trackingKey}`;
+                            // เก็บรายการล่าสุด (กรณีมีรายการซ้ำ)
+                            uniqueEntries[key] = item;
+                        });
+                        
+                        // แปลง object กลับเป็น array
+                        currentHistoryData = Object.values(uniqueEntries);
+                        
+                        // จัดรูปแบบข้อมูลก่อนแสดงผล
+                        currentHistoryData = currentHistoryData.map(item => {
+                            // จัดรูปแบบวันที่เวลาให้อ่านง่าย
                             let formattedDate = item.timestamp;
                             
-                            // ตรวจสอบและแปลงรูปแบบวันที่
-                            if (item.timestamp) {
-                                if (item.timestamp.includes('T') && item.timestamp.includes('Z')) {
-                                    // กรณีเป็น ISO format
-                                    const date = new Date(item.timestamp);
-                                    if (!isNaN(date.getTime())) {
-                                        formattedDate = date.toLocaleString('th-TH', {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit'
-                                        });
+                            try {
+                                // ตรวจสอบรูปแบบวันที่
+                                if (typeof item.timestamp === 'string') {
+                                    // กรณีเป็นรูปแบบ ISO เช่น "2568-04-19T13:27:39.000Z"
+                                    if (item.timestamp.includes('T')) {
+                                        const date = new Date(item.timestamp);
+                                        if (!isNaN(date.getTime())) {
+                                            formattedDate = date.toLocaleString('th-TH', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false
+                                            });
+                                        }
                                     }
                                 }
+                            } catch (e) {
+                                console.error("เกิดข้อผิดพลาดในการแปลงวันที่:", e);
                             }
                             
-                            // ตรวจสอบและกำหนดค่าที่เหมาะสมสำหรับแต่ละฟิลด์
                             return {
                                 ...item,
                                 timestamp: formattedDate,
+                                // ตรวจสอบและกำหนดค่าเริ่มต้นสำหรับข้อมูลที่อาจไม่มี
+                                caseName: item.caseName || "ไม่ระบุชื่อเคส",
                                 trackingKey: item.trackingKey || "ไม่ระบุ",
-                                caseName: item.caseName || "ไม่ระบุ",
-                                creatorFullName: item.creatorFullName || "ไม่ระบุ",
                                 ip: item.ip || "ไม่ทราบ",
                                 location: item.location || null,
-                                deviceInfo: ensureDeviceInfo(item.deviceInfo)
+                                deviceInfo: item.deviceInfo || {}
                             };
+                        });
+                        
+                        // เรียงลำดับตามวันที่ใหม่สุดก่อน
+                        currentHistoryData.sort((a, b) => {
+                            // พยายามแปลงกลับเป็น Date เพื่อเปรียบเทียบ
+                            try {
+                                const dateA = new Date(a.timestamp);
+                                const dateB = new Date(b.timestamp);
+                                if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+                                    return dateB - dateA;
+                                }
+                            } catch (e) {
+                                // กรณีแปลงไม่ได้ ใช้การเปรียบเทียบสตริง
+                            }
+                            return String(b.timestamp).localeCompare(String(a.timestamp));
                         });
                         
                         filteredData = [...currentHistoryData];
@@ -1237,27 +1267,6 @@
             }
         }
         
-        // ฟังก์ชันใหม่: ตรวจสอบและสร้างข้อมูลอุปกรณ์ที่สมบูรณ์
-        function ensureDeviceInfo(deviceInfo) {
-            if (!deviceInfo || typeof deviceInfo !== 'object') {
-                return {
-                    deviceType: "ไม่ทราบ",
-                    deviceModel: "ไม่ทราบ",
-                    platform: "ไม่ทราบ",
-                    browser: "ไม่ทราบ"
-                };
-            }
-            
-            return {
-                deviceType: deviceInfo.deviceType || "ไม่ทราบ",
-                deviceModel: deviceInfo.deviceModel || "ไม่ทราบ",
-                platform: deviceInfo.platform || "ไม่ทราบ",
-                browser: deviceInfo.browser || "ไม่ทราบ",
-                connection: deviceInfo.connection || null,
-                battery: deviceInfo.battery || null
-            };
-        }
-        
         // กรองข้อมูลตามการค้นหา
         function filterHistoryData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -1303,26 +1312,25 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // จัดการกับข้อมูล location
+                // ตรวจสอบข้อมูลตำแหน่งและจัดการอย่างเหมาะสม
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location) {
-                    if (typeof item.location === "object" && item.location.lat && item.location.long) {
-                        locationText = `${item.location.lat}, ${item.location.long}`;
-                    } else if (typeof item.location === "string" && item.location.includes(",")) {
-                        locationText = item.location;
-                    }
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // จัดการกับข้อมูล deviceInfo
+                // ตรวจสอบข้อมูลอุปกรณ์และจัดการอย่างเหมาะสม
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // แสดงผลข้อมูล
+                // ตรวจสอบชื่อเคสและ trackingKey
+                const caseName = item.caseName || "ไม่ระบุชื่อเคส";
+                const trackingKey = item.trackingKey || "ไม่ระบุ";
+                
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
-                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${trackingKey}</div>
+                    <div class="history-case">${caseName}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
@@ -1355,40 +1363,51 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
-            console.log("แสดงรายละเอียดข้อมูล:", item);
-            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            
-            // จัดการกับข้อมูล location
-            if (item.location) {
-                if (typeof item.location === "object" && item.location.lat && item.location.long) {
+            if (item.location && typeof item.location === "object") {
+                if (item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                     mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                } else if (typeof item.location === "string" && item.location.includes(",")) {
-                    // กรณีที่ location เป็น string ที่มี comma
-                    const parts = item.location.split(",");
-                    if (parts.length >= 2) {
-                        const lat = parts[0].trim();
-                        const long = parts[1].trim();
-                        locationText = `${lat}, ${long}`;
-                        mapLink = `https://www.google.com/maps?q=${lat},${long}`;
-                    }
+                } else {
+                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
                 }
+            } else {
+                console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
-            // จัดการกับข้อมูล deviceInfo
             const deviceInfo = item.deviceInfo || {};
-            const connectionInfo = (deviceInfo && deviceInfo.connection) ? deviceInfo.connection : {};
-            const batteryInfo = (deviceInfo && deviceInfo.battery) ? deviceInfo.battery : {};
+            const connectionInfo = deviceInfo.connection || {};
+            const batteryInfo = deviceInfo.battery || {};
+            
+            // ตรวจสอบและจัดการรูปแบบวันที่
+            let formattedDate = item.timestamp;
+            if (typeof item.timestamp === 'string' && item.timestamp.includes('T')) {
+                try {
+                    const date = new Date(item.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        formattedDate = date.toLocaleString('th-TH', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+                    }
+                } catch (e) {
+                    console.error("ไม่สามารถแปลงวันที่ได้:", e);
+                }
+            }
             
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${item.timestamp || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${formattedDate || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">Tracking Key</div>
@@ -1397,10 +1416,6 @@
                     <div class="detail-item">
                         <div class="detail-label">ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
-                        <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
                 
@@ -1464,16 +1479,16 @@
                     </div>` : ''}
                 </div>` : ''}
                 
-                ${batteryInfo && (batteryInfo.level !== undefined || batteryInfo.charging !== undefined) ? `
+                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
                 <div class="detail-group">
                     <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
                     <div class="detail-item">
                         <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level !== undefined ? batteryInfo.level : "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging !== undefined ? (batteryInfo.charging ? "กำลังชาร์จ" : "ไม่ได้ชาร์จ") : "ไม่ระบุ"}</div>
+                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
                     </div>
                 </div>` : ''}
             `;
@@ -1552,14 +1567,13 @@
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลองที่มีรูปแบบเดียวกันกับที่ API จะส่งกลับมา
+            // สร้างข้อมูลจำลอง
             const mockData = [
                 {
-                    timestamp: new Date().toLocaleString('th-TH'),
+                    timestamp: "15/02/2023 14:32:21",
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
                     creatorFullName: "นายทดสอบ ระบบ",
-                    creatorId: "Uid12345",
                     ip: "203.0.113.1",
                     location: {
                         lat: 13.756331,
@@ -1575,20 +1589,19 @@
                         connection: {
                             networkType: "wifi",
                             effectiveType: "4g",
-                            downlink: 10.5
+                            downlink: 10.2
                         },
                         battery: {
                             level: "85%",
-                            charging: true
+                            charging: "กำลังชาร์จ"
                         }
                     }
                 },
                 {
-                    timestamp: new Date(Date.now() - 86400000).toLocaleString('th-TH'),
+                    timestamp: "14/02/2023 10:15:03",
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
-                    creatorId: "Uid54321",
                     ip: "203.0.113.2",
                     location: {
                         lat: 13.736717,
@@ -1604,11 +1617,11 @@
                         connection: {
                             networkType: "cellular",
                             effectiveType: "3g",
-                            downlink: 2.5
+                            downlink: 5.5
                         },
                         battery: {
                             level: "45%",
-                            charging: false
+                            charging: "ไม่ได้ชาร์จ"
                         }
                     }
                 }
@@ -1650,7 +1663,7 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.3 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
