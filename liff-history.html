@@ -317,7 +317,7 @@
 
         .history-date i {
             margin-right: 6px;
-            color: var(--primary-color);
+            color: var (--primary-color);
         }
 
         .history-key {
@@ -787,8 +787,9 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
+        // แก้ไข URL ให้ตรงกับ Google Script ที่มีฟังก์ชัน getUserHistory
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1112,7 +1113,10 @@
                         return;
                     }
                     
-                    if (data.history && data.history.length > 0) {
+                    // เพิ่มการล็อกข้อมูลดิบที่ได้รับจากเซิร์ฟเวอร์เพื่อการดีบั๊ก
+                    console.log("ข้อมูลดิบจากเซิร์ฟเวอร์:", JSON.stringify(data));
+                    
+                    if (data.history && Array.isArray(data.history) && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
                         // บันทึกและแสดงข้อมูลดิบเพื่อการตรวจสอบ
@@ -1123,9 +1127,44 @@
                             // แปลงรูปแบบวันที่เวลา
                             let formattedTimestamp = formatDateTime(item.timestamp);
                             
+                            // แปลงข้อมูล location เป็น object ที่สมบูรณ์ถ้ายังไม่ใช่
+                            let location = item.location;
+                            if (typeof location === 'string') {
+                                try {
+                                    // พยายามแปลง JSON string เป็น object
+                                    if (location.startsWith('{') && location.endsWith('}')) {
+                                        location = JSON.parse(location);
+                                    } else if (location.includes(',')) {
+                                        // กรณีที่เป็นรูปแบบ "lat,long"
+                                        const parts = location.split(',');
+                                        if (parts.length === 2) {
+                                            location = {
+                                                lat: parseFloat(parts[0].trim()),
+                                                long: parseFloat(parts[1].trim())
+                                            };
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log("ไม่สามารถแปลงข้อมูล location:", e);
+                                }
+                            }
+                            
+                            // แปลงข้อมูล deviceInfo เป็น object ที่สมบูรณ์ถ้ายังไม่ใช่
+                            let deviceInfo = item.deviceInfo || {};
+                            if (typeof deviceInfo === 'string') {
+                                try {
+                                    deviceInfo = JSON.parse(deviceInfo);
+                                } catch (e) {
+                                    console.log("ไม่สามารถแปลงข้อมูล deviceInfo:", e);
+                                    deviceInfo = {}; // ใช้ object ว่างถ้าแปลงไม่ได้
+                                }
+                            }
+                            
                             return {
                                 ...item,
-                                formattedTimestamp: formattedTimestamp // เพิ่มฟิลด์ใหม่สำหรับเวลาที่จัดรูปแบบแล้ว
+                                formattedTimestamp: formattedTimestamp,
+                                location: location,
+                                deviceInfo: deviceInfo
                             };
                         });
                         
@@ -1163,10 +1202,25 @@
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
                     
-                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
-                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
-                        handleMockDataResponse();
-                    }
+                    // เพิ่มปุ่มสำหรับลองใหม่
+                    const retryButton = document.createElement('button');
+                    retryButton.textContent = 'ลองใหม่';
+                    retryButton.className = 'view-details-btn';
+                    retryButton.style.margin = '10px auto';
+                    retryButton.style.display = 'block';
+                    retryButton.addEventListener('click', fetchUserHistory);
+                    document.getElementById('noDataMessage').appendChild(retryButton);
+                    
+                    // เพิ่มตัวเลือกใช้ข้อมูลจำลอง
+                    const mockButton = document.createElement('button');
+                    mockButton.textContent = 'ใช้ข้อมูลตัวอย่าง';
+                    mockButton.className = 'view-details-btn';
+                    mockButton.style.margin = '10px auto';
+                    mockButton.style.display = 'block';
+                    mockButton.style.backgroundColor = '#dddddd';
+                    mockButton.style.color = '#333333';
+                    mockButton.addEventListener('click', handleMockDataResponse);
+                    document.getElementById('noDataMessage').appendChild(mockButton);
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
@@ -1190,8 +1244,16 @@
                         retryButton.addEventListener('click', fetchUserHistory);
                         document.getElementById('noDataMessage').appendChild(retryButton);
                         
-                        // ถ้าหมดเวลา ลองใช้วิธีการดึงข้อมูลแบบสำรอง
-                        tryFallbackFetch();
+                        // เพิ่มตัวเลือกใช้ข้อมูลจำลอง
+                        const mockButton = document.createElement('button');
+                        mockButton.textContent = 'ใช้ข้อมูลตัวอย่าง';
+                        mockButton.className = 'view-details-btn';
+                        mockButton.style.margin = '10px auto';
+                        mockButton.style.display = 'block';
+                        mockButton.style.backgroundColor = '#dddddd';
+                        mockButton.style.color = '#333333';
+                        mockButton.addEventListener('click', handleMockDataResponse);
+                        document.getElementById('noDataMessage').appendChild(mockButton);
                     }
                 }, 15000);
                 
@@ -1216,74 +1278,16 @@
                 retryButton.addEventListener('click', fetchUserHistory);
                 document.getElementById('noDataMessage').appendChild(retryButton);
                 
-                // ถ้าเกิดข้อผิดพลาด ลองใช้วิธีการดึงข้อมูลแบบสำรอง
-                tryFallbackFetch();
-            }
-        }
-        
-        // ฟังก์ชันสำรองสำหรับดึงข้อมูล (ใช้ fetch API)
-        function tryFallbackFetch() {
-            try {
-                console.log("กำลังลองใช้วิธีสำรองในการดึงข้อมูล");
-                
-                // ใช้ fetch API แทน JSONP
-                fetch(`${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&_=${new Date().getTime()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("ได้รับข้อมูลจากวิธีสำรอง:", data);
-                    
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    
-                    if (data.status === "error") {
-                        throw new Error(data.message || "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์");
-                    }
-                    
-                    if (data.history && data.history.length > 0) {
-                        console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ (วิธีสำรอง)`);
-                        
-                        // แปลงข้อมูลเช่นเดียวกับฟังก์ชันหลัก
-                        currentHistoryData = data.history.map(item => {
-                            return {
-                                ...item,
-                                formattedTimestamp: formatDateTime(item.timestamp)
-                            };
-                        });
-                        
-                        filteredData = [...currentHistoryData];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
-                    } else {
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                        document.getElementById('noDataMessage').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error("เกิดข้อผิดพลาดในการใช้วิธีสำรอง:", error);
-                    // ไม่ต้องแสดงข้อความอีกเพราะอาจจะแสดงไปแล้วจากฟังก์ชันหลัก
-                    
-                    // ลองใช้ข้อมูลจำลองในกรณีฉุกเฉิน
-                    if (confirm("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ทั้งสองวิธี ต้องการใช้ข้อมูลจำลองหรือไม่?")) {
-                        handleMockDataResponse();
-                    }
-                });
-            } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการใช้วิธีสำรอง:", error);
-                // ไม่ต้องทำอะไร เพราะอาจมีการแสดงข้อความข้อผิดพลาดไปแล้ว
+                // เพิ่มตัวเลือกใช้ข้อมูลจำลอง
+                const mockButton = document.createElement('button');
+                mockButton.textContent = 'ใช้ข้อมูลตัวอย่าง';
+                mockButton.className = 'view-details-btn';
+                mockButton.style.margin = '10px auto';
+                mockButton.style.display = 'block';
+                mockButton.style.backgroundColor = '#dddddd';
+                mockButton.style.color = '#333333';
+                mockButton.addEventListener('click', handleMockDataResponse);
+                document.getElementById('noDataMessage').appendChild(mockButton);
             }
         }
         
@@ -1360,18 +1364,17 @@
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
             
+            // แสดง log จำนวนรายการที่พบ
+            console.log(`แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${filteredData.length} รายการ`);
+            
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
-                
-                // ตรวจสอบว่า item มีค่าหรือไม่
-                if (!item) {
-                    console.error("พบข้อมูลที่ไม่ถูกต้องที่ index:", i);
-                    continue; // ข้ามรายการนี้
-                }
-                
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
+                
+                // ตรวจสอบว่ามีข้อมูลครบหรือไม่
+                console.log(`กำลังแสดงรายการที่ ${i+1}:`, item);
                 
                 // ใช้ formattedTimestamp ที่จัดรูปแบบไว้แล้ว หรือใช้ฟังก์ชันแปลงอีกครั้งถ้ายังไม่มี
                 const displayTime = item.formattedTimestamp || formatDateTime(item.timestamp);
@@ -1431,15 +1434,7 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
-            // ตรวจสอบว่า item มีค่าหรือไม่
-            if (!item) {
-                console.error("ไม่มีข้อมูลสำหรับแสดงใน modal");
-                modalBody.innerHTML = '<div class="detail-group"><h3><i class="fas fa-exclamation-circle"></i> ข้อผิดพลาด</h3><p>ไม่พบข้อมูลที่ต้องการแสดง</p></div>';
-                modal.style.display = 'block';
-                return;
-            }
-            
-            // Log ข้อมูลที่จะแสดง
+            // ล็อกข้อมูลที่จะแสดงในโมดัลเพื่อการแก้ไขปัญหา
             console.log("กำลังแสดงข้อมูลในโมดัล:", item);
             
             // ใช้เวลาที่จัดรูปแบบแล้ว หรือแปลงอีกครั้ง
@@ -1469,9 +1464,6 @@
             const trackingKey = item.trackingKey && item.trackingKey !== "ไม่ระบุ" && item.trackingKey !== "ไม่มีค่า" ? 
                 item.trackingKey : "ไม่ระบุ";
             
-            // เตรียมข้อมูล IP
-            const ip = item.ip || "ไม่ระบุ";
-            
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
@@ -1493,7 +1485,7 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP</div>
-                        <div class="detail-value">${ip}</div>
+                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
@@ -1620,8 +1612,8 @@
                     }
                 }, 500);
             };
-            // ทดสอบการเชื่อมต่อกับ App Script
-            img.src = `${HISTORY_WEBHOOK_URL}?action=ping&_=${new Date().getTime()}`;
+            // ใช้การเรียก favicon.ico เพื่อทดสอบการเข้าถึง
+            img.src = `https://script.google.com/favicon.ico?${new Date().getTime()}`;
             
             // ตั้งเวลาหมดเวลา 5 วินาที
             setTimeout(() => {
@@ -1646,19 +1638,20 @@
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลอง
+            // สร้างข้อมูลจำลองที่มีรายละเอียดมากขึ้น
             const mockData = [
                 {
-                    timestamp: "2023-02-15T14:32:21.000Z",
-                    formattedTimestamp: "15/02/2566 14:32:21",
+                    timestamp: "2023-04-23T14:32:21.000Z",
+                    formattedTimestamp: "23/04/2023 14:32:21",
                     trackingKey: "track_123456",
-                    caseName: "เคสทดสอบ 1",
+                    caseName: "ตรวจสอบลิงก์หลอกลวงในอีเมล",
                     creatorFullName: "นายทดสอบ ระบบ",
                     ip: "203.0.113.1",
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15
+                        accuracy: 15,
+                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
@@ -1668,7 +1661,7 @@
                         connection: {
                             networkType: "wifi",
                             effectiveType: "4g",
-                            downlink: 25.5
+                            downlink: 15.5
                         },
                         battery: {
                             level: "85%",
@@ -1677,41 +1670,57 @@
                     }
                 },
                 {
-                    timestamp: "2023-02-14T10:15:03.000Z", 
-                    formattedTimestamp: "14/02/2566 10:15:03",
+                    timestamp: "2023-04-22T10:15:03.000Z", 
+                    formattedTimestamp: "22/04/2023 10:15:03",
                     trackingKey: "track_654321",
-                    caseName: "เคสทดสอบ 2",
+                    caseName: "ลิงก์หลอกลวงผ่าน SMS",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
                     ip: "203.0.113.2",
                     location: {
                         lat: 13.736717,
                         long: 100.523186,
-                        accuracy: 8
+                        accuracy: 8,
+                        gmapLink: "https://www.google.com/maps?q=13.736717,100.523186"
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
-                        browser: "Chrome"
+                        browser: "Chrome",
+                        connection: {
+                            networkType: "cellular",
+                            effectiveType: "3g",
+                            downlink: 7.2
+                        },
+                        battery: {
+                            level: "45%",
+                            charging: "ไม่ได้ชาร์จ"
+                        }
                     }
                 },
                 {
-                    timestamp: "2023-02-13T08:45:00.000Z",
-                    formattedTimestamp: "13/02/2566 08:45:00",
+                    timestamp: "2023-04-20T08:45:00.000Z",
+                    formattedTimestamp: "20/04/2023 08:45:00",
                     trackingKey: "track_abcdef",
-                    caseName: "เคสทดสอบ 3",
+                    caseName: "เว็บไซต์หลอกลวงในโฆษณา",
                     creatorFullName: "นายระบบ ทดสอบ",
                     ip: "203.0.113.3",
                     location: {
                         lat: 13.746731,
                         long: 100.513762,
-                        accuracy: 10
+                        accuracy: 10,
+                        gmapLink: "https://www.google.com/maps?q=13.746731,100.513762"
                     },
                     deviceInfo: {
                         deviceType: "Desktop",
                         deviceModel: "Windows PC",
                         platform: "Windows 10",
-                        browser: "Firefox"
+                        browser: "Firefox",
+                        connection: {
+                            networkType: "wifi",
+                            effectiveType: "4g",
+                            downlink: 22.8
+                        }
                     }
                 }
             ];
@@ -1732,7 +1741,7 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.3 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.1.4 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
