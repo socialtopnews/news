@@ -564,7 +564,7 @@
         .no-data {
             text-align: center;
             padding: 40px 20px;
-            color: var(--text-light);
+            color: var (--text-light);
         }
 
         .no-data i {
@@ -785,9 +785,10 @@
         // ค่า Config สำคัญ
         const LIFF_ID = '2007293657-Lw86gYw1';
         
-        // URL สำหรับ webhook - แก้ไขเป็น URL ที่เป็น public (deployed) และแน่ใจว่าใช้ URL ที่ถูกต้อง
+        // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxtWWWU5HTpEdaYAgfvnOAeQak61oLSrBaW8986Yw3m7VD6yVvkL6tytIqCv-1TT_pm/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -859,14 +860,50 @@
                 try {
                     console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                     
+                    // เริ่มการแสดงสถานะกำลังตรวจสอบ
+                    const statusEl = document.getElementById('userStatus');
+                    const originalText = statusEl.textContent;
+                    statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
+                    
+                    // ตรวจสอบใน localStorage ก่อนว่าเคยตรวจสอบสิทธิ์แล้วหรือไม่ (ภายใน 30 นาที)
+                    try {
+                        const savedPermission = localStorage.getItem('user_permission_' + userId);
+                        const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
+                        const currentTime = new Date().getTime();
+                        
+                        // ถ้าข้อมูลไม่เกิน 30 นาที ให้ใช้ค่าจาก localStorage
+                        if (savedPermission && (currentTime - savedTime < 30 * 60 * 1000)) {
+                            console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
+                            statusEl.textContent = originalText;
+                            return resolve(savedPermission === 'true');
+                        }
+                    } catch (e) {
+                        console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
+                    }
+                    
+                    // แก้ไขปัญหา cache โดยเพิ่ม timestamp
+                    const timestamp = new Date().getTime();
                     // สร้าง unique callback name
-                    const callbackName = 'permCallback_' + new Date().getTime();
+                    const callbackName = 'permCallback_' + timestamp;
                     
                     // สร้าง global callback function
                     window[callbackName] = function(data) {
                         console.log("ได้รับข้อมูลสิทธิ์:", data);
                         
-                        if (data && data.hasPermission !== undefined) {
+                        // คืนค่าข้อความเดิม
+                        statusEl.textContent = originalText;
+                        
+                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
+                            console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
+                            
+                            // บันทึกสิทธิ์ใน localStorage
+                            try {
+                                localStorage.setItem('user_permission_' + userId, data.hasPermission ? 'true' : 'false');
+                                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
+                            } catch (e) {
+                                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+                            }
+                            
                             resolve(data.hasPermission === true);
                         } else {
                             console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
@@ -879,15 +916,26 @@
                     
                     // สร้าง script tag สำหรับ JSONP
                     const script = document.createElement('script');
-                    const url = new URL(LINE_OA_WEBHOOK_URL);
-                    url.searchParams.append('action', 'checkUserPermission');
-                    url.searchParams.append('userId', userId);
-                    url.searchParams.append('callback', callbackName);
-                    url.searchParams.append('_', new Date().getTime()); // ป้องกันการ cache
+                    
+                    // ใช้ URL ที่ถูกต้องและตรงกับทั้งสองไฟล์
+                    const url = new URL(PERMISSION_WEBHOOK_URL);
+                    url.searchParams.append('action', 'checkUserPermissionFromSheet');
+                    url.searchParams.append('userId', encodeURIComponent(userId));
+                    url.searchParams.append('callback', encodeURIComponent(callbackName));
+                    url.searchParams.append('_', timestamp); // ป้องกันการ cache
+                    
+                    console.log("เรียกใช้ API URL:", url.toString());
                     
                     script.src = url.toString();
-                    script.onerror = function() {
-                        console.error('เกิดข้อผิดพลาดในการโหลด permission script');
+                    script.onerror = function(e) {
+                        console.error('เกิดข้อผิดพลาดในการโหลด permission script:', e);
+                        
+                        // คืนค่าข้อความเดิม
+                        statusEl.textContent = originalText;
+                        
+                        // แสดง dialog ยืนยันให้ผู้ใช้ทราบ
+                        showErrorMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ตรวจสอบสิทธิ์ได้ กำลังใช้ระบบสำรอง');
+                        
                         resolve(checkUserPermissionFallback(userId));
                         
                         // ลบ callback หากเกิดข้อผิดพลาด
@@ -901,6 +949,12 @@
                     setTimeout(() => {
                         if (window[callbackName]) {
                             console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้การตรวจสอบสำรอง");
+                            
+                            // คืนค่าข้อความเดิม
+                            statusEl.textContent = originalText;
+                            
+                            showErrorMessage('การตรวจสอบสิทธิ์ใช้เวลานานเกินไป กำลังใช้ระบบสำรอง');
+                            
                             delete window[callbackName];
                             resolve(checkUserPermissionFallback(userId));
                         }
@@ -913,13 +967,37 @@
             });
         }
         
-        // ตรวจสอบสิทธิ์แบบสำรอง
+        // ตรวจสอบสิทธิ์แบบสำรอง - ปรับปรุงให้ดีขึ้น
         function checkUserPermissionFallback(userId) {
+            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
+            
+            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
             const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021' // ไอดีผู้ดูแลระบบ
+                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                // ในกรณีฉุกเฉินให้เพิ่มไอดีของผู้ใช้ที่ได้รับอนุมัติแล้วในนี้
+                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAA', // ชื่อผู้ใช้ 1
+                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxBB', // ชื่อผู้ใช้ 2
+                // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
             ];
             
-            return approvedUserIds.includes(userId);
+            // ตรวจสอบว่าเป็น admin หรือไม่โดยตรง
+            if (userId === 'U69aa2cb90c9f40291278c346c50dc021') {
+                console.log("ผู้ใช้คือผู้ดูแลระบบ อนุญาตให้เข้าใช้งาน");
+                return true;
+            }
+            
+            const hasAccess = approvedUserIds.includes(userId);
+            console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
+            
+            // บันทึกการตรวจสอบนี้ไว้ใน localStorage เพื่อลดการเรียกใช้งานซ้ำ
+            try {
+                localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
+                localStorage.setItem('user_permission_time_' + userId, new Date().getTime());
+            } catch (e) {
+                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+            }
+            
+            return hasAccess;
         }
         
         // เปิดใช้งานฟีเจอร์ประวัติ
@@ -989,8 +1067,10 @@
                     return;
                 }
                 
+                // แก้ไขปัญหา cache โดยเพิ่ม timestamp
+                const timestamp = new Date().getTime();
                 // สร้าง unique callback name เพื่อป้องกันการชนกันของ callback
-                const callbackName = 'jsonpCallback_' + new Date().getTime();
+                const callbackName = 'jsonpCallback_' + timestamp;
                 
                 // สร้าง global callback function
                 window[callbackName] = function(data) {
@@ -1028,8 +1108,8 @@
                     delete window[callbackName];
                 };
                 
-                // สร้าง URL สำหรับเรียก API
-                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${new Date().getTime()}`;
+                // สร้าง URL สำหรับเรียก API พร้อม timestamp ป้องกัน cache
+                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
                 console.log("กำลังเรียก API ที่ URL:", scriptURL);
                 
                 // สร้าง script tag สำหรับ JSONP
@@ -1062,6 +1142,15 @@
                         document.getElementById('loadingIndicator').style.display = 'none';
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        
+                        // เพิ่มปุ่มสำหรับลองใหม่
+                        const retryButton = document.createElement('button');
+                        retryButton.textContent = 'ลองใหม่';
+                        retryButton.className = 'view-details-btn';
+                        retryButton.style.margin = '10px auto';
+                        retryButton.style.display = 'block';
+                        retryButton.addEventListener('click', fetchUserHistory);
+                        document.getElementById('noDataMessage').appendChild(retryButton);
                     }
                 }, 15000);
                 
@@ -1076,6 +1165,15 @@
                 document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                 document.getElementById('noDataMessage').style.display = 'block';
                 document.getElementById('pagination').style.display = 'none';
+                
+                // เพิ่มปุ่มสำหรับลองใหม่
+                const retryButton = document.createElement('button');
+                retryButton.textContent = 'ลองใหม่';
+                retryButton.className = 'view-details-btn';
+                retryButton.style.margin = '10px auto';
+                retryButton.style.display = 'block';
+                retryButton.addEventListener('click', fetchUserHistory);
+                document.getElementById('noDataMessage').appendChild(retryButton);
             }
         }
         
@@ -1304,16 +1402,55 @@
         // เพิ่มฟังก์ชันสำหรับตรวจสอบว่า App Script เข้าถึงได้หรือไม่
         function checkAppScriptAccess() {
             console.log("กำลังตรวจสอบการเข้าถึง App Script...");
+            
+            // เพิ่มข้อความแสดงสถานะการตรวจสอบ
+            const statusMessage = document.createElement('div');
+            statusMessage.id = 'appscript-status';
+            statusMessage.style.position = 'fixed';
+            statusMessage.style.bottom = '10px';
+            statusMessage.style.left = '10px';
+            statusMessage.style.padding = '5px 10px';
+            statusMessage.style.fontSize = '12px';
+            statusMessage.style.backgroundColor = '#ffffcc';
+            statusMessage.style.border = '1px solid #ccc';
+            statusMessage.style.borderRadius = '3px';
+            statusMessage.style.zIndex = '1000';
+            statusMessage.textContent = 'กำลังตรวจสอบการเชื่อมต่อ...';
+            document.body.appendChild(statusMessage);
+            
             const img = new Image();
             img.onload = function() {
                 console.log("สามารถเข้าถึง App Script ได้!");
+                statusMessage.style.backgroundColor = '#ccffcc';
+                statusMessage.textContent = 'เชื่อมต่อ App Script สำเร็จ';
+                // ซ่อนข้อความหลัง 3 วินาที
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
             };
             img.onerror = function() {
                 console.error("ไม่สามารถเข้าถึง App Script!");
+                statusMessage.style.backgroundColor = '#ffcccc';
+                statusMessage.textContent = 'ไม่สามารถเชื่อมต่อ App Script ได้';
+                
                 showErrorMessage("ไม่สามารถเข้าถึง Google Apps Script ได้ โปรดตรวจสอบว่า App Script ได้เผยแพร่เป็น Web App และอนุญาตให้เข้าถึงจากทุกคน");
+                
+                // แสดงปุ่มสำหรับใช้ข้อมูลจำลองหรือลองใหม่
+                setTimeout(() => {
+                    if (confirm("ต้องการใช้ข้อมูลจำลองสำหรับทดสอบหรือไม่?")) {
+                        handleMockDataResponse();
+                    }
+                }, 500);
             };
             // ใช้การเรียก favicon.ico เพื่อทดสอบการเข้าถึง (ถ้าเข้าถึงได้จะได้รับรูปภาพ ถ้าไม่ได้จะเกิด error)
-            img.src = `https://script.googleusercontent.com/favicon.ico?${new Date().getTime()}`;
+            img.src = `https://script.google.com/favicon.ico?${new Date().getTime()}`;
+            
+            // ตั้งเวลาหมดเวลา 5 วินาที
+            setTimeout(() => {
+                if (!img.complete || !img.naturalWidth) {
+                    img.onerror();
+                }
+            }, 5000);
         }
 
         // ฟังก์ชันตรวจสอบว่าเบราว์เซอร์มีข้อจำกัดหรือไม่ 
