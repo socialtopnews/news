@@ -787,11 +787,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
-        
-        // ID ของ Google Spreadsheet
-        const SPREADSHEET_ID = '1j7MqTTEW6izLtVDk95SlPYLjkUqk9MTV7-ZK0Arpnj8';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1117,9 +1114,7 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        // ลองล็อกข้อมูลประวัติรายการแรกเพื่อตรวจสอบ
-                        console.log("ตัวอย่างข้อมูลรายการแรก:", JSON.stringify(data.history[0]));
-                        
+                        console.log("ตัวอย่างข้อมูลแรก:", JSON.stringify(data.history[0]));
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -1155,8 +1150,10 @@
                     // ลบ callback หากเกิดข้อผิดพลาด
                     delete window[callbackName];
                     
-                    // ทางเลือกสำรอง: ลองใช้การเรียก API แบบตรง
-                    tryDirectAPICall();
+                    // ทางเลือกสำรอง: ใช้ข้อมูลจำลองสำหรับการทดสอบ
+                    if (confirm("ไม่สามารถเชื่อมต่อกับ API ได้ ต้องการโหลดข้อมูลจำลองเพื่อทดสอบหรือไม่?")) {
+                        handleMockDataResponse();
+                    }
                 };
                 
                 // เพิ่ม script เข้าไปใน DOM
@@ -1205,48 +1202,6 @@
             }
         }
         
-        // เพิ่มฟังก์ชันทางเลือกสำรองในการเรียกใช้ API โดยตรง
-        function tryDirectAPICall() {
-            console.log("ลองใช้การเรียก API แบบตรง...");
-            
-            // ใช้ fetch API หรือ XMLHttpRequest
-            fetch(`${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log("ได้รับข้อมูลจากการเรียก API โดยตรง:", data);
-                
-                if (data.history && data.history.length > 0) {
-                    currentHistoryData = data.history;
-                    filteredData = [...currentHistoryData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                    
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                } else {
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                }
-            })
-            .catch(error => {
-                console.error("การเรียก API โดยตรงล้มเหลว:", error);
-                document.getElementById('loadingIndicator').style.display = 'none';
-                showErrorMessage("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ทั้งสองวิธี");
-            });
-        }
-        
         // กรองข้อมูลตามการค้นหา
         function filterHistoryData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -1286,54 +1241,42 @@
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
             
-            console.log(`แสดงรายการ ${startIndex+1} ถึง ${endIndex} จากทั้งหมด ${filteredData.length} รายการ`);
-            
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
-                console.log(`กำลังแสดงรายการที่ ${i+1}:`, item);
-                
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // จัดการกับข้อมูลวันที่
-                let formattedDate = item.timestamp || "ไม่ระบุเวลา";
-                // ไม่ต้องแปลงรูปแบบวันที่ ตามที่โจทย์ระบุ
+                // ตรวจสอบข้อมูลและใช้ค่าเริ่มต้นถ้าไม่มีข้อมูล
+                const isp = (item.ip && item.ip.org) ? item.ip.org : (item.ip && item.ip.isp) ? item.ip.isp : "ไม่ทราบ";
                 
-                // จัดการกับข้อมูลพิกัด
                 let locationText = "ไม่มีข้อมูล";
                 if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
                     locationText = `${item.location.lat}, ${item.location.long}`;
                 }
                 
-                // จัดการกับข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 const platform = deviceInfo.platform || "ไม่ทราบ";
                 const browser = deviceInfo.browser || "ไม่ทราบ";
                 
-                // จัดการกับข้อมูล IP และ ISP
-                const ip = item.ip || "ไม่ทราบ";
-                const isp = item.org || (item.ip && item.ip.org) || "ไม่ทราบ";
-                
+                // สร้าง HTML สำหรับรายการประวัติ
                 listItem.innerHTML = `
-                    <div class="history-date">
-                        <i class="far fa-calendar-alt"></i>${formattedDate}
-                    </div>
-                    <div class="history-key">
-                        <strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}
-                    </div>
-                    <div class="history-case">
-                        ${item.caseName || "ไม่ระบุชื่อเคส"}
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
+                    <div class="history-details">
+                        <div><i class="fas fa-globe"></i> IP: ${item.ip ? item.ip.ip || "ไม่ทราบ" : "ไม่ทราบ"}</div>
+                        <div><i class="fas fa-network-wired"></i> ISP: ${isp}</div>
+                        <div><i class="fas fa-mobile-alt"></i> อุปกรณ์: ${deviceType} ${deviceModel}</div>
+                        <div><i class="fas fa-laptop-code"></i> ระบบ: ${platform}</div>
+                        <div><i class="fas fa-window-maximize"></i> เบราว์เซอร์: ${browser}</div>
                     </div>
                     <div class="history-action">
-                        <button class="view-details-btn" data-index="${i}">
-                            <i class="fas fa-eye"></i> ดูรายละเอียด
-                        </button>
+                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
-                            <div><i class="fas fa-mobile-alt"></i> ${deviceType} ${deviceModel}</div>
                         </div>
                     </div>
                 `;
@@ -1361,8 +1304,6 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
-            console.log("แสดงรายละเอียดของรายการ:", item);
-            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
@@ -1377,18 +1318,12 @@
                 console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
-            // จัดการข้อมูลอุปกรณ์
+            // แยกข้อมูล IP เป็นส่วนๆ
+            const ipInfo = item.ip || {};
             const deviceInfo = item.deviceInfo || {};
-            const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-            const platform = deviceInfo.platform || "ไม่ทราบ";
-            const browser = deviceInfo.browser || "ไม่ทราบ";
+            const connectionInfo = deviceInfo.connection || {};
+            const batteryInfo = deviceInfo.battery || {};
             
-            // จัดการข้อมูล IP และ ISP
-            const ip = item.ip || "ไม่ทราบ";
-            const isp = item.org || (item.ip && item.ip.org) || "ไม่ทราบ";
-            
-            // สร้างเนื้อหาโมดัล
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
@@ -1411,17 +1346,29 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
+                    <h3><i class="fas fa-globe"></i> ข้อมูล IP</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP</div>
-                        <div class="detail-value">${ip}</div>
+                        <div class="detail-label">ไอพี</div>
+                        <div class="detail-value">${ipInfo.ip || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ISP/องค์กร</div>
-                        <div class="detail-value">${isp}</div>
+                        <div class="detail-label">ISP/บริษัท</div>
+                        <div class="detail-value">${ipInfo.org || ipInfo.isp || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
+                        <div class="detail-label">เมือง/ภูมิภาค</div>
+                        <div class="detail-value">${ipInfo.city ? ipInfo.city + (ipInfo.region ? ", " + ipInfo.region : "") : "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-value">${ipInfo.country || "ไม่ระบุ"}</div>
+                    </div>
+                </div>
+                
+                <div class="detail-group">
+                    <h3><i class="fas fa-map-marker-alt"></i> ตำแหน่ง GPS</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">พิกัด</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
                     ${item.location && item.location.accuracy ? `
@@ -1440,21 +1387,43 @@
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
-                        <div class="detail-value">${deviceType}</div>
+                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceModel}</div>
+                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${platform}</div>
+                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${browser}</div>
+                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ขนาดหน้าจอ</div>
+                        <div class="detail-value">${deviceInfo.screenSize || "ไม่ระบุ"}</div>
                     </div>
                 </div>
+                
+                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
+                <div class="detail-group">
+                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเภทเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">คุณภาพเครือข่าย</div>
+                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
+                    </div>
+                    ${connectionInfo.downlink ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความเร็ว</div>
+                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
+                    </div>` : ''}
+                </div>` : ''}
             `;
             
             modal.style.display = 'block';
@@ -1538,18 +1507,27 @@
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
                     creatorFullName: "นายทดสอบ ระบบ",
-                    ip: "203.0.113.1",
-                    org: "True Internet Co., Ltd.",
+                    ip: {
+                        ip: "203.0.113.1",
+                        hostname: "example.com",
+                        country: "TH",
+                        region: "กรุงเทพมหานคร",
+                        city: "กรุงเทพ",
+                        org: "TRUE Corporation",
+                        loc: "13.756331,100.501762"
+                    },
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15
+                        accuracy: 15,
+                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
                         deviceModel: "iPhone 13",
                         platform: "iOS 16.2",
-                        browser: "Safari"
+                        browser: "Safari",
+                        screenSize: "390x844"
                     }
                 },
                 {
@@ -1557,18 +1535,27 @@
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
-                    ip: "203.0.113.2",
-                    org: "AIS Internet Co., Ltd.",
+                    ip: {
+                        ip: "203.0.113.2",
+                        hostname: "example.org",
+                        country: "TH",
+                        region: "เชียงใหม่",
+                        city: "เชียงใหม่",
+                        org: "3BB Broadband",
+                        loc: "18.788477,98.984963"
+                    },
                     location: {
-                        lat: 13.736717,
-                        long: 100.523186,
-                        accuracy: 8
+                        lat: 18.788477,
+                        long: 98.984963,
+                        accuracy: 8,
+                        gmapLink: "https://www.google.com/maps?q=18.788477,98.984963"
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
-                        browser: "Chrome"
+                        browser: "Chrome",
+                        screenSize: "412x915"
                     }
                 }
             ];
@@ -1581,219 +1568,71 @@
             document.getElementById('historyList').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
         }
-        
-        // เพิ่มฟังก์ชันเพื่อดึงข้อมูลโดยตรงจาก Google Sheet ด้วย Google Visualization API
-        function fetchDirectFromGoogleSheet() {
-            console.log("กำลังลองดึงข้อมูลโดยตรงจาก Google Sheet...");
-            
-            document.getElementById('loadingIndicator').style.display = 'flex';
-            document.getElementById('noDataMessage').style.display = 'none';
-            
-            // ใช้ Google Visualization API ดึงข้อมูลจาก sheet
-            const query = new google.visualization.Query(
-                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?sheet=PhisingLog`
-            );
-            
-            query.send(function(response) {
-                if (response.isError()) {
-                    console.error('Error in query: ' + response.getMessage() + ' ' + response.getDetailedMessage());
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>' + response.getMessage() + '</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                    return;
-                }
-                
-                const data = response.getDataTable();
-                const rows = data.getNumberOfRows();
-                const cols = data.getNumberOfColumns();
-                
-                console.log(`พบข้อมูล ${rows} แถว, ${cols} คอลัมน์`);
-                
-                // หาดัชนีคอลัมน์ที่ต้องการ
-                let trackingKeyIdx = -1;
-                let caseNameIdx = -1;
-                let creatorIdx = -1;
-                let ipIdx = -1;
-                let orgIdx = -1;
-                let deviceTypeIdx = -1;
-                let deviceModelIdx = -1;
-                let platformIdx = -1;
-                let browserIdx = -1;
-                let gpsLocationIdx = -1;
-                
-                for (let i = 0; i < cols; i++) {
-                    const colName = data.getColumnLabel(i);
-                    if (colName === "Tracking Key") trackingKeyIdx = i;
-                    else if (colName === "ชื่อเคส") caseNameIdx = i;
-                    else if (colName === "ผู้สร้าง") creatorIdx = i;
-                    else if (colName === "IP") ipIdx = i;
-                    else if (colName === "องค์กร/ISP") orgIdx = i;
-                    else if (colName === "ประเภทอุปกรณ์") deviceTypeIdx = i;
-                    else if (colName === "รุ่นอุปกรณ์") deviceModelIdx = i;
-                    else if (colName === "ระบบปฏิบัติการ") platformIdx = i;
-                    else if (colName === "เบราว์เซอร์") browserIdx = i;
-                    else if (colName === "พิกัด GPS") gpsLocationIdx = i;
-                }
-                
-                // แปลงข้อมูลให้อยู่ในรูปแบบที่ใช้ในแอพ
-                const historyData = [];
-                
-                for (let i = 0; i < rows; i++) {
-                    const rowData = {
-                        timestamp: data.getValue(i, 0) || "ไม่ระบุ", // สมมติว่าคอลัมน์แรกคือวันเวลา
-                        trackingKey: trackingKeyIdx > -1 ? data.getValue(i, trackingKeyIdx) : "ไม่ระบุ",
-                        caseName: caseNameIdx > -1 ? data.getValue(i, caseNameIdx) : "ไม่ระบุ",
-                        creatorFullName: creatorIdx > -1 ? data.getValue(i, creatorIdx) : "ไม่ระบุ",
-                        ip: ipIdx > -1 ? data.getValue(i, ipIdx) : "ไม่ระบุ",
-                        org: orgIdx > -1 ? data.getValue(i, orgIdx) : "ไม่ระบุ",
-                        deviceInfo: {
-                            deviceType: deviceTypeIdx > -1 ? data.getValue(i, deviceTypeIdx) : "ไม่ระบุ",
-                            deviceModel: deviceModelIdx > -1 ? data.getValue(i, deviceModelIdx) : "ไม่ระบุ",
-                            platform: platformIdx > -1 ? data.getValue(i, platformIdx) : "ไม่ระบุ",
-                            browser: browserIdx > -1 ? data.getValue(i, browserIdx) : "ไม่ระบุ"
-                        }
-                    };
-                    
-                    // จัดการกับพิกัด GPS ถ้ามีข้อมูล
-                    if (gpsLocationIdx > -1) {
-                        const gpsValue = data.getValue(i, gpsLocationIdx);
-                        if (gpsValue && gpsValue !== "ไม่มีข้อมูล") {
-                            const coords = gpsValue.split(',');
-                            if (coords.length === 2) {
-                                rowData.location = {
-                                    lat: parseFloat(coords[0].trim()),
-                                    long: parseFloat(coords[1].trim())
-                                };
-                            }
-                        }
-                    }
-                    
-                    historyData.push(rowData);
-                }
-                
-                // กรองข้อมูลเฉพาะของผู้ใช้ปัจจุบัน (ถ้าจำเป็น)
-                // สมมติว่าเรามี TrackingMapping Sheet ที่เชื่อมโยง userId กับ trackingKey
-                
-                document.getElementById('loadingIndicator').style.display = 'none';
-                
-                if (historyData.length > 0) {
-                    currentHistoryData = historyData;
-                    filteredData = [...historyData];
-                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                    
-                    displayHistoryData();
-                    document.getElementById('historyList').style.display = 'block';
-                    document.getElementById('pagination').style.display = 'flex';
-                } else {
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ไม่พบข้อมูลประวัติการใช้งาน</p>';
-                    document.getElementById('noDataMessage').style.display = 'block';
-                }
-            });
-        }
-        
-        // เพิ่มปุ่มดึงข้อมูลทางเลือก
-        function addAlternativeOptions() {
-            const content = document.querySelector('.content');
-            const optionsDiv = document.createElement('div');
-            optionsDiv.style.marginTop = '20px';
-            optionsDiv.style.textAlign = 'center';
-            
-            const directFetchBtn = document.createElement('button');
-            directFetchBtn.textContent = "ลองดึงข้อมูลโดยตรงจาก Google Sheet";
-            directFetchBtn.style.padding = "8px 16px";
-            directFetchBtn.style.background = "#f1f1f1";
-            directFetchBtn.style.border = "1px solid #ddd";
-            directFetchBtn.style.borderRadius = "4px";
-            directFetchBtn.style.margin = "5px";
-            directFetchBtn.style.cursor = "pointer";
-            
-            directFetchBtn.addEventListener('click', function() {
-                // ตรวจสอบว่า Google Visualization API ถูกโหลดหรือไม่
-                if (typeof google !== 'undefined' && google.visualization) {
-                    fetchDirectFromGoogleSheet();
-                } else {
-                    // โหลด Google Visualization API
-                    const script = document.createElement('script');
-                    script.src = 'https://www.gstatic.com/charts/loader.js';
-                    script.onload = function() {
-                        google.charts.load('current', {'packages':['corechart', 'table']});
-                        google.charts.setOnLoadCallback(fetchDirectFromGoogleSheet);
-                    };
-                    document.head.appendChild(script);
-                }
-            });
-            
-            // สร้างปุ่มอื่นๆ เช่น ปุ่มใช้ข้อมูลจำลอง
-            const mockDataBtn = document.createElement('button');
-            mockDataBtn.textContent = "ใช้ข้อมูลจำลอง";
-            mockDataBtn.style.padding = "8px 16px";
-            mockDataBtn.style.background = "#f1f1f1";
-            mockDataBtn.style.border = "1px solid #ddd";
-            mockDataBtn.style.borderRadius = "4px";
-            mockDataBtn.style.margin = "5px";
-            mockDataBtn.style.cursor = "pointer";
-            
-            mockDataBtn.addEventListener('click', handleMockDataResponse);
-            
-            optionsDiv.appendChild(directFetchBtn);
-            optionsDiv.appendChild(mockDataBtn);
-            
-            // หาตำแหน่งที่เหมาะสมในการแทรก
-            const permissionMsg = document.getElementById('permissionMessage');
-            if (permissionMsg) {
-                permissionMsg.parentNode.insertBefore(optionsDiv, permissionMsg.nextSibling);
-            } else {
-                const firstElement = content.firstChild;
-                content.insertBefore(optionsDiv, firstElement);
-            }
-        }
-        
-        // เรียกใช้เมื่อตรวจพบว่าอาจมีปัญหาในการเข้าถึง API
-        document.addEventListener('DOMContentLoaded', function() {
-            // เพิ่มหลังจากโหลด DOM เรียบร้อย
-            setTimeout(addAlternativeOptions, 3000);
-        });
-        
-        // ตั้งค่า Event Listeners เพิ่มเติม
-        function setupEventListeners() {
-            // ค้นหา
-            document.getElementById('searchInput').addEventListener('input', function() {
-                filterHistoryData();
-            });
-            
-            // ปุ่ม Pagination
-            document.getElementById('prevBtn').addEventListener('click', function() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    displayHistoryData();
-                }
-            });
-            
-            document.getElementById('nextBtn').addEventListener('click', function() {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    displayHistoryData();
-                }
-            });
-            
-            // ปุ่มปิด Modal
-            document.querySelector('.close-modal').addEventListener('click', closeModal);
-            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-            
-            // ปิด Modal เมื่อคลิกที่พื้นหลัง
-            window.addEventListener('click', function(event) {
-                if (event.target === document.getElementById('detailsModal')) {
-                    closeModal();
-                }
-            });
 
-            // เพิ่มปุ่มทดสอบและเวอร์ชันล่าสุดของโค้ด
-            if (isLimitedBrowser() || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-                addTestOption();
-            }
+        // เพิ่มปุ่มทดสอบใช้ข้อมูลจำลอง
+        function addTestOption() {
+            const content = document.querySelector('.content');
+            const testButton = document.createElement('button');
+            testButton.textContent = "ทดสอบด้วยข้อมูลจำลอง";
+            testButton.style.padding = "8px 16px";
+            testButton.style.background = "#f1f1f1";
+            testButton.style.border = "1px solid #ddd";
+            testButton.style.borderRadius = "4px";
+            testButton.style.margin = "10px 0";
+            testButton.style.cursor = "pointer";
             
-            checkLiffVersion();
+            testButton.addEventListener('click', function() {
+                handleMockDataResponse();
+            });
+            
+            const firstChild = content.firstChild;
+            content.insertBefore(testButton, firstChild);
         }
+
+        // ตรวจสอบสถานะการอัพเดตโค้ด LIFF
+        function checkLiffVersion() {
+            const versionElement = document.createElement('div');
+            versionElement.style.fontSize = '10px';
+            versionElement.style.color = '#999';
+            versionElement.style.textAlign = 'center';
+            versionElement.style.padding = '5px';
+            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            
+            const footer = document.querySelector('.footer');
+            footer.appendChild(versionElement);
+        }
+
+        // Adds styles for new history details section
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add styles for history details section
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .history-details {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                    margin: 10px 0;
+                    font-size: 13px;
+                    color: var(--text-light);
+                }
+                .history-details div {
+                    display: flex;
+                    align-items: center;
+                }
+                .history-details i {
+                    margin-right: 5px;
+                    color: var(--primary-color);
+                    width: 14px;
+                    text-align: center;
+                }
+                @media (max-width: 480px) {
+                    .history-details {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            `;
+            document.head.appendChild(styleElement);
+        });
     </script>
 </body>
 </html>
