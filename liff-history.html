@@ -2,940 +2,263 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ประวัติการใช้งาน | Phishing</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Line LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <!-- Font Awesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติการใช้งาน Fishing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- Copy ALL CSS styles from liff.html here --- */
-        :root {
-            --primary-color: #3876BF;
-            --primary-dark: #192655;
-            --primary-light: #5A96E3;
-            --secondary-color: #A1C2F1;
-            --accent-color: #00AAFF;
-            --success-color: #4CAF50;
-            --error-color: #FF5252;
-            --warning-color: #FFC107;
-            --text-color: #333333;
-            --text-light: #666666;
-            --text-white: #FFFFFF;
-            --bg-color: #F8F9FA;
-            --border-radius: 12px;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
-            --transition-normal: all 0.3s ease;
-            --spacer: 1.5rem;
-        }
-
-        * {
-            box-sizing: border-box;
-            font-family: 'Prompt', sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 0;
-            margin: 0;
-            min-height: 100vh;
+            background-color: #f5f5f5;
+            font-family: 'Prompt', sans-serif;
         }
-
-        .app-container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 0 20px 0;
-            min-height: 100vh;
-            background-color: #ffffff;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
+        .navbar {
+            background-color: #4CAF50;
         }
-
-        .header {
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+        .navbar-brand {
             color: white;
-            padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
+            font-weight: bold;
         }
-
-        .header::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
-            background-size: 200% 200%;
-            animation: gradientFlow 3s ease infinite;
+        .card {
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        @keyframes gradientFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        .card-header {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0;
         }
-
-        .header .header-icon {
-            width: 36px;
-            height: 36px;
-            fill: white;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .header .header-text {
-            text-align: left;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            letter-spacing: 0.5px;
-        }
-
-        .header .subtitle {
-            font-size: 14px;
-            opacity: 0.95;
-            margin-top: 3px;
-            font-weight: 300;
-            letter-spacing: 0.3px;
-        }
-
-        .content {
-            padding: var(--spacer);
-            background-color: #ffffff;
-        }
-
-        /* User Info Section */
-        .user-info {
-            background-color: #ffffff;
-            border-radius: var(--border-radius);
-            padding: 1.2rem;
-            margin-bottom: 1.5rem;
-            border: none;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition-normal);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .user-info::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background-color: var(--primary-color);
-        }
-
-        .user-info:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-
-        .user-info .profile {
-            display: flex;
-            align-items: center;
-        }
-
-        .user-info .profile-img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 20px;
-            border: 2px solid var(--primary-light);
-            padding: 2px;
-            background-color: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            transition: var(--transition-normal);
-        }
-
-        .user-info:hover .profile-img {
-            transform: scale(1.05) rotate(5deg);
-        }
-
-        .user-info .user-name {
-            font-weight: 600;
-            color: var(--text-color);
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-
-        .user-info .user-status {
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-            color: var(--text-light);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            margin-left: 8px;
-            transition: var(--transition-normal);
-        }
-
-        .badge.approved {
-            background-color: rgba(76, 175, 80, 0.15);
-            color: var(--success-color); /* Corrected variable name */
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-
-        .badge.pending {
-            background-color: rgba(255, 193, 7, 0.15);
-            color: var(--warning-color);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-        }
-
-        /* Message Box */
-        .message-box {
-            background-color: rgba(255, 193, 7, 0.1);
-            border-left: 4px solid var(--warning-color);
-            padding: 15px 20px;
-            margin: 1.5rem 0;
-            border-radius: 4px;
-            position: relative;
-            transition: var(--transition-normal);
-        }
-
-        .message-box:before {
-            content: '\f071';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            top: 15px;
-            left: -12px;
-            background-color: white;
-            color: var(--warning-color);
-            padding: 0 4px;
-            font-size: 14px;
-            border-radius: 50%;
-        }
-
-        .message-box p {
-            margin: 0;
-            color: #856404;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-
-        .message-box strong {
-            background-color: rgba(255, 193, 7, 0.2);
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .message-box.error {
-            background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var(--error-color);
-        }
-
-        .message-box.error p {
-            color: #721c24;
-        }
-
-        /* History Section Styles */
-        .history-container {
-            margin-top: 1.5rem;
-        }
-
-        .history-item {
-            background-color: #fff;
-            border-radius: var(--border-radius);
-            margin-bottom: 1rem;
-            padding: 1rem 1.2rem;
-            box-shadow: var(--shadow-sm);
-            border-left: 4px solid var(--primary-light);
-            transition: var(--transition-normal);
-        }
-
-        .history-item:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-
-        .history-item p {
-            margin-bottom: 0.6rem;
-            font-size: 14px;
-            color: var(--text-light);
-            word-wrap: break-word; /* Prevent long strings from overflowing */
-        }
-
-        .history-item p strong {
-            color: var(--text-color);
-            font-weight: 500;
-            min-width: 100px; /* Adjust as needed */
-            display: inline-block;
-        }
-
-        .history-item p i {
-            margin-right: 8px;
-            color: var(--primary-color);
-            width: 16px; /* Ensure icons align */
-            text-align: center;
-        }
-
-        .history-item .gps-link {
-            color: var(--accent-color);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .history-item .gps-link:hover {
-            text-decoration: underline;
-        }
-
-        .no-history {
-            text-align: center;
-            color: var(--text-light);
-            padding: 2rem;
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-        }
-
-        /* Pagination Styles */
         .pagination {
+            justify-content: center;
+        }
+        .page-link {
+            color: #4CAF50;
+        }
+        .active .page-link {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+        .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: 2rem;
-            padding-bottom: 1rem;
+            height: 200px;
         }
-
-        .pagination button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            margin: 0 5px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            font-size: 14px;
-        }
-
-        .pagination button:hover:not(:disabled) {
-            background-color: var(--primary-dark);
-        }
-
-        .pagination button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .pagination span {
-            margin: 0 10px;
-            font-size: 14px;
-            color: var(--text-color);
-            font-weight: 500;
-        }
-
-        /* Status Message */
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: var(--border-radius);
+        .error-message {
+            color: red;
             text-align: center;
-            display: none;
-            position: relative;
-            animation: fadeIn 0.3s forwards;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .status.success {
-            background-color: rgba(76, 175, 80, 0.1);
-            color: var(--success-color);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-
-        .status.success:before {
-            content: '\f058';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            margin-right: 8px;
-        }
-
-        .status.error {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: var(--error-color);
-            border: 1px solid rgba(255, 82, 82, 0.3);
-        }
-
-        .status.error:before {
-            content: '\f057';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            margin-right: 8px;
-        }
-
-        /* Loader */
-        .loader {
-            display: none; /* Initially hidden */
+        .user-info {
             text-align: center;
-            margin: 25px 0;
-        }
-
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 12px;
-            border: 3px solid rgba(88, 136, 231, 0.2);
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loader p {
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 20px;
-            background-color: #F8F9FA;
-            border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
-            font-size: 14px;
-            color: var(--text-light);
-        }
-
-        .footer p {
-            margin-bottom: 10px;
-        }
-
-        /* Loading Screen */
-        #loadingScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        #loadingScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
-
-        #loadingScreen p {
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 576px) {
-            .app-container {
-                max-width: 100%;
-                min-height: 100svh;
-                box-shadow: none;
-            }
-
-            .header {
-                padding: 1.2rem;
-            }
-
-            .header h1 {
-                font-size: 20px;
-            }
-
-            .content {
-                padding: 16px;
-            }
-
-            .user-info .profile-img {
-                width: 50px;
-                height: 50px;
-            }
-
-            .message-box {
-                padding: 12px 15px;
-            }
-
-            .history-item {
-                padding: 0.8rem 1rem;
-            }
-            .history-item p {
-                font-size: 13px;
-            }
+        .user-info img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen">
-        <div class="spinner"></div>
-        <p>กำลังโหลดข้อมูล...</p>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-history"></i> ประวัติการใช้งาน Fishing</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="user-info" id="userInfo">
+            <!-- User profile will be displayed here -->
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div id="dataContainer" style="display: none;">
+            <!-- Data cards will be inserted here -->
+        </div>
+
+        <nav aria-label="Page navigation" class="mt-4" id="pagination" style="display: none;">
+            <ul class="pagination" id="paginationList">
+                <!-- Pagination will be generated here -->
+            </ul>
+        </nav>
     </div>
 
-    <div class="app-container">
-        <div class="header">
-            <!-- History Icon -->
-            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
-            </svg>
-            <div class="header-text">
-                <h1>ประวัติการใช้งาน</h1>
-                <div class="subtitle">ดูข้อมูลการคลิกลิงก์ที่คุณสร้าง</div>
-            </div>
-        </div>
-
-        <div class="content">
-            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
-            <div class="user-info" id="userInfoSection" style="display: none;">
-                <div class="profile">
-                    <img id="profileImage" src="" alt="Profile" class="profile-img">
-                    <div>
-                        <div class="user-name" id="userName">User Name</div>
-                        <div class="user-status">
-                            <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
-                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ข้อความแจ้งเตือน (กรณีไม่มีสิทธิ์) -->
-            <div id="permissionMessage" class="message-box error" style="display: none;">
-                <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้ หรือรอการอนุมัติจากผู้ดูแลระบบ</p>
-            </div>
-
-            <!-- ส่วนแสดงประวัติ -->
-            <div id="historySection" style="display: none;">
-                <div class="loader" id="historyLoader">
-                    <div class="loader-spinner"></div>
-                    <p>กำลังโหลดประวัติ...</p>
-                </div>
-                <div id="historyList" class="history-container">
-                    <!-- History items will be inserted here -->
-                </div>
-                <div id="noHistoryMessage" class="no-history" style="display: none;">
-                    <i class="fas fa-box-open fa-2x" style="margin-bottom: 1rem;"></i>
-                    <p>ไม่พบประวัติการใช้งานของคุณ</p>
-                </div>
-                <div id="historyPagination" class="pagination" style="display: none;">
-                    <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
-                    <span id="pageInfo">หน้า 1 / 1</span>
-                    <button id="nextPageBtn" disabled>ถัดไป <i class="fas fa-chevron-right"></i></button>
-                </div>
-            </div>
-
-            <div id="statusMessage" class="status"></div>
-
-        </div>
-
-        <div class="footer">
-            <p>&copy; 2025 Image Phishing - Detective-X</p>
-        </div>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script>
-        // ตัวแปรหลัก
-        let userId = "";
-        let displayName = "";
-        let pictureUrl = "";
-        let isLiffInitialized = false;
-        let userHasPermission = false;
-        let allHistoryData = [];
+        const ITEMS_PER_PAGE = 5;
+        let userData = [];
         let currentPage = 1;
-        const itemsPerPage = 10; // จำนวนรายการต่อหน้า
+        let userId = '';
 
-        // ค่า Config สำคัญ (ควรตรงกับ liff.html)
-        const LIFF_ID = '2007293657-Lw86gYw1'; // ใช้ LIFF ID เดียวกัน
-        // ใช้ URL เดียวกันกับ liff.html สำหรับการตรวจสอบสิทธิ์และดึงข้อมูล
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN5XIRJ38u2epBMpL4Z8w5dfmzf5Nz2UyC6nbkFw-TjpLqPXJCiF9Sz2FN9MWLd7gm/exec'; // URL ของ Google Apps Script ที่ deploy ไว้
-
-        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeLiff();
-            setupPaginationListeners();
-        });
-
-        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        // Initialize LIFF
         async function initializeLiff() {
             try {
-                await liff.init({ liffId: LIFF_ID });
-
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                    return;
-                }
-
-                const profile = await liff.getProfile();
-                userId = profile.userId;
-                displayName = profile.displayName;
-                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
-
-                console.log(`ผู้ใช้: ${displayName} (${userId})`);
-
-                document.getElementById('userName').textContent = displayName;
-                document.getElementById('profileImage').src = pictureUrl;
-                document.getElementById('userInfoSection').style.display = 'block';
-
-                // ตรวจสอบสิทธิ์ผู้ใช้ (ใช้ฟังก์ชันเดียวกับ liff.html)
-                userHasPermission = await checkUserPermission(userId);
-
-                if (userHasPermission) {
-                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
-                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
-                    document.getElementById('statusBadge').className = 'badge approved';
-                    document.getElementById('historySection').style.display = 'block';
-                    fetchUserHistory(); // เรียกโหลดประวัติ
-                } else {
-                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
-                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
-                    document.getElementById('statusBadge').className = 'badge pending';
-                    document.getElementById('permissionMessage').style.display = 'block';
-                }
-
-                isLiffInitialized = true;
-                document.getElementById('loadingScreen').style.display = 'none';
-
-            } catch (error) {
-                console.error('LIFF initialization failed', error);
-                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
-                document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('permissionMessage').style.display = 'block'; // แสดงข้อความไม่มีสิทธิ์ถ้า LIFF มีปัญหา
-            }
-        }
-
-        // ตรวจสอบสิทธิ์ผู้ใช้ (เหมือนใน liff.html)
-        async function checkUserPermission(userIdToCheck) {
-            // --- Copy the checkUserPermission function from liff.html here ---
-            // --- Make sure it uses the correct GOOGLE_SCRIPT_URL ---
-            // --- Example structure: ---
-            try {
-                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userIdToCheck);
-                const statusEl = document.getElementById('userStatus');
-                statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
-
-                // Check localStorage cache first
-                try {
-                    const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
-                    const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userIdToCheck) || '0');
-                    const currentTime = new Date().getTime();
-                    if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
-                        console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
-                        statusEl.textContent = originalText; // Restore original text if needed
-                        return Promise.resolve(savedPermission === 'true');
-                    }
-                } catch (e) { console.error('ไม่สามารถอ่าน localStorage:', e); }
-
-
-                const timestamp = new Date().getTime();
-                const callbackName = 'permCallback_' + timestamp;
-
-                return new Promise((resolve) => {
-                    window[callbackName] = function(data) {
-                        console.log("ได้รับข้อมูลสิทธิ์:", data);
-                        let hasPermission = false;
-                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
-                            hasPermission = data.hasPermission === true;
-                            try {
-                                localStorage.setItem('user_permission_' + userIdToCheck, hasPermission ? 'true' : 'false');
-                                localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
-                                if (data.userStatus) {
-                                     localStorage.setItem('user_status_' + userIdToCheck, data.userStatus);
-                                }
-                            } catch (e) { console.error('ไม่สามารถบันทึก localStorage:', e); }
-                        } else {
-                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง/ไม่สมบูรณ์, ใช้ fallback");
-                            hasPermission = checkUserPermissionFallback(userIdToCheck); // Use fallback
-                        }
-                        // Restore original status text if needed before resolving
-                        // statusEl.textContent = originalText;
-                        resolve(hasPermission);
-                        delete window[callbackName];
-                    };
-
-                    const script = document.createElement('script');
-                    const url = new URL(GOOGLE_SCRIPT_URL); // Use the defined constant
-                    url.searchParams.append('action', 'checkUserPermissionFromSheet');
-                    url.searchParams.append('userId', encodeURIComponent(userIdToCheck));
-                    url.searchParams.append('callback', encodeURIComponent(callbackName));
-                    url.searchParams.append('_', timestamp);
-
-                    console.log("เรียกใช้ API ตรวจสอบสิทธิ์ URL:", url.toString());
-                    script.src = url.toString();
-                    script.onerror = function(e) {
-                        console.error('เกิดข้อผิดพลาดในการโหลด permission script:', e);
-                        // statusEl.textContent = originalText; // Restore original text
-                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ตรวจสอบสิทธิ์', false);
-                        resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback on error
-                        delete window[callbackName];
-                    };
-                    document.body.appendChild(script);
-
-                    setTimeout(() => {
-                        if (window[callbackName]) {
-                            console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้ fallback");
-                            // statusEl.textContent = originalText; // Restore original text
-                            showStatus('การตรวจสอบสิทธิ์ใช้เวลานาน', false);
-                            delete window[callbackName];
-                            resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback on timeout
-                        }
-                    }, 10000); // 10 seconds timeout
-                });
-            } catch (error) {
-                console.error('Error checking permission:', error);
-                // statusEl.textContent = originalText; // Restore original text
-                return checkUserPermissionFallback(userIdToCheck); // Use fallback on general error
-            }
-        }
-
-        // Fallback permission check (เหมือนใน liff.html)
-        function checkUserPermissionFallback(userIdToCheck) {
-            // --- Copy the checkUserPermissionFallback function from liff.html here ---
-            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
-            const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021', // Admin ID
-                // Add other emergency approved IDs here if necessary
-            ];
-             if (userIdToCheck === 'U69aa2cb90c9f40291278c346c50dc021') {
-                return true;
-            }
-            try {
-                const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
-                if (savedPermission === 'true') return true;
-                if (savedPermission === 'false') return false;
-            } catch (e) { console.error('ไม่สามารถอ่าน localStorage:', e); }
-
-            const hasAccess = approvedUserIds.includes(userIdToCheck);
-             try {
-                localStorage.setItem('user_permission_' + userIdToCheck, hasAccess ? 'true' : 'false');
-                localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
-            } catch (e) { console.error('ไม่สามารถบันทึก localStorage:', e); }
-            return hasAccess;
-        }
-
-
-        // ฟังก์ชันดึงข้อมูลประวัติผู้ใช้
-        async function fetchUserHistory() {
-            if (!userHasPermission || !userId) {
-                console.log("ไม่มีสิทธิ์ หรือ ไม่มี userId สำหรับดึงข้อมูลประวัติ");
-                return;
-            }
-
-            const loader = document.getElementById('historyLoader');
-            const historyList = document.getElementById('historyList');
-            const noHistoryMessage = document.getElementById('noHistoryMessage');
-            const paginationControls = document.getElementById('historyPagination');
-
-            loader.style.display = 'block';
-            historyList.innerHTML = ''; // Clear previous results
-            noHistoryMessage.style.display = 'none';
-            paginationControls.style.display = 'none';
-
-            try {
-                const timestamp = new Date().getTime();
-                const callbackName = 'historyCallback_' + timestamp;
-
-                return new Promise((resolve, reject) => {
-                    window[callbackName] = function(data) {
-                        loader.style.display = 'none';
-                        console.log("ได้รับข้อมูลประวัติ:", data);
-
-                        if (data && data.status === "success" && Array.isArray(data.history)) {
-                            allHistoryData = data.history;
-                            if (allHistoryData.length > 0) {
-                                currentPage = 1;
-                                displayHistoryPage();
-                                paginationControls.style.display = 'flex';
-                            } else {
-                                noHistoryMessage.style.display = 'block';
-                            }
-                            resolve();
-                        } else {
-                            showStatus('ไม่สามารถโหลดข้อมูลประวัติได้: ' + (data.message || 'รูปแบบข้อมูลไม่ถูกต้อง'), false);
-                            noHistoryMessage.style.display = 'block'; // Show no history message on error too
-                            reject(new Error(data.message || 'Failed to fetch history'));
-                        }
-                        delete window[callbackName];
-                    };
-
-                    const script = document.createElement('script');
-                    const url = new URL(GOOGLE_SCRIPT_URL);
-                    url.searchParams.append('action', 'getUserHistory');
-                    url.searchParams.append('userId', encodeURIComponent(userId));
-                    url.searchParams.append('callback', encodeURIComponent(callbackName));
-                    url.searchParams.append('_', timestamp); // Prevent caching
-
-                    console.log("เรียกใช้ API ดึงประวัติ URL:", url.toString());
-                    script.src = url.toString();
-                    script.onerror = function(e) {
-                        loader.style.display = 'none';
-                        console.error('เกิดข้อผิดพลาดในการโหลด history script:', e);
-                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อโหลดประวัติ', false);
-                        noHistoryMessage.style.display = 'block';
-                        reject(e);
-                        delete window[callbackName];
-                    };
-                    document.body.appendChild(script);
-
-                    // Timeout for the request
-                    setTimeout(() => {
-                        if (window[callbackName]) {
-                            loader.style.display = 'none';
-                            console.log("การดึงข้อมูลประวัติหมดเวลา");
-                            showStatus('การโหลดประวัติใช้เวลานานเกินไป', false);
-                            noHistoryMessage.style.display = 'block';
-                            delete window[callbackName];
-                            reject(new Error('History fetch timeout'));
-                        }
-                    }, 15000); // 15 seconds timeout
-                });
-
-            } catch (error) {
-                loader.style.display = 'none';
-                console.error('Error fetching user history:', error);
-                showStatus('เกิดข้อผิดพลาดในการโหลดประวัติ: ' + error.message, false);
-                noHistoryMessage.style.display = 'block';
-            }
-        }
-
-        // ฟังก์ชันแสดงผลข้อมูลประวัติในหน้าปัจจุบัน
-        function displayHistoryPage() {
-            const historyList = document.getElementById('historyList');
-            const noHistoryMessage = document.getElementById('noHistoryMessage');
-            const paginationControls = document.getElementById('historyPagination');
-            const pageInfo = document.getElementById('pageInfo');
-            const prevBtn = document.getElementById('prevPageBtn');
-            const nextBtn = document.getElementById('nextPageBtn');
-
-            historyList.innerHTML = ''; // Clear current items
-            noHistoryMessage.style.display = 'none';
-
-            if (allHistoryData.length === 0) {
-                noHistoryMessage.style.display = 'block';
-                paginationControls.style.display = 'none';
-                return;
-            }
-
-            const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const itemsToShow = allHistoryData.slice(startIndex, endIndex);
-
-            itemsToShow.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'history-item';
-
-                let gpsHtml = '<p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ไม่มีข้อมูล</p>';
-                if (item.location) {
-                    const accuracyText = item.location.accuracy ? ` (แม่นยำ ±${Math.round(item.location.accuracy)}m)` : '';
-                    const mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                    gpsHtml = `
-                        <p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ${item.location.lat}, ${item.location.long}${accuracyText}</p>
-                        <p><i class="fas fa-map"></i><strong>แผนที่:</strong> <a href="${mapLink}" target="_blank" class="gps-link">เปิด Google Maps</a></p>
+                await liff.init({ liffId: "2007293657-Lw86gYw1" }); // Replace with your LIFF ID
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    userId = profile.userId;
+                    
+                    // Display user info
+                    const userInfoElement = document.getElementById('userInfo');
+                    userInfoElement.innerHTML = `
+                        <img src="${profile.pictureUrl}" alt="Profile picture">
+                        <h5>${profile.displayName}</h5>
                     `;
+                    
+                    // Fetch data
+                    fetchData();
+                } else {
+                    liff.login();
                 }
-
-                itemElement.innerHTML = `
-                    <p><i class="far fa-calendar-alt"></i><strong>วันเวลา:</strong> ${item.timestamp || 'N/A'}</p>
-                    <p><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || 'N/A'}</p>
-                    <p><i class="fas fa-clipboard-list"></i><strong>ชื่อเคส:</strong> ${item.caseName || 'N/A'}</p>
-                    <p><i class="fas fa-user-tie"></i><strong>ผู้สร้าง:</strong> ${item.creatorFullName || 'N/A'}</p>
-                    <p><i class="fas fa-network-wired"></i><strong>IP:</strong> ${item.ip || 'N/A'}</p>
-                    <p><i class="fas fa-building"></i><strong>ISP/องค์กร:</strong> ${item.ispOrg || 'N/A'}</p>
-                    <p><i class="fas fa-mobile-alt"></i><strong>รุ่นอุปกรณ์:</strong> ${item.deviceModel || 'N/A'}</p>
-                    <p><i class="fab fa-windows"></i><strong>ระบบ:</strong> ${item.os || 'N/A'}</p> <!-- Assuming fab fa-windows is a placeholder -->
-                    <p><i class="fab fa-chrome"></i><strong>เบราว์เซอร์:</strong> ${item.browser || 'N/A'}</p> <!-- Assuming fab fa-chrome is a placeholder -->
-                    ${gpsHtml}
-                `;
-                historyList.appendChild(itemElement);
-            });
-
-            // Update pagination controls
-            pageInfo.textContent = `หน้า ${currentPage} / ${totalPages}`;
-            prevBtn.disabled = currentPage === 1;
-            nextBtn.disabled = currentPage === totalPages;
-            paginationControls.style.display = 'flex';
-        }
-
-        // ตั้งค่า Event Listeners สำหรับ Pagination
-        function setupPaginationListeners() {
-            document.getElementById('prevPageBtn').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    displayHistoryPage();
-                }
-            });
-
-            document.getElementById('nextPageBtn').addEventListener('click', () => {
-                const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    displayHistoryPage();
-                }
-            });
-        }
-
-        // แสดงสถานะการทำงาน (เหมือนใน liff.html)
-        function showStatus(message, isSuccess) {
-            const statusEl = document.getElementById('statusMessage');
-            if (!statusEl) return; // Add check if element exists
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-
-            if (isSuccess) {
-                statusEl.className = 'status success';
-            } else {
-                statusEl.className = 'status error';
+            } catch (error) {
+                showError("Failed to initialize LIFF: " + error.message);
             }
-
-            setTimeout(() => {
-                statusEl.style.display = 'none';
-            }, 5000);
         }
 
+        // Fetch data from Google Sheets
+        async function fetchData() {
+            try {
+                // Replace with your Google Sheets API URL or web app URL
+                const sheetUrl = "https://docs.google.com/spreadsheets/d/1j7MqTTEW6izLtVDk95SlPYLjkUqk9MTV7-ZK0Arpnj8";
+                const response = await fetch(sheetUrl);
+                
+                if (!response.ok) {
+                    throw new Error("Failed to fetch data from sheet");
+                }
+                
+                const data = await response.json();
+                
+                // Filter data for current user
+                userData = data.filter(item => item.ผู้สร้าง === userId);
+                
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                
+                // Display data
+                if (userData.length > 0) {
+                    document.getElementById('dataContainer').style.display = 'block';
+                    document.getElementById('pagination').style.display = 'block';
+                    displayData();
+                } else {
+                    showError("ไม่พบข้อมูลการใช้งาน Fishing ของคุณ");
+                }
+            } catch (error) {
+                showError("Error fetching data: " + error.message);
+            }
+        }
+
+        // Display data with pagination
+        function displayData() {
+            const dataContainer = document.getElementById('dataContainer');
+            dataContainer.innerHTML = '';
+            
+            // Calculate start and end indices for current page
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, userData.length);
+            
+            // Display data for current page
+            for (let i = startIndex; i < endIndex; i++) {
+                const item = userData[i];
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        Track Key: ${item.Trackkey || 'N/A'}
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">${item.ชื่อเคส || 'N/A'}</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>ผู้สร้าง:</strong> ${item.ผู้สร้าง || 'N/A'}</p>
+                                <p><strong>IP:</strong> ${item.ไอพี || 'N/A'}</p>
+                                <p><strong>ISP:</strong> ${item.บริษัทผู้ให้บริการ || 'N/A'}</p>
+                                <p><strong>อุปกรณ์มือถือ:</strong> ${item.อุปกรณ์มือถือ || 'N/A'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>ระบบ:</strong> ${item.ระบบ || 'N/A'}</p>
+                                <p><strong>เวอร์ชั่น:</strong> ${item.เวอร์ชั่น || 'N/A'}</p>
+                                <p><strong>บราวเซอร์:</strong> ${item.บราวเซอร์ || 'N/A'}</p>
+                                <p><strong>พิกัด:</strong> ${item.พิกัด || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted">
+                        ${item.วันเวลา || 'N/A'}
+                    </div>
+                `;
+                dataContainer.appendChild(card);
+            }
+            
+            // Update pagination
+            updatePagination();
+        }
+
+        // Update pagination controls
+        function updatePagination() {
+            const totalPages = Math.ceil(userData.length / ITEMS_PER_PAGE);
+            const paginationList = document.getElementById('paginationList');
+            paginationList.innerHTML = '';
+            
+            // Previous button
+            const prevItem = document.createElement('li');
+            prevItem.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></a>`;
+            paginationList.appendChild(prevItem);
+            
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageItem = document.createElement('li');
+                pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                pageItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+                paginationList.appendChild(pageItem);
+            }
+            
+            // Next button
+            const nextItem = document.createElement('li');
+            nextItem.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></a>`;
+            paginationList.appendChild(nextItem);
+        }
+
+        // Change page
+        function changePage(page) {
+            const totalPages = Math.ceil(userData.length / ITEMS_PER_PAGE);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                displayData();
+                window.scrollTo(0, 0);
+            }
+            return false;
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', initializeLiff);
     </script>
 </body>
 </html>
