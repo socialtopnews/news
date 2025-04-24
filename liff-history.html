@@ -9,8 +9,8 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Reuse styles from liff.html -->
     <style>
+        /* Reuse styles from liff.html - Copy all styles from liff.html here */
         :root {
             --primary-color: #3876BF;
             --primary-dark: #192655;
@@ -128,7 +128,7 @@
             background-color: #ffffff;
         }
 
-        /* User Info Section (Same as liff.html) */
+        /* User Info Section */
         .user-info {
             background-color: #ffffff;
             border-radius: var(--border-radius);
@@ -204,7 +204,7 @@
 
         .badge.approved {
             background-color: rgba(76, 175, 80, 0.15);
-            color: var(--success-color);
+            color: var (--success-color);
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
@@ -214,7 +214,7 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
-        /* Message Box (Same as liff.html) */
+        /* Message Box */
         .message-box {
             background-color: rgba(255, 193, 7, 0.1);
             border-left: 4px solid var(--warning-color);
@@ -224,18 +224,48 @@
             position: relative;
             transition: var(--transition-normal);
         }
+
+        .message-box:before {
+            content: '\f071';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 15px;
+            left: -12px;
+            background-color: white;
+            color: var(--warning-color);
+            padding: 0 4px;
+            font-size: 14px;
+            border-radius: 50%;
+        }
+
+        .message-box p {
+            margin: 0;
+            color: #856404;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .message-box strong {
+            background-color: rgba(255, 193, 7, 0.2);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
             border-left: 4px solid var(--error-color);
         }
-        .message-box p { margin: 0; color: #856404; line-height: 1.6; font-size: 14px; }
-        .message-box.error p { color: #721c24; }
 
-        /* History List Styles */
+        .message-box.error p {
+            color: #721c24;
+        }
+
+        /* History List */
         .history-list {
-            margin-top: 1.5rem;
             list-style: none;
             padding: 0;
+            margin: 0;
         }
 
         .history-item {
@@ -262,76 +292,68 @@
             align-items: center;
             margin-bottom: 0.8rem;
             padding-bottom: 0.8rem;
-            border-bottom: 1px dashed #eee;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        .history-item .case-name {
+        .history-item .item-header .case-name {
             font-weight: 600;
             color: var(--primary-dark);
             font-size: 1.1em;
-        }
-
-        .history-item .timestamp {
-            font-size: 0.85em;
-            color: var(--text-light);
-        }
-
-        .history-item .item-details p {
-            margin: 0.4rem 0;
-            font-size: 0.95em;
-            color: var(--text-color);
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
-        .history-item .item-details p i {
+        .history-item .item-header .case-name i {
             color: var(--primary-color);
-            width: 16px; /* Fixed width for icons */
+        }
+
+        .history-item .item-header .timestamp {
+            font-size: 0.85em;
+            color: var(--text-light);
+        }
+
+        .history-item .item-details {
+            font-size: 0.95em;
+            color: var(--text-color);
+            line-height: 1.7;
+        }
+
+        .history-item .item-details p {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+         .history-item .item-details p i {
+            color: var(--primary-light);
+            width: 16px; /* Ensure icons align */
             text-align: center;
         }
 
-        .history-item .item-details .ip-address {
-            font-family: monospace;
-            background-color: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.9em;
+        .history-item .item-details strong {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-right: 5px;
         }
 
-        .history-item .item-details .location-link {
+        .history-item .item-details a {
             color: var(--accent-color);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s ease;
+            transition: var(--transition-normal);
         }
-        .history-item .item-details .location-link:hover {
-            color: var(--primary-dark);
+        .history-item .item-details a:hover {
             text-decoration: underline;
+            color: var(--primary-dark);
         }
 
-        .no-history {
-            text-align: center;
-            color: var(--text-light);
-            padding: 2rem;
-            border: 2px dashed #eee;
-            border-radius: var(--border-radius);
-            margin-top: 2rem;
-        }
-        .no-history i {
-            font-size: 2em;
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--secondary-color);
-        }
-
-        /* Pagination Styles */
+        /* Pagination */
         .pagination {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 2rem;
-            padding-top: 1rem;
+            padding: 1rem 0;
             border-top: 1px solid #eee;
         }
 
@@ -340,8 +362,8 @@
             color: white;
             border: none;
             padding: 8px 16px;
-            font-size: 0.9em;
-            border-radius: var(--border-radius);
+            font-size: 14px;
+            border-radius: 8px;
             cursor: pointer;
             transition: var(--transition-normal);
             display: flex;
@@ -351,7 +373,6 @@
 
         .pagination button:hover:not(:disabled) {
             background-color: var(--primary-dark);
-            transform: translateY(-1px);
         }
 
         .pagination button:disabled {
@@ -361,11 +382,11 @@
         }
 
         .pagination .page-info {
-            font-size: 0.9em;
+            font-size: 14px;
             color: var(--text-light);
         }
 
-        /* Status Message (Same as liff.html) */
+        /* Status Message */
         .status {
             margin-top: 20px;
             padding: 15px;
@@ -375,45 +396,161 @@
             position: relative;
             animation: fadeIn 0.3s forwards;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .status.success { background-color: rgba(76, 175, 80, 0.1); color: var(--success-color); border: 1px solid rgba(76, 175, 80, 0.3); }
-        .status.success:before { content: '\f058'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-right: 8px; }
-        .status.error { background-color: rgba(255, 82, 82, 0.1); color: var(--error-color); border: 1px solid rgba(255, 82, 82, 0.3); }
-        .status.error:before { content: '\f057'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-right: 8px; }
 
-        /* Loader (Same as liff.html) */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status.success {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status.success:before {
+            content: '\f058'; /* Check circle */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 8px;
+        }
+
+        .status.error {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+        }
+
+        .status.error:before {
+            content: '\f057'; /* Times circle */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 8px;
+        }
+         .status.info {
+            background-color: rgba(88, 136, 231, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(88, 136, 231, 0.3);
+        }
+        .status.info:before {
+            content: '\f05a'; /* Info circle */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 8px;
+        }
+
+        /* Loader */
         .loader {
-            display: none; /* Initially hidden */
+            display: none; /* Hidden by default */
             text-align: center;
             margin: 25px 0;
+            padding: 2rem;
         }
-        .loader-spinner { width: 40px; height: 40px; margin: 0 auto 12px; border: 3px solid rgba(88, 136, 231, 0.2); border-top: 3px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader p { color: var(--text-light); font-size: 14px; }
 
-        /* Footer (Same as liff.html) */
-        .footer { text-align: center; padding: 20px; background-color: #F8F9FA; border-top: 1px solid #E9ECEF; margin-top: 30px; font-size: 14px; color: var(--text-light); }
-        .footer p { margin-bottom: 10px; }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 12px;
+            border: 3px solid rgba(88, 136, 231, 0.2);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
 
-        /* Loading Screen (Same as liff.html) */
-        #loadingScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #FFFFFF; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; }
-        #loadingScreen .spinner { width: 60px; height: 60px; border: 4px solid rgba(88, 136, 231, 0.2); border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        #loadingScreen p { color: var(--primary-color); font-weight: 500; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-        /* Responsive Adjustments (Same as liff.html) */
+        .loader p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #F8F9FA;
+            border-top: 1px solid #E9ECEF;
+            margin-top: 30px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        #loadingScreen .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(88, 136, 231, 0.2);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        #loadingScreen p {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Responsive Adjustments */
         @media (max-width: 576px) {
-            .app-container { max-width: 100%; min-height: 100svh; box-shadow: none; }
-            .header { padding: 1.2rem; }
-            .header h1 { font-size: 20px; }
-            .content { padding: 16px; }
-            .user-info .profile-img { width: 50px; height: 50px; }
-            .message-box { padding: 12px 15px; }
-            .history-item { padding: 0.8rem 1rem; }
-            .history-item .case-name { font-size: 1em; }
-            .history-item .timestamp { font-size: 0.8em; }
-            .history-item .item-details p { font-size: 0.9em; }
-            .pagination button { padding: 6px 12px; font-size: 0.85em; }
-            .pagination .page-info { font-size: 0.85em; }
+            .app-container {
+                max-width: 100%;
+                min-height: 100svh;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 1.2rem;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+             .history-item {
+                padding: 0.8rem 1rem;
+            }
+            .history-item .item-header .case-name {
+                font-size: 1em;
+            }
+             .history-item .item-header .timestamp {
+                font-size: 0.8em;
+            }
+             .history-item .item-details {
+                font-size: 0.9em;
+            }
+             .pagination button {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+             .pagination .page-info {
+                font-size: 13px;
+            }
         }
     </style>
 </head>
@@ -428,11 +565,11 @@
         <div class="header">
             <!-- History Icon -->
             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155.4 105.3 203 96 256 96c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.1 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 57c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V156c0-13.3-10.7-24-24-24z"/>
+                <path d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
             </svg>
             <div class="header-text">
                 <h1>ประวัติการใช้งาน</h1>
-                <div class="subtitle">รายการบันทึกการเข้าถึงลิงก์ของคุณ</div>
+                <div class="subtitle">ดูบันทึกการคลิกลิงก์ฟิชชิ่งของคุณ</div>
             </div>
         </div>
 
@@ -464,15 +601,14 @@
                     <p>กำลังโหลดประวัติ...</p>
                 </div>
                 <ul id="historyList" class="history-list">
-                    <!-- History items will be injected here -->
+                    <!-- History items will be loaded here -->
                 </ul>
-                <div id="noHistoryMessage" class="no-history" style="display: none;">
-                    <i class="fas fa-box-open"></i>
+                <div id="noHistoryMessage" class="status info" style="display: none;">
                     <p>ยังไม่มีประวัติการใช้งาน</p>
                 </div>
-                <div id="paginationControls" class="pagination" style="display: none;">
+                <div class="pagination" id="paginationControls" style="display: none;">
                     <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
-                    <span id="pageInfo" class="page-info">หน้า 1 / 1</span>
+                    <span class="page-info" id="pageInfo">หน้า 1 จาก 1</span>
                     <button id="nextPageBtn" disabled>ถัดไป <i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
@@ -484,20 +620,20 @@
     </div>
 
     <script>
-        // Configuration (Should match liff.html)
-        const LIFF_ID = '2007293657-Lw86gYw1'; // Use the same LIFF ID if it's the same app
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec'; // Permission check URL
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec'; // History data URL (can be the same script)
-
-        // State variables
+        // Variables
         let userId = "";
         let displayName = "";
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let allHistoryData = [];
+        let historyData = [];
         let currentPage = 1;
         const itemsPerPage = 10; // Number of history items per page
+
+        // Config
+        const LIFF_ID = '2007293657-Lw86gYw1'; // Use the same LIFF ID
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec'; // Permission check URL
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec'; // History data URL (same script, different action)
 
         // DOM Elements
         const loadingScreen = document.getElementById('loadingScreen');
@@ -508,14 +644,14 @@
         const statusBadge = document.getElementById('statusBadge');
         const permissionMessage = document.getElementById('permissionMessage');
         const historyContent = document.getElementById('historyContent');
-        const historyList = document.getElementById('historyList');
         const historyLoader = document.getElementById('historyLoader');
-        const statusMessage = document.getElementById('statusMessage');
+        const historyList = document.getElementById('historyList');
         const noHistoryMessage = document.getElementById('noHistoryMessage');
         const paginationControls = document.getElementById('paginationControls');
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfo = document.getElementById('pageInfo');
+        const statusMessage = document.getElementById('statusMessage');
 
         // Initialize on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -545,7 +681,7 @@
                 profileImage.src = pictureUrl;
                 userInfoSection.style.display = 'block';
 
-                // Check permission
+                // Check user permission
                 userHasPermission = await checkUserPermission(userId);
 
                 if (userHasPermission) {
@@ -554,8 +690,8 @@
                     statusBadge.className = 'badge approved';
                     permissionMessage.style.display = 'none';
                     historyContent.style.display = 'block';
-                    // Fetch history data only if permission is granted
-                    fetchHistoryData();
+                    // Fetch history data only if permitted
+                    fetchHistory();
                 } else {
                     userStatus.textContent = 'รอการอนุมัติ';
                     statusBadge.textContent = 'รออนุมัติ';
@@ -569,37 +705,34 @@
 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
-                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, 'error');
                 loadingScreen.style.display = 'none';
                 permissionMessage.style.display = 'block'; // Show permission error if LIFF fails
-                historyContent.style.display = 'none';
             }
         }
 
-        // Check User Permission (Reuse from liff.html, ensure it's identical or imported)
-        async function checkUserPermission(userId) {
-            // --- Start: Copy checkUserPermission function from liff.html ---
-            // This function should be identical to the one in liff.html
-            // It uses PERMISSION_WEBHOOK_URL and JSONP to check permission
-            // It should return true if the user has permission, false otherwise.
-            // Make sure the fallback logic (checkUserPermissionFallback) is also included if used.
-            try {
-                console.log("Checking user permission:", userId);
+        // Check User Permission (Reusing the function from liff.html)
+        async function checkUserPermission(userIdToCheck) {
+             try {
+                console.log("Checking user permission:", userIdToCheck);
                 const statusEl = document.getElementById('userStatus');
                 const originalText = statusEl.textContent;
                 statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
 
-                // Check localStorage cache first
+                // Check localStorage first (cache for 15 minutes)
                 try {
-                    const savedPermission = localStorage.getItem('user_permission_' + userId);
-                    const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
+                    const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
+                    const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userIdToCheck) || '0');
                     const currentTime = new Date().getTime();
+
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("Using permission from localStorage");
                         statusEl.textContent = originalText; // Restore original text
                         return savedPermission === 'true';
                     }
-                } catch (e) { console.error('Cannot read from localStorage:', e); }
+                } catch (e) {
+                    console.warn('Could not read permission from localStorage:', e);
+                }
 
                 const timestamp = new Date().getTime();
                 const callbackName = 'permCallback_' + timestamp;
@@ -607,263 +740,287 @@
                 return new Promise((resolve) => {
                     window[callbackName] = function(data) {
                         console.log("Received permission data:", data);
-                        let hasPermission = false;
-                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
-                            hasPermission = data.hasPermission === true;
-                            console.log("Permission status from API:", hasPermission);
-                            try {
-                                localStorage.setItem('user_permission_' + userId, hasPermission ? 'true' : 'false');
-                                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-                                if (data.userStatus) {
-                                    localStorage.setItem('user_status_' + userId, data.userStatus);
-                                }
-                            } catch (e) { console.error('Cannot save to localStorage:', e); }
-                        } else {
-                            console.log("Invalid permission data, using fallback.");
-                            hasPermission = checkUserPermissionFallback(userId);
-                        }
                         statusEl.textContent = originalText; // Restore original text
-                        resolve(hasPermission);
+
+                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
+                            const hasPermission = data.hasPermission === true;
+                            console.log("Permission status from API:", hasPermission);
+                            // Save to localStorage
+                            try {
+                                localStorage.setItem('user_permission_' + userIdToCheck, hasPermission ? 'true' : 'false');
+                                localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
+                            } catch (e) {
+                                console.warn('Could not save permission to localStorage:', e);
+                            }
+                            resolve(hasPermission);
+                        } else {
+                            console.log("Invalid permission data, using fallback");
+                            resolve(checkUserPermissionFallback(userIdToCheck));
+                        }
                         delete window[callbackName];
                     };
 
                     const script = document.createElement('script');
                     const url = new URL(PERMISSION_WEBHOOK_URL);
                     url.searchParams.append('action', 'checkUserPermissionFromSheet');
-                    url.searchParams.append('userId', encodeURIComponent(userId));
+                    url.searchParams.append('userId', encodeURIComponent(userIdToCheck));
                     url.searchParams.append('callback', encodeURIComponent(callbackName));
-                    url.searchParams.append('_', timestamp);
+                    url.searchParams.append('_', timestamp); // Cache buster
 
                     console.log("Calling permission API URL:", url.toString());
                     script.src = url.toString();
                     script.onerror = function(e) {
                         console.error('Error loading permission script:', e);
                         statusEl.textContent = originalText; // Restore original text
-                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ตรวจสอบสิทธิ์, ใช้ระบบสำรอง', false);
-                        resolve(checkUserPermissionFallback(userId));
+                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ตรวจสอบสิทธิ์ได้', 'error');
+                        resolve(checkUserPermissionFallback(userIdToCheck));
                         delete window[callbackName];
                     };
                     document.body.appendChild(script);
 
+                    // Timeout after 10 seconds
                     setTimeout(() => {
                         if (window[callbackName]) {
-                            console.log("Permission check timed out, using fallback.");
+                            console.log("Permission check timed out, using fallback");
                             statusEl.textContent = originalText; // Restore original text
-                            showStatus('ตรวจสอบสิทธิ์นานเกินไป, ใช้ระบบสำรอง', false);
+                            showStatus('การตรวจสอบสิทธิ์ใช้เวลานานเกินไป', 'warning');
                             delete window[callbackName];
-                            resolve(checkUserPermissionFallback(userId));
+                            resolve(checkUserPermissionFallback(userIdToCheck));
                         }
-                    }, 10000); // 10 seconds timeout
+                    }, 10000);
                 });
             } catch (error) {
                 console.error('Error checking permission:', error);
-                return checkUserPermissionFallback(userId);
+                return checkUserPermissionFallback(userIdToCheck);
             }
-            // --- End: Copy checkUserPermission function ---
         }
 
-        // Fallback Permission Check (Reuse from liff.html)
-        function checkUserPermissionFallback(userId) {
-            // --- Start: Copy checkUserPermissionFallback function from liff.html ---
+        // Fallback Permission Check (Reusing the function from liff.html)
+        function checkUserPermissionFallback(userIdToCheck) {
             console.log("Using fallback permission check");
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021', // Admin ID
                 // Add other emergency approved IDs here if needed
             ];
-            if (userId === 'U69aa2cb90c9f40291278c346c50dc021') return true;
 
-            try {
-                const savedPermission = localStorage.getItem('user_permission_' + userId);
-                if (savedPermission === 'true') return true;
-                if (savedPermission === 'false') return false;
-            } catch (e) { console.error('Cannot read from localStorage:', e); }
-
-            const hasAccess = approvedUserIds.includes(userId);
-            console.log(`Fallback check: User ${userId} ${hasAccess ? 'has' : 'does not have'} access.`);
-            try {
-                localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
-                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-            } catch (e) { console.error('Cannot save to localStorage:', e); }
-            return hasAccess;
-            // --- End: Copy checkUserPermissionFallback function ---
-        }
-
-
-        // Fetch History Data from Google Apps Script
-        function fetchHistoryData() {
-            if (!userHasPermission || !userId) {
-                console.log("Cannot fetch history: No permission or userId missing.");
-                return;
+            if (userIdToCheck === 'U69aa2cb90c9f40291278c346c50dc021') {
+                console.log("User is admin, granting access.");
+                return true;
             }
 
-            console.log("Fetching history for user:", userId);
-            historyLoader.style.display = 'block';
-            historyList.innerHTML = ''; // Clear previous list
-            noHistoryMessage.style.display = 'none';
-            paginationControls.style.display = 'none';
-            showStatus('', true); // Clear status message
-
-            const timestamp = new Date().getTime();
-            const callbackName = 'historyCallback_' + timestamp;
-
-            window[callbackName] = function(response) {
-                historyLoader.style.display = 'none';
-                console.log("Received history data:", response);
-
-                if (response && response.status === 'success' && Array.isArray(response.history)) {
-                    allHistoryData = response.history;
-                    if (allHistoryData.length > 0) {
-                        currentPage = 1;
-                        renderHistoryPage();
-                        paginationControls.style.display = 'flex';
-                    } else {
-                        noHistoryMessage.style.display = 'block';
-                        paginationControls.style.display = 'none';
-                    }
-                } else {
-                    showStatus('เกิดข้อผิดพลาดในการโหลดประวัติ: ' + (response ? response.message : 'ไม่มีข้อมูลตอบกลับ'), false);
-                    noHistoryMessage.style.display = 'block'; // Show no history message on error too
+            // Check localStorage again in fallback
+            try {
+                const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
+                if (savedPermission === 'true') {
+                    console.log("Using permission from localStorage (fallback): Approved");
+                    return true;
+                } else if (savedPermission === 'false') {
+                     console.log("Using permission from localStorage (fallback): Denied");
+                    return false;
                 }
-                delete window[callbackName];
-            };
+            } catch (e) {
+                 console.warn('Could not read permission from localStorage in fallback:', e);
+            }
 
-            const script = document.createElement('script');
-            const url = new URL(HISTORY_WEBHOOK_URL);
-            url.searchParams.append('action', 'getUserHistory');
-            url.searchParams.append('userId', encodeURIComponent(userId));
-            url.searchParams.append('callback', encodeURIComponent(callbackName));
-            url.searchParams.append('_', timestamp); // Prevent caching
-
-            console.log("Calling history API URL:", url.toString());
-            script.src = url.toString();
-            script.onerror = function(e) {
-                console.error('Error loading history script:', e);
-                historyLoader.style.display = 'none';
-                showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อโหลดประวัติได้', false);
-                noHistoryMessage.style.display = 'block';
-                delete window[callbackName];
-            };
-            document.body.appendChild(script);
-
-            // Timeout for history fetch
-            setTimeout(() => {
-                if (window[callbackName]) {
-                    console.log("History fetch timed out.");
-                    historyLoader.style.display = 'none';
-                    showStatus('การโหลดประวัติใช้เวลานานเกินไป', false);
-                    noHistoryMessage.style.display = 'block';
-                    delete window[callbackName];
-                }
-            }, 15000); // 15 seconds timeout
+            const hasAccess = approvedUserIds.includes(userIdToCheck);
+            console.log(`User ${userIdToCheck} ${hasAccess ? 'has' : 'does not have'} access via fallback list.`);
+             // Save fallback result to localStorage
+            try {
+                localStorage.setItem('user_permission_' + userIdToCheck, hasAccess ? 'true' : 'false');
+                localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
+            } catch (e) {
+                 console.warn('Could not save fallback permission to localStorage:', e);
+            }
+            return hasAccess;
         }
 
-        // Render History List for the Current Page
-        function renderHistoryPage() {
-            historyList.innerHTML = ''; // Clear current items
-            if (allHistoryData.length === 0) {
+        // Fetch History Data
+        async function fetchHistory() {
+            if (!userHasPermission) return;
+
+            historyLoader.style.display = 'block';
+            historyList.innerHTML = '';
+            noHistoryMessage.style.display = 'none';
+            paginationControls.style.display = 'none';
+            showStatus('', 'info', false); // Clear status
+
+            try {
+                const timestamp = new Date().getTime();
+                const callbackName = 'historyCallback_' + timestamp;
+
+                return new Promise((resolve, reject) => {
+                    window[callbackName] = function(data) {
+                        console.log("Received history data:", data);
+                        historyLoader.style.display = 'none';
+
+                        if (data && data.status === 'success' && Array.isArray(data.history)) {
+                            historyData = data.history;
+                            if (historyData.length > 0) {
+                                currentPage = 1;
+                                displayHistoryPage();
+                                paginationControls.style.display = 'flex';
+                            } else {
+                                noHistoryMessage.style.display = 'block';
+                                paginationControls.style.display = 'none';
+                            }
+                            resolve();
+                        } else {
+                            showStatus('ไม่สามารถโหลดข้อมูลประวัติได้: ' + (data.message || 'รูปแบบข้อมูลไม่ถูกต้อง'), 'error');
+                            noHistoryMessage.style.display = 'block'; // Show no history message on error too
+                            reject(new Error(data.message || 'Failed to fetch history'));
+                        }
+                        delete window[callbackName];
+                    };
+
+                    const script = document.createElement('script');
+                    const url = new URL(HISTORY_WEBHOOK_URL);
+                    url.searchParams.append('action', 'getUserHistory');
+                    url.searchParams.append('userId', encodeURIComponent(userId));
+                    url.searchParams.append('callback', encodeURIComponent(callbackName));
+                    url.searchParams.append('_', timestamp); // Cache buster
+
+                    console.log("Calling history API URL:", url.toString());
+                    script.src = url.toString();
+                    script.onerror = function(e) {
+                        console.error('Error loading history script:', e);
+                        historyLoader.style.display = 'none';
+                        showStatus('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อโหลดประวัติ', 'error');
+                        noHistoryMessage.style.display = 'block';
+                        delete window[callbackName];
+                        reject(e);
+                    };
+                    document.body.appendChild(script);
+
+                     // Timeout after 15 seconds
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            console.log("History fetch timed out");
+                            historyLoader.style.display = 'none';
+                            showStatus('การโหลดประวัติใช้เวลานานเกินไป', 'warning');
+                            noHistoryMessage.style.display = 'block';
+                            delete window[callbackName];
+                            reject(new Error('History fetch timed out'));
+                        }
+                    }, 15000);
+                });
+
+            } catch (error) {
+                console.error('Error fetching history:', error);
+                historyLoader.style.display = 'none';
+                showStatus('เกิดข้อผิดพลาดในการโหลดประวัติ: ' + error.message, 'error');
+                noHistoryMessage.style.display = 'block';
+            }
+        }
+
+        // Display History Page
+        function displayHistoryPage() {
+            historyList.innerHTML = ''; // Clear previous items
+            noHistoryMessage.style.display = 'none';
+
+            if (historyData.length === 0) {
                 noHistoryMessage.style.display = 'block';
                 paginationControls.style.display = 'none';
                 return;
             }
 
-            noHistoryMessage.style.display = 'none';
-
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
-            const pageData = allHistoryData.slice(startIndex, endIndex);
-            const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
+            const pageItems = historyData.slice(startIndex, endIndex);
 
-            pageData.forEach(item => {
+            if (pageItems.length === 0 && currentPage > 1) {
+                // Handle case where user is on a page that no longer exists after data refresh
+                currentPage--;
+                displayHistoryPage();
+                return;
+            }
+
+            pageItems.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'history-item';
 
                 // Format timestamp
                 let formattedTimestamp = item.timestamp;
                 try {
-                    // Attempt to format if it's a valid date string
-                    const date = new Date(item.timestamp);
-                    if (!isNaN(date)) {
+                     // Handle potential non-standard date strings from Sheets
+                    let dateStr = String(item.timestamp).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3'); // Swap day/month if needed
+                    const date = new Date(dateStr);
+                     if (!isNaN(date)) {
                         formattedTimestamp = date.toLocaleString('th-TH', {
                             day: '2-digit', month: 'short', year: 'numeric',
                             hour: '2-digit', minute: '2-digit', second: '2-digit',
                             hour12: false
                         });
                     }
-                } catch (e) { /* Keep original if formatting fails */ }
+                } catch (e) { console.warn("Could not format date:", item.timestamp); }
 
 
-                // Location details
-                let locationHtml = '<p><i class="fas fa-map-marker-alt"></i> พิกัด GPS: ไม่มีข้อมูล</p>';
+                // Location Info
+                let locationInfo = `<p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ไม่พบข้อมูล</p>`;
                 if (item.location && item.location.lat && item.location.long) {
                     const accuracyText = item.location.accuracy ? ` (แม่นยำ ±${Math.round(item.location.accuracy)}m)` : '';
-                    const mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                    locationHtml = `<p><i class="fas fa-map-marker-alt"></i> พิกัด GPS: <a href="${mapLink}" target="_blank" class="location-link">${item.location.lat}, ${item.location.long}</a>${accuracyText}</p>`;
+                    const mapLink = item.location.gmapLink ? `<a href="${item.location.gmapLink}" target="_blank" rel="noopener noreferrer">ดูแผนที่</a>` : `(${item.location.lat.toFixed(5)}, ${item.location.long.toFixed(5)})`;
+                    locationInfo = `<p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ${mapLink}${accuracyText}</p>`;
                 }
 
-                // Device details
+                // Device Info
                 const deviceType = item.deviceInfo?.deviceType || 'ไม่ทราบ';
                 const deviceModel = item.deviceInfo?.deviceModel || 'ไม่ทราบ';
 
                 li.innerHTML = `
                     <div class="item-header">
-                        <span class="case-name">${item.caseName || 'ไม่มีชื่อเคส'}</span>
+                        <span class="case-name"><i class="fas fa-folder"></i> ${item.caseName || 'ไม่มีชื่อเคส'}</span>
                         <span class="timestamp">${formattedTimestamp}</span>
                     </div>
                     <div class="item-details">
-                        <p><i class="fas fa-user-secret"></i> IP: <span class="ip-address">${item.ip || 'ไม่ทราบ'}</span></p>
-                        ${locationHtml}
-                        <p><i class="fas fa-mobile-alt"></i> อุปกรณ์: ${deviceType} ${deviceModel ? `- ${deviceModel}` : ''}</p>
-                        ${item.creatorFullName && item.creatorFullName !== 'ไม่ทราบ' ? `<p><i class="fas fa-user-tie"></i> ผู้สร้าง: ${item.creatorFullName}</p>` : ''}
+                        <p><i class="fas fa-user-secret"></i><strong>IP:</strong> ${item.ip || 'ไม่ทราบ'}</p>
+                        <p><i class="fas fa-laptop-code"></i><strong>อุปกรณ์:</strong> ${deviceType} ${deviceModel ? `- ${deviceModel}` : ''}</p>
+                        ${locationInfo}
+                        ${item.creatorFullName && item.creatorFullName !== 'ไม่ทราบ' ? `<p><i class="fas fa-user-tie"></i><strong>ผู้สร้าง:</strong> ${item.creatorFullName}</p>` : ''}
+                         <p><i class="fas fa-key"></i><strong>Key:</strong> ${item.trackingKey || 'N/A'}</p>
                     </div>
                 `;
                 historyList.appendChild(li);
             });
 
             // Update pagination controls
-            pageInfo.textContent = `หน้า ${currentPage} / ${totalPages}`;
+            pageInfo.textContent = `หน้า ${currentPage} จาก ${totalPages}`;
             prevPageBtn.disabled = currentPage === 1;
             nextPageBtn.disabled = currentPage === totalPages;
-            paginationControls.style.display = 'flex';
+            paginationControls.style.display = historyData.length > 0 ? 'flex' : 'none';
         }
 
-        // Setup Event Listeners for Pagination
+        // Setup Event Listeners
         function setupEventListeners() {
             prevPageBtn.addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    renderHistoryPage();
-                    window.scrollTo(0, 0); // Scroll to top
+                    displayHistoryPage();
                 }
             });
 
             nextPageBtn.addEventListener('click', () => {
-                const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
+                const totalPages = Math.ceil(historyData.length / itemsPerPage);
                 if (currentPage < totalPages) {
                     currentPage++;
-                    renderHistoryPage();
-                    window.scrollTo(0, 0); // Scroll to top
+                    displayHistoryPage();
                 }
             });
         }
 
-        // Show Status Message (Reuse from liff.html)
-        function showStatus(message, isSuccess) {
+        // Show Status Message
+        function showStatus(message, type = 'info', autoHide = true) {
             if (!message) {
                 statusMessage.style.display = 'none';
                 return;
             }
             statusMessage.textContent = message;
+            statusMessage.className = `status ${type}`; // 'info', 'success', 'error', 'warning'
             statusMessage.style.display = 'block';
-            statusMessage.className = isSuccess ? 'status success' : 'status error';
 
-            // Auto-hide after 5 seconds only for temporary messages
-            if (message.includes('โหลด') || message.includes('เชื่อมต่อ')) {
-               // Don't auto-hide loading/connection messages
-            } else {
+            if (autoHide) {
                 setTimeout(() => {
-                    if (statusMessage.textContent === message) { // Hide only if the message hasn't changed
-                       statusMessage.style.display = 'none';
-                    }
+                    statusMessage.style.display = 'none';
                 }, 5000);
             }
         }
