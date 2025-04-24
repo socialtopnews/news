@@ -395,7 +395,7 @@
             margin: 0 5px;
             border-radius: 4px;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
@@ -1114,14 +1114,38 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        console.log("ตัวอย่างข้อมูลแรก:", JSON.stringify(data.history[0]));
-                        currentHistoryData = data.history;
-                        filteredData = [...currentHistoryData];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
                         
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
+                        // แสดงการตรวจสอบข้อมูลดิบทั้งหมด
+                        console.log("ข้อมูลดิบที่ได้รับจาก API:", data.history);
+                        
+                        // กรองเฉพาะข้อมูลที่ผู้ใช้สร้างเอง
+                        let userCreatedData = data.history.filter(item => {
+                            return item.creatorId === userId;
+                        });
+                        
+                        console.log(`กรองเหลือข้อมูลที่ผู้ใช้สร้างเอง ${userCreatedData.length} รายการ`);
+                        
+                        if (userCreatedData.length > 0) {
+                            currentHistoryData = userCreatedData;
+                            filteredData = [...currentHistoryData];
+                            totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                            
+                            // แสดงข้อมูลแต่ละรายการเพื่อตรวจสอบ
+                            console.log("ข้อมูลที่จะแสดง (บางส่วน):");
+                            const sampleSize = Math.min(3, userCreatedData.length);
+                            for (let i = 0; i < sampleSize; i++) {
+                                console.log(`รายการที่ ${i+1}:`, JSON.stringify(userCreatedData[i]));
+                            }
+                            
+                            displayHistoryData();
+                            document.getElementById('historyList').style.display = 'block';
+                            document.getElementById('pagination').style.display = 'flex';
+                        } else {
+                            console.log("ไม่พบข้อมูลที่ผู้ใช้สร้างเอง");
+                            document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งานที่คุณสร้างเอง</p>';
+                            document.getElementById('noDataMessage').style.display = 'block';
+                            document.getElementById('pagination').style.display = 'none';
+                        }
                     } else {
                         console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
@@ -1247,36 +1271,44 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ตรวจสอบข้อมูลและใช้ค่าเริ่มต้นถ้าไม่มีข้อมูล
-                const isp = (item.ip && item.ip.org) ? item.ip.org : (item.ip && item.ip.isp) ? item.ip.isp : "ไม่ทราบ";
+                // ตรวจสอบและกำหนดค่าสำหรับข้อมูลที่จะแสดง
+                const timestamp = item.timestamp || "ไม่ระบุเวลา";
+                const trackingKey = item.trackingKey || "ไม่ระบุ";
+                const caseName = item.caseName || "ไม่ระบุชื่อเคส";
                 
-                let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
+                // ข้อมูล IP และ ISP
+                const ip = item.ip || "ไม่ทราบ";
+                let ispInfo = "ไม่มีข้อมูล";
+                // ตรวจสอบองค์กร/ISP (ถ้ามี)
+                if (item.ipInfo && item.ipInfo.org) {
+                    ispInfo = item.ipInfo.org;
                 }
                 
+                // ข้อมูลอุปกรณ์
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 const platform = deviceInfo.platform || "ไม่ทราบ";
                 const browser = deviceInfo.browser || "ไม่ทราบ";
                 
-                // สร้าง HTML สำหรับรายการประวัติ
+                // ข้อมูลพิกัด GPS
+                let locationText = "ไม่มีข้อมูล";
+                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
+                    locationText = `${item.location.lat}, ${item.location.long}`;
+                    if (locationText.length > 15) {
+                        locationText = locationText.substring(0, 15) + '...';
+                    }
+                }
+                
                 listItem.innerHTML = `
-                    <div class="history-date"><i class="far fa-calendar-alt"></i>${item.timestamp || "ไม่ระบุเวลา"}</div>
-                    <div class="history-key"><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
-                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
-                    <div class="history-details">
-                        <div><i class="fas fa-globe"></i> IP: ${item.ip ? item.ip.ip || "ไม่ทราบ" : "ไม่ทราบ"}</div>
-                        <div><i class="fas fa-network-wired"></i> ISP: ${isp}</div>
-                        <div><i class="fas fa-mobile-alt"></i> อุปกรณ์: ${deviceType} ${deviceModel}</div>
-                        <div><i class="fas fa-laptop-code"></i> ระบบ: ${platform}</div>
-                        <div><i class="fas fa-window-maximize"></i> เบราว์เซอร์: ${browser}</div>
-                    </div>
+                    <div class="history-date"><i class="far fa-calendar-alt"></i>${timestamp}</div>
+                    <div class="history-key"><strong>Tracking Key:</strong> ${trackingKey}</div>
+                    <div class="history-case">${caseName}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
-                            <div><i class="fas fa-map-marker-alt"></i> ${locationText.length > 15 ? locationText.substring(0, 15) + '...' : locationText}</div>
+                            <div><i class="fas fa-map-marker-alt"></i> ${locationText}</div>
+                            <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
                     </div>
                 `;
@@ -1304,6 +1336,8 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
+            console.log("แสดงรายละเอียดของรายการ:", item);
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
@@ -1318,8 +1352,10 @@
                 console.log("Location ไม่ใช่ object:", typeof item.location);
             }
             
-            // แยกข้อมูล IP เป็นส่วนๆ
-            const ipInfo = item.ip || {};
+            // ดึงข้อมูล IP info (ถ้ามี)
+            const ipInfo = item.ipInfo || {};
+            
+            // ดึงข้อมูลอุปกรณ์
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
@@ -1346,29 +1382,17 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-globe"></i> ข้อมูล IP</h3>
+                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ไอพี</div>
-                        <div class="detail-value">${ipInfo.ip || "ไม่ระบุ"}</div>
+                        <div class="detail-label">IP</div>
+                        <div class="detail-value">${item.ip || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ISP/บริษัท</div>
-                        <div class="detail-value">${ipInfo.org || ipInfo.isp || "ไม่ระบุ"}</div>
+                        <div class="detail-label">บริษัทผู้ให้บริการ</div>
+                        <div class="detail-value">${ipInfo.org || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${ipInfo.city ? ipInfo.city + (ipInfo.region ? ", " + ipInfo.region : "") : "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
-                        <div class="detail-value">${ipInfo.country || "ไม่ระบุ"}</div>
-                    </div>
-                </div>
-                
-                <div class="detail-group">
-                    <h3><i class="fas fa-map-marker-alt"></i> ตำแหน่ง GPS</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด</div>
+                        <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
                     ${item.location && item.location.accuracy ? `
@@ -1384,7 +1408,7 @@
                 </div>
                 
                 <div class="detail-group">
-                    <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
+                    <h3><i class="fas fa-laptop-mobile"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
@@ -1401,29 +1425,7 @@
                         <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ขนาดหน้าจอ</div>
-                        <div class="detail-value">${deviceInfo.screenSize || "ไม่ระบุ"}</div>
-                    </div>
                 </div>
-                
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
-                    </div>
-                    ${connectionInfo.downlink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
-                    </div>` : ''}
-                </div>` : ''}
             `;
             
             modal.style.display = 'block';
@@ -1500,20 +1502,22 @@
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลอง
+            // สร้างข้อมูลจำลองที่มีข้อมูลครบถ้วนตามที่ต้องการ
             const mockData = [
                 {
-                    timestamp: "15/02/2023 14:32:21",
+                    timestamp: "23/04/2568 13:54:21",
                     trackingKey: "track_123456",
                     caseName: "เคสทดสอบ 1",
+                    creatorId: userId, // ใช้ userId ปัจจุบัน เพื่อให้แสดงในรายการ
+                    creatorName: "ผู้ใช้ปัจจุบัน",
                     creatorFullName: "นายทดสอบ ระบบ",
-                    ip: {
-                        ip: "203.0.113.1",
-                        hostname: "example.com",
+                    ip: "203.0.113.1",
+                    ipInfo: {
+                        hostname: "hostname1.example.com",
                         country: "TH",
-                        region: "กรุงเทพมหานคร",
-                        city: "กรุงเทพ",
-                        org: "TRUE Corporation",
+                        region: "Bangkok",
+                        city: "Bangkok",
+                        org: "True Internet Co., Ltd.",
                         loc: "13.756331,100.501762"
                     },
                     location: {
@@ -1527,35 +1531,59 @@
                         deviceModel: "iPhone 13",
                         platform: "iOS 16.2",
                         browser: "Safari",
-                        screenSize: "390x844"
+                        screenSize: "390x844",
+                        language: "th-TH",
+                        connection: {
+                            networkType: "wifi",
+                            effectiveType: "4g",
+                            downlink: 10.2,
+                            rtt: 50
+                        },
+                        battery: {
+                            level: "85%",
+                            charging: "ไม่ได้ชาร์จ"
+                        }
                     }
                 },
                 {
-                    timestamp: "14/02/2023 10:15:03",
+                    timestamp: "22/04/2568 10:15:03",
                     trackingKey: "track_654321",
                     caseName: "เคสทดสอบ 2",
+                    creatorId: userId, // ใช้ userId ปัจจุบัน
+                    creatorName: "ผู้ใช้ปัจจุบัน",
                     creatorFullName: "นางสาวทดสอบ ระบบ",
-                    ip: {
-                        ip: "203.0.113.2",
-                        hostname: "example.org",
+                    ip: "203.0.113.2",
+                    ipInfo: {
+                        hostname: "hostname2.example.com",
                         country: "TH",
-                        region: "เชียงใหม่",
-                        city: "เชียงใหม่",
-                        org: "3BB Broadband",
-                        loc: "18.788477,98.984963"
+                        region: "Chiang Mai",
+                        city: "Chiang Mai",
+                        org: "AIS Internet Services",
+                        loc: "18.788220,98.985892"
                     },
                     location: {
-                        lat: 18.788477,
-                        long: 98.984963,
+                        lat: 18.788220,
+                        long: 98.985892,
                         accuracy: 8,
-                        gmapLink: "https://www.google.com/maps?q=18.788477,98.984963"
+                        gmapLink: "https://www.google.com/maps?q=18.788220,98.985892"
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
                         browser: "Chrome",
-                        screenSize: "412x915"
+                        screenSize: "1080x2340",
+                        language: "th-TH",
+                        connection: {
+                            networkType: "cellular",
+                            effectiveType: "4g",
+                            downlink: 15.5,
+                            rtt: 40
+                        },
+                        battery: {
+                            level: "45%",
+                            charging: "กำลังชาร์จ"
+                        }
                     }
                 }
             ];
@@ -1596,43 +1624,11 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.2.0 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
         }
-
-        // Adds styles for new history details section
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add styles for history details section
-            const styleElement = document.createElement('style');
-            styleElement.textContent = `
-                .history-details {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 8px;
-                    margin: 10px 0;
-                    font-size: 13px;
-                    color: var(--text-light);
-                }
-                .history-details div {
-                    display: flex;
-                    align-items: center;
-                }
-                .history-details i {
-                    margin-right: 5px;
-                    color: var(--primary-color);
-                    width: 14px;
-                    text-align: center;
-                }
-                @media (max-width: 480px) {
-                    .history-details {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            `;
-            document.head.appendChild(styleElement);
-        });
     </script>
 </body>
 </html>
