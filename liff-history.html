@@ -204,7 +204,7 @@
 
         .badge.approved {
             background-color: rgba(76, 175, 80, 0.15);
-            color: var(--success-color);
+            color: var(--success-color); /* Corrected variable name */
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
@@ -261,21 +261,19 @@
             color: #721c24;
         }
 
-        /* History List Styles */
-        .history-list {
+        /* History Section Styles */
+        .history-container {
             margin-top: 1.5rem;
-            list-style: none;
-            padding: 0;
         }
 
         .history-item {
-            background-color: #ffffff;
+            background-color: #fff;
             border-radius: var(--border-radius);
             margin-bottom: 1rem;
+            padding: 1rem 1.2rem;
             box-shadow: var(--shadow-sm);
-            border: 1px solid #eee;
+            border-left: 4px solid var(--primary-light);
             transition: var(--transition-normal);
-            overflow: hidden; /* Ensure border-radius applies to children */
         }
 
         .history-item:hover {
@@ -283,66 +281,51 @@
             transform: translateY(-2px);
         }
 
-        .history-item-header {
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .history-item p {
+            margin-bottom: 0.6rem;
             font-size: 14px;
             color: var(--text-light);
+            word-wrap: break-word; /* Prevent long strings from overflowing */
         }
 
-        .history-item-header .timestamp {
-            font-weight: 500;
-            color: var(--primary-dark);
-        }
-
-        .history-item-body {
-            padding: 15px;
-        }
-
-        .history-item-body p {
-            margin-bottom: 8px;
-            font-size: 15px;
+        .history-item p strong {
             color: var(--text-color);
-            line-height: 1.5;
-        }
-
-        .history-item-body p strong {
-            font-weight: 600;
-            color: var(--primary-dark);
-            min-width: 100px;
+            font-weight: 500;
+            min-width: 100px; /* Adjust as needed */
             display: inline-block;
         }
 
-        .history-item-body .icon {
+        .history-item p i {
             margin-right: 8px;
             color: var(--primary-color);
             width: 16px; /* Ensure icons align */
             text-align: center;
         }
 
-        .history-item-body a {
+        .history-item .gps-link {
             color: var(--accent-color);
             text-decoration: none;
-            transition: var(--transition-normal);
+            font-weight: 500;
+        }
+        .history-item .gps-link:hover {
+            text-decoration: underline;
         }
 
-        .history-item-body a:hover {
-            text-decoration: underline;
-            color: var(--primary-dark);
+        .no-history {
+            text-align: center;
+            color: var(--text-light);
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
         }
 
         /* Pagination Styles */
         .pagination {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             margin-top: 2rem;
-            padding: 10px 0;
-            border-top: 1px solid #eee;
+            padding-bottom: 1rem;
         }
 
         .pagination button {
@@ -350,18 +333,15 @@
             color: white;
             border: none;
             padding: 8px 16px;
-            font-size: 14px;
-            border-radius: var(--border-radius);
+            margin: 0 5px;
+            border-radius: 6px;
             cursor: pointer;
             transition: var(--transition-normal);
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            font-size: 14px;
         }
 
         .pagination button:hover:not(:disabled) {
             background-color: var(--primary-dark);
-            box-shadow: var(--shadow-sm);
         }
 
         .pagination button:disabled {
@@ -370,9 +350,10 @@
             opacity: 0.7;
         }
 
-        .pagination .page-info {
+        .pagination span {
+            margin: 0 10px;
             font-size: 14px;
-            color: var(--text-light);
+            color: var(--text-color);
             font-weight: 500;
         }
 
@@ -519,17 +500,10 @@
                 padding: 12px 15px;
             }
 
-            .history-item-body p {
-                font-size: 14px;
+            .history-item {
+                padding: 0.8rem 1rem;
             }
-            .history-item-body p strong {
-                min-width: 80px;
-            }
-            .pagination button {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            .pagination .page-info {
+            .history-item p {
                 font-size: 13px;
             }
         }
@@ -550,12 +524,12 @@
             </svg>
             <div class="header-text">
                 <h1>ประวัติการใช้งาน</h1>
-                <div class="subtitle">รายการ Phishing ที่คุณสร้าง</div>
+                <div class="subtitle">ดูข้อมูลการคลิกลิงก์ที่คุณสร้าง</div>
             </div>
         </div>
 
         <div class="content">
-            <!-- User Info Section -->
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
             <div class="user-info" id="userInfoSection" style="display: none;">
                 <div class="profile">
                     <img id="profileImage" src="" alt="Profile" class="profile-img">
@@ -569,79 +543,63 @@
                 </div>
             </div>
 
-            <!-- Permission Message -->
+            <!-- ข้อความแจ้งเตือน (กรณีไม่มีสิทธิ์) -->
             <div id="permissionMessage" class="message-box error" style="display: none;">
                 <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้ หรือรอการอนุมัติจากผู้ดูแลระบบ</p>
             </div>
 
-            <!-- History Content -->
-            <div id="historyContent" style="display: none;">
+            <!-- ส่วนแสดงประวัติ -->
+            <div id="historySection" style="display: none;">
                 <div class="loader" id="historyLoader">
                     <div class="loader-spinner"></div>
                     <p>กำลังโหลดประวัติ...</p>
                 </div>
-                <div id="statusMessage" class="status"></div>
-                <ul id="historyList" class="history-list">
-                    <!-- History items will be injected here -->
-                </ul>
-                <div id="noHistoryMessage" class="message-box" style="display: none;">
-                    <p>ยังไม่มีประวัติการใช้งาน</p>
+                <div id="historyList" class="history-container">
+                    <!-- History items will be inserted here -->
                 </div>
-                <div id="paginationControls" class="pagination" style="display: none;">
+                <div id="noHistoryMessage" class="no-history" style="display: none;">
+                    <i class="fas fa-box-open fa-2x" style="margin-bottom: 1rem;"></i>
+                    <p>ไม่พบประวัติการใช้งานของคุณ</p>
+                </div>
+                <div id="historyPagination" class="pagination" style="display: none;">
                     <button id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>
-                    <span id="pageInfo" class="page-info">หน้า 1 / 1</span>
+                    <span id="pageInfo">หน้า 1 / 1</span>
                     <button id="nextPageBtn" disabled>ถัดไป <i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
+
+            <div id="statusMessage" class="status"></div>
+
         </div>
 
         <div class="footer">
-            <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
             <p>&copy; 2025 Image Phishing - Detective-X</p>
         </div>
     </div>
 
     <script>
-        // Config
-        const LIFF_ID = '2007293657-Lw86gYw1'; // Use the same LIFF ID
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyMobfxl2bpenRmyERAHnyrXgqVnM_z716jcBzZtWXb_1MtSDbfC09oGgCiayTv00QJ/exec'; // URL for fetching history
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyMobfxl2bpenRmyERAHnyrXgqVnM_z716jcBzZtWXb_1MtSDbfC09oGgCiayTv00QJ/exec'; // URL for checking permission
-
-        // State
+        // ตัวแปรหลัก
         let userId = "";
         let displayName = "";
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let historyData = [];
+        let allHistoryData = [];
         let currentPage = 1;
-        const itemsPerPage = 10; // Number of history items per page
+        const itemsPerPage = 10; // จำนวนรายการต่อหน้า
 
-        // DOM Elements
-        const loadingScreen = document.getElementById('loadingScreen');
-        const userInfoSection = document.getElementById('userInfoSection');
-        const profileImage = document.getElementById('profileImage');
-        const userName = document.getElementById('userName');
-        const userStatus = document.getElementById('userStatus');
-        const statusBadge = document.getElementById('statusBadge');
-        const permissionMessage = document.getElementById('permissionMessage');
-        const historyContent = document.getElementById('historyContent');
-        const historyLoader = document.getElementById('historyLoader');
-        const statusMessage = document.getElementById('statusMessage');
-        const historyList = document.getElementById('historyList');
-        const noHistoryMessage = document.getElementById('noHistoryMessage');
-        const paginationControls = document.getElementById('paginationControls');
-        const prevPageBtn = document.getElementById('prevPageBtn');
-        const nextPageBtn = document.getElementById('nextPageBtn');
-        const pageInfo = document.getElementById('pageInfo');
+        // ค่า Config สำคัญ (ควรตรงกับ liff.html)
+        const LIFF_ID = '2007293657-Lw86gYw1'; // ใช้ LIFF ID เดียวกัน
+        // ใช้ URL เดียวกันกับ liff.html สำหรับการตรวจสอบสิทธิ์และดึงข้อมูล
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxN5XIRJ38u2epBMpL4Z8w5dfmzf5Nz2UyC6nbkFw-TjpLqPXJCiF9Sz2FN9MWLd7gm/exec'; // URL ของ Google Apps Script ที่ deploy ไว้
 
-        // Initialization
+        // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
             initializeLiff();
-            setupEventListeners();
+            setupPaginationListeners();
         });
 
-        // LIFF Initialization
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
         async function initializeLiff() {
             try {
                 await liff.init({ liffId: LIFF_ID });
@@ -654,305 +612,327 @@
                 const profile = await liff.getProfile();
                 userId = profile.userId;
                 displayName = profile.displayName;
-                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/60';
+                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
 
-                console.log(`User: ${displayName} (${userId})`);
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
 
-                // Display user info
-                userName.textContent = displayName;
-                profileImage.src = pictureUrl;
-                userInfoSection.style.display = 'block';
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('profileImage').src = pictureUrl;
+                document.getElementById('userInfoSection').style.display = 'block';
 
-                // Check user permission
+                // ตรวจสอบสิทธิ์ผู้ใช้ (ใช้ฟังก์ชันเดียวกับ liff.html)
                 userHasPermission = await checkUserPermission(userId);
 
                 if (userHasPermission) {
-                    userStatus.textContent = 'ได้รับอนุมัติแล้ว';
-                    statusBadge.textContent = 'อนุมัติแล้ว';
-                    statusBadge.className = 'badge approved';
-                    historyContent.style.display = 'block';
-                    fetchUserHistory(); // Fetch history only if permitted
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    document.getElementById('historySection').style.display = 'block';
+                    fetchUserHistory(); // เรียกโหลดประวัติ
                 } else {
-                    userStatus.textContent = 'รอการอนุมัติ';
-                    statusBadge.textContent = 'รออนุมัติ';
-                    statusBadge.className = 'badge pending';
-                    permissionMessage.style.display = 'block';
-                    historyContent.style.display = 'none';
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('permissionMessage').style.display = 'block';
                 }
 
                 isLiffInitialized = true;
-                loadingScreen.style.display = 'none';
+                document.getElementById('loadingScreen').style.display = 'none';
 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
                 showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
-                loadingScreen.style.display = 'none';
-                permissionMessage.style.display = 'block'; // Show permission error if LIFF fails
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('permissionMessage').style.display = 'block'; // แสดงข้อความไม่มีสิทธิ์ถ้า LIFF มีปัญหา
             }
         }
 
-        // Check User Permission (Reusing function structure from liff.html)
+        // ตรวจสอบสิทธิ์ผู้ใช้ (เหมือนใน liff.html)
         async function checkUserPermission(userIdToCheck) {
+            // --- Copy the checkUserPermission function from liff.html here ---
+            // --- Make sure it uses the correct GOOGLE_SCRIPT_URL ---
+            // --- Example structure: ---
             try {
-                console.log("Checking user permission:", userIdToCheck);
-                userStatus.textContent = "กำลังตรวจสอบสิทธิ์...";
+                console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userIdToCheck);
+                const statusEl = document.getElementById('userStatus');
+                statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
 
-                // Check localStorage cache first (15 minutes validity)
+                // Check localStorage cache first
                 try {
                     const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
                     const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userIdToCheck) || '0');
                     const currentTime = new Date().getTime();
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
-                        console.log("Using permission from localStorage");
-                        return savedPermission === 'true';
+                        console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
+                        statusEl.textContent = originalText; // Restore original text if needed
+                        return Promise.resolve(savedPermission === 'true');
                     }
-                } catch (e) { console.error('Cannot read from localStorage:', e); }
+                } catch (e) { console.error('ไม่สามารถอ่าน localStorage:', e); }
+
 
                 const timestamp = new Date().getTime();
                 const callbackName = 'permCallback_' + timestamp;
 
                 return new Promise((resolve) => {
                     window[callbackName] = function(data) {
-                        console.log("Received permission data:", data);
-                        const hasPermission = data && data.hasPermission === true;
-
-                        try {
-                            localStorage.setItem('user_permission_' + userIdToCheck, hasPermission ? 'true' : 'false');
-                            localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
-                        } catch (e) { console.error('Cannot save to localStorage:', e); }
-
+                        console.log("ได้รับข้อมูลสิทธิ์:", data);
+                        let hasPermission = false;
+                        if (data && typeof data === 'object' && data.hasPermission !== undefined) {
+                            hasPermission = data.hasPermission === true;
+                            try {
+                                localStorage.setItem('user_permission_' + userIdToCheck, hasPermission ? 'true' : 'false');
+                                localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
+                                if (data.userStatus) {
+                                     localStorage.setItem('user_status_' + userIdToCheck, data.userStatus);
+                                }
+                            } catch (e) { console.error('ไม่สามารถบันทึก localStorage:', e); }
+                        } else {
+                            console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง/ไม่สมบูรณ์, ใช้ fallback");
+                            hasPermission = checkUserPermissionFallback(userIdToCheck); // Use fallback
+                        }
+                        // Restore original status text if needed before resolving
+                        // statusEl.textContent = originalText;
                         resolve(hasPermission);
                         delete window[callbackName];
                     };
 
                     const script = document.createElement('script');
-                    const url = new URL(PERMISSION_WEBHOOK_URL);
+                    const url = new URL(GOOGLE_SCRIPT_URL); // Use the defined constant
                     url.searchParams.append('action', 'checkUserPermissionFromSheet');
                     url.searchParams.append('userId', encodeURIComponent(userIdToCheck));
                     url.searchParams.append('callback', encodeURIComponent(callbackName));
                     url.searchParams.append('_', timestamp);
 
-                    console.log("Calling permission API URL:", url.toString());
+                    console.log("เรียกใช้ API ตรวจสอบสิทธิ์ URL:", url.toString());
                     script.src = url.toString();
                     script.onerror = function(e) {
-                        console.error('Error loading permission script:', e);
-                        showStatus('ไม่สามารถตรวจสอบสิทธิ์ได้ กำลังใช้ระบบสำรอง', false);
-                        resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback
+                        console.error('เกิดข้อผิดพลาดในการโหลด permission script:', e);
+                        // statusEl.textContent = originalText; // Restore original text
+                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ตรวจสอบสิทธิ์', false);
+                        resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback on error
                         delete window[callbackName];
                     };
                     document.body.appendChild(script);
 
                     setTimeout(() => {
                         if (window[callbackName]) {
-                            console.log("Permission check timed out, using fallback");
-                            showStatus('การตรวจสอบสิทธิ์หมดเวลา กำลังใช้ระบบสำรอง', false);
+                            console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้ fallback");
+                            // statusEl.textContent = originalText; // Restore original text
+                            showStatus('การตรวจสอบสิทธิ์ใช้เวลานาน', false);
                             delete window[callbackName];
-                            resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback
+                            resolve(checkUserPermissionFallback(userIdToCheck)); // Use fallback on timeout
                         }
                     }, 10000); // 10 seconds timeout
                 });
             } catch (error) {
                 console.error('Error checking permission:', error);
-                return checkUserPermissionFallback(userIdToCheck); // Use fallback on error
+                // statusEl.textContent = originalText; // Restore original text
+                return checkUserPermissionFallback(userIdToCheck); // Use fallback on general error
             }
         }
 
-        // Fallback Permission Check (Reusing function from liff.html)
+        // Fallback permission check (เหมือนใน liff.html)
         function checkUserPermissionFallback(userIdToCheck) {
-            console.warn("Using fallback permission check for:", userIdToCheck);
+            // --- Copy the checkUserPermissionFallback function from liff.html here ---
+            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
             const approvedUserIds = [
                 'U69aa2cb90c9f40291278c346c50dc021', // Admin ID
-                // Add other emergency approved IDs here if needed
+                // Add other emergency approved IDs here if necessary
             ];
-            const isAdmin = userIdToCheck === 'U69aa2cb90c9f40291278c346c50dc021';
-            if (isAdmin) return true;
-
+             if (userIdToCheck === 'U69aa2cb90c9f40291278c346c50dc021') {
+                return true;
+            }
             try {
                 const savedPermission = localStorage.getItem('user_permission_' + userIdToCheck);
                 if (savedPermission === 'true') return true;
                 if (savedPermission === 'false') return false;
-            } catch (e) { console.error('Cannot read from localStorage:', e); }
+            } catch (e) { console.error('ไม่สามารถอ่าน localStorage:', e); }
 
             const hasAccess = approvedUserIds.includes(userIdToCheck);
-            console.log(`Fallback check: User ${userIdToCheck} ${hasAccess ? 'has' : 'does not have'} access.`);
-            try {
+             try {
                 localStorage.setItem('user_permission_' + userIdToCheck, hasAccess ? 'true' : 'false');
                 localStorage.setItem('user_permission_time_' + userIdToCheck, new Date().getTime().toString());
-            } catch (e) { console.error('Cannot save to localStorage:', e); }
+            } catch (e) { console.error('ไม่สามารถบันทึก localStorage:', e); }
             return hasAccess;
         }
 
 
-        // Fetch User History
-        function fetchUserHistory() {
-            if (!userId) {
-                showStatus('ไม่พบข้อมูลผู้ใช้', false);
+        // ฟังก์ชันดึงข้อมูลประวัติผู้ใช้
+        async function fetchUserHistory() {
+            if (!userHasPermission || !userId) {
+                console.log("ไม่มีสิทธิ์ หรือ ไม่มี userId สำหรับดึงข้อมูลประวัติ");
                 return;
             }
 
-            console.log("Fetching history for user:", userId);
-            historyLoader.style.display = 'block';
-            historyList.innerHTML = ''; // Clear previous list
+            const loader = document.getElementById('historyLoader');
+            const historyList = document.getElementById('historyList');
+            const noHistoryMessage = document.getElementById('noHistoryMessage');
+            const paginationControls = document.getElementById('historyPagination');
+
+            loader.style.display = 'block';
+            historyList.innerHTML = ''; // Clear previous results
             noHistoryMessage.style.display = 'none';
             paginationControls.style.display = 'none';
 
-            const timestamp = new Date().getTime();
-            const callbackName = 'historyCallback_' + timestamp;
+            try {
+                const timestamp = new Date().getTime();
+                const callbackName = 'historyCallback_' + timestamp;
 
-            window[callbackName] = function(data) {
-                console.log("Received history data:", data);
-                historyLoader.style.display = 'none';
+                return new Promise((resolve, reject) => {
+                    window[callbackName] = function(data) {
+                        loader.style.display = 'none';
+                        console.log("ได้รับข้อมูลประวัติ:", data);
 
-                if (data && data.status === 'success' && Array.isArray(data.history)) {
-                    historyData = data.history;
-                    if (historyData.length > 0) {
-                        currentPage = 1;
-                        renderHistoryPage();
-                        paginationControls.style.display = 'flex';
-                    } else {
+                        if (data && data.status === "success" && Array.isArray(data.history)) {
+                            allHistoryData = data.history;
+                            if (allHistoryData.length > 0) {
+                                currentPage = 1;
+                                displayHistoryPage();
+                                paginationControls.style.display = 'flex';
+                            } else {
+                                noHistoryMessage.style.display = 'block';
+                            }
+                            resolve();
+                        } else {
+                            showStatus('ไม่สามารถโหลดข้อมูลประวัติได้: ' + (data.message || 'รูปแบบข้อมูลไม่ถูกต้อง'), false);
+                            noHistoryMessage.style.display = 'block'; // Show no history message on error too
+                            reject(new Error(data.message || 'Failed to fetch history'));
+                        }
+                        delete window[callbackName];
+                    };
+
+                    const script = document.createElement('script');
+                    const url = new URL(GOOGLE_SCRIPT_URL);
+                    url.searchParams.append('action', 'getUserHistory');
+                    url.searchParams.append('userId', encodeURIComponent(userId));
+                    url.searchParams.append('callback', encodeURIComponent(callbackName));
+                    url.searchParams.append('_', timestamp); // Prevent caching
+
+                    console.log("เรียกใช้ API ดึงประวัติ URL:", url.toString());
+                    script.src = url.toString();
+                    script.onerror = function(e) {
+                        loader.style.display = 'none';
+                        console.error('เกิดข้อผิดพลาดในการโหลด history script:', e);
+                        showStatus('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อโหลดประวัติ', false);
                         noHistoryMessage.style.display = 'block';
-                        paginationControls.style.display = 'none';
-                    }
-                } else {
-                    showStatus('ไม่สามารถโหลดประวัติได้: ' + (data.message || 'ข้อผิดพลาดไม่ทราบสาเหตุ'), false);
-                    noHistoryMessage.style.display = 'block'; // Show no history message on error too
-                }
-                delete window[callbackName];
-            };
+                        reject(e);
+                        delete window[callbackName];
+                    };
+                    document.body.appendChild(script);
 
-            const script = document.createElement('script');
-            const url = new URL(HISTORY_WEBHOOK_URL);
-            url.searchParams.append('action', 'getUserHistory');
-            url.searchParams.append('userId', encodeURIComponent(userId));
-            url.searchParams.append('callback', encodeURIComponent(callbackName));
-            url.searchParams.append('_', timestamp); // Prevent caching
+                    // Timeout for the request
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            loader.style.display = 'none';
+                            console.log("การดึงข้อมูลประวัติหมดเวลา");
+                            showStatus('การโหลดประวัติใช้เวลานานเกินไป', false);
+                            noHistoryMessage.style.display = 'block';
+                            delete window[callbackName];
+                            reject(new Error('History fetch timeout'));
+                        }
+                    }, 15000); // 15 seconds timeout
+                });
 
-            console.log("Calling history API URL:", url.toString());
-            script.src = url.toString();
-            script.onerror = function(e) {
-                console.error('Error loading history script:', e);
-                historyLoader.style.display = 'none';
-                showStatus('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อโหลดประวัติ', false);
+            } catch (error) {
+                loader.style.display = 'none';
+                console.error('Error fetching user history:', error);
+                showStatus('เกิดข้อผิดพลาดในการโหลดประวัติ: ' + error.message, false);
                 noHistoryMessage.style.display = 'block';
-                delete window[callbackName];
-            };
-            document.body.appendChild(script);
-
-             // Timeout for history fetch
-            setTimeout(() => {
-                if (window[callbackName]) {
-                    console.log("History fetch timed out");
-                    historyLoader.style.display = 'none';
-                    showStatus('การโหลดประวัติใช้เวลานานเกินไป', false);
-                    noHistoryMessage.style.display = 'block';
-                    delete window[callbackName];
-                }
-            }, 15000); // 15 seconds timeout
+            }
         }
 
-        // Render History Page
-        function renderHistoryPage() {
+        // ฟังก์ชันแสดงผลข้อมูลประวัติในหน้าปัจจุบัน
+        function displayHistoryPage() {
+            const historyList = document.getElementById('historyList');
+            const noHistoryMessage = document.getElementById('noHistoryMessage');
+            const paginationControls = document.getElementById('historyPagination');
+            const pageInfo = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+
             historyList.innerHTML = ''; // Clear current items
-            const totalPages = Math.ceil(historyData.length / itemsPerPage);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const pageItems = historyData.slice(startIndex, endIndex);
-
-            if (pageItems.length === 0 && historyData.length > 0) {
-                // Handle case where current page might be invalid after data change
-                currentPage = 1;
-                renderHistoryPage(); // Re-render with page 1
-                return;
-            } else if (pageItems.length === 0) {
-                 noHistoryMessage.style.display = 'block';
-                 paginationControls.style.display = 'none';
-                 return;
-            }
-
             noHistoryMessage.style.display = 'none';
 
-            pageItems.forEach(item => {
-                const li = document.createElement('li');
-                li.className = 'history-item';
+            if (allHistoryData.length === 0) {
+                noHistoryMessage.style.display = 'block';
+                paginationControls.style.display = 'none';
+                return;
+            }
 
-                // Format timestamp
-                let formattedTimestamp = item.timestamp;
-                try {
-                    // Attempt to format if it's a valid date string
-                    const date = new Date(item.timestamp);
-                    if (!isNaN(date)) {
-                        formattedTimestamp = date.toLocaleString('th-TH', {
-                            year: 'numeric', month: 'short', day: 'numeric',
-                            hour: '2-digit', minute: '2-digit', second: '2-digit',
-                            timeZone: 'Asia/Bangkok' // Ensure correct timezone
-                        });
-                    }
-                } catch (e) { /* Keep original if formatting fails */ }
+            const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const itemsToShow = allHistoryData.slice(startIndex, endIndex);
 
+            itemsToShow.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'history-item';
 
-                let locationHtml = `<p><i class="fas fa-map-marker-alt icon"></i><strong>พิกัด GPS:</strong> ไม่พบข้อมูล</p>`;
+                let gpsHtml = '<p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ไม่มีข้อมูล</p>';
                 if (item.location) {
-                    const lat = item.location.lat;
-                    const long = item.location.long;
-                    const accuracy = item.location.accuracy ? ` (±${Math.round(item.location.accuracy)}m)` : '';
-                    const mapLink = item.location.gmapLink;
-
-                    if (mapLink) {
-                        locationHtml = `<p><i class="fas fa-map-marker-alt icon"></i><strong>พิกัด GPS:</strong> <a href="${mapLink}" target="_blank" rel="noopener noreferrer">${lat}, ${long}${accuracy} <i class="fas fa-external-link-alt fa-xs"></i></a></p>`;
-                    } else {
-                         locationHtml = `<p><i class="fas fa-map-marker-alt icon"></i><strong>พิกัด GPS:</strong> ${lat}, ${long}${accuracy}</p>`;
-                    }
+                    const accuracyText = item.location.accuracy ? ` (แม่นยำ ±${Math.round(item.location.accuracy)}m)` : '';
+                    const mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                    gpsHtml = `
+                        <p><i class="fas fa-map-marker-alt"></i><strong>พิกัด GPS:</strong> ${item.location.lat}, ${item.location.long}${accuracyText}</p>
+                        <p><i class="fas fa-map"></i><strong>แผนที่:</strong> <a href="${mapLink}" target="_blank" class="gps-link">เปิด Google Maps</a></p>
+                    `;
                 }
 
-                li.innerHTML = `
-                    <div class="history-item-header">
-                        <span class="timestamp"><i class="fas fa-calendar-alt"></i> ${formattedTimestamp}</span>
-                        <span class="case-name">เคส: ${item.caseName || 'N/A'}</span>
-                    </div>
-                    <div class="history-item-body">
-                        <p><i class="fas fa-key icon"></i><strong>Tracking Key:</strong> ${item.trackingKey || 'N/A'}</p>
-                        <p><i class="fas fa-user-secret icon"></i><strong>ผู้สร้าง:</strong> ${item.creatorFullName || 'N/A'}</p>
-                        <p><i class="fas fa-network-wired icon"></i><strong>IP Address:</strong> ${item.ip || 'N/A'}</p>
-                        ${locationHtml}
-                        <p><i class="fas fa-laptop-code icon"></i><strong>อุปกรณ์:</strong> ${item.deviceInfo?.deviceType || 'N/A'} - ${item.deviceInfo?.deviceModel || 'N/A'}</p>
-                    </div>
+                itemElement.innerHTML = `
+                    <p><i class="far fa-calendar-alt"></i><strong>วันเวลา:</strong> ${item.timestamp || 'N/A'}</p>
+                    <p><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || 'N/A'}</p>
+                    <p><i class="fas fa-clipboard-list"></i><strong>ชื่อเคส:</strong> ${item.caseName || 'N/A'}</p>
+                    <p><i class="fas fa-user-tie"></i><strong>ผู้สร้าง:</strong> ${item.creatorFullName || 'N/A'}</p>
+                    <p><i class="fas fa-network-wired"></i><strong>IP:</strong> ${item.ip || 'N/A'}</p>
+                    <p><i class="fas fa-building"></i><strong>ISP/องค์กร:</strong> ${item.ispOrg || 'N/A'}</p>
+                    <p><i class="fas fa-mobile-alt"></i><strong>รุ่นอุปกรณ์:</strong> ${item.deviceModel || 'N/A'}</p>
+                    <p><i class="fab fa-windows"></i><strong>ระบบ:</strong> ${item.os || 'N/A'}</p> <!-- Assuming fab fa-windows is a placeholder -->
+                    <p><i class="fab fa-chrome"></i><strong>เบราว์เซอร์:</strong> ${item.browser || 'N/A'}</p> <!-- Assuming fab fa-chrome is a placeholder -->
+                    ${gpsHtml}
                 `;
-                historyList.appendChild(li);
+                historyList.appendChild(itemElement);
             });
 
             // Update pagination controls
             pageInfo.textContent = `หน้า ${currentPage} / ${totalPages}`;
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages;
-            paginationControls.style.display = historyData.length > 0 ? 'flex' : 'none';
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            paginationControls.style.display = 'flex';
         }
 
-        // Setup Event Listeners
-        function setupEventListeners() {
-            prevPageBtn.addEventListener('click', () => {
+        // ตั้งค่า Event Listeners สำหรับ Pagination
+        function setupPaginationListeners() {
+            document.getElementById('prevPageBtn').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    renderHistoryPage();
+                    displayHistoryPage();
                 }
             });
 
-            nextPageBtn.addEventListener('click', () => {
-                const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            document.getElementById('nextPageBtn').addEventListener('click', () => {
+                const totalPages = Math.ceil(allHistoryData.length / itemsPerPage);
                 if (currentPage < totalPages) {
                     currentPage++;
-                    renderHistoryPage();
+                    displayHistoryPage();
                 }
             });
         }
 
-        // Show Status Message
+        // แสดงสถานะการทำงาน (เหมือนใน liff.html)
         function showStatus(message, isSuccess) {
-            statusMessage.textContent = message;
-            statusMessage.style.display = 'block';
-            statusMessage.className = isSuccess ? 'status success' : 'status error';
+            const statusEl = document.getElementById('statusMessage');
+            if (!statusEl) return; // Add check if element exists
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+
+            if (isSuccess) {
+                statusEl.className = 'status success';
+            } else {
+                statusEl.className = 'status error';
+            }
 
             setTimeout(() => {
-                statusMessage.style.display = 'none';
+                statusEl.style.display = 'none';
             }, 5000);
         }
 
