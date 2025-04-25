@@ -484,7 +484,7 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzxS2Q7xn9ebgvDmIcBFmw2oGlSyYoIf46c0QBNpr1-qd6LZMH8c22vclorKy8PYAk6/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzxS2Q7xn9ebgvDmIcBFmw2oGlSyYoIf46c0QBNpr1-qd6LZMH8c22vclorKy8PYAk6/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5KJ0OYzl58Dyj2AJedIUI2GUSlAoFF4k_N23CpuwkJbm7TxB6zvI1-fe8lK2uGBRH/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby5KJ0OYzl58Dyj2AJedIUI2GUSlAoFF4k_N23CpuwkJbm7TxB6zvI1-fe8lK2uGBRH/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1273,19 +1273,7 @@
             
             try {
                 let date;
-                
-                // แสดงรูปแบบวันที่ดิบเพื่อการตรวจสอบ
-                console.log("รูปแบบวันที่ดิบที่ได้รับ:", dateTimeStr);
-                
                 // ตรวจสอบรูปแบบวันที่
-                if (typeof dateTimeStr === 'object' && dateTimeStr instanceof Date) {
-                    // กรณีเป็น Date object อยู่แล้ว
-                    date = dateTimeStr;
-                } else if (typeof dateTimeStr !== 'string') {
-                    // แปลงเป็นสตริงก่อนดำเนินการต่อ
-                    dateTimeStr = String(dateTimeStr);
-                }
-
                 if (dateTimeStr.includes('T')) {
                     // รูปแบบ ISO format: "2023-04-24T04:15:27.000Z"
                     date = new Date(dateTimeStr);
@@ -1319,30 +1307,6 @@
                         // รูปแบบไม่ถูกต้อง ใช้ Date constructor เลย
                         date = new Date(dateTimeStr);
                     }
-                } else if (dateTimeStr.includes('-')) {
-                    // รูปแบบ "2023-04-24" หรือ "2023-04-24 04:15:27"
-                    const parts = dateTimeStr.split(' ');
-                    const dateParts = parts[0].split('-');
-                    
-                    if (dateParts.length === 3) {
-                        const year = parseInt(dateParts[0]);
-                        const month = parseInt(dateParts[1]) - 1;
-                        const day = parseInt(dateParts[2]);
-                        
-                        if (parts.length > 1 && parts[1].includes(':')) {
-                            // มีส่วนของเวลา
-                            const timeParts = parts[1].split(':');
-                            const hour = parseInt(timeParts[0]);
-                            const minute = parseInt(timeParts[1]);
-                            const second = timeParts.length > 2 ? parseInt(timeParts[2]) : 0;
-                            
-                            date = new Date(year, month, day, hour, minute, second);
-                        } else {
-                            date = new Date(year, month, day);
-                        }
-                    } else {
-                        date = new Date(dateTimeStr);
-                    }
                 } else {
                     // รูปแบบอื่นๆ ใช้ Date constructor
                     date = new Date(dateTimeStr);
@@ -1350,7 +1314,6 @@
                 
                 // ตรวจสอบว่า date เป็นวันที่ที่ถูกต้องหรือไม่
                 if (isNaN(date.getTime())) {
-                    console.log("แปลงวันที่ไม่สำเร็จ สำหรับค่า:", dateTimeStr);
                     return dateTimeStr; // วันที่ไม่ถูกต้อง ส่งคืนสตริงเดิม
                 }
                 
@@ -1366,12 +1329,9 @@
                 
                 const hours = date.getHours().toString().padStart(2, '0');
                 const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
                 
-                // ค่าที่จะคืนกลับ
-                const formattedDate = `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
-                console.log("วันที่หลังจากแปลง:", formattedDate);
-                
-                return formattedDate;
+                return `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
             } catch (error) {
                 console.error("ข้อผิดพลาดในการแปลงรูปแบบวันที่:", error);
                 return dateTimeStr; // ส่งคืนสตริงเดิมในกรณีที่มีข้อผิดพลาด
@@ -1406,13 +1366,11 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ดึงข้อมูลอุปกรณ์แบบปลอดภัยยิ่งขึ้น
                 const deviceInfo = item.deviceInfo || {};
-                const deviceType = deviceInfo.deviceType || deviceInfo.type || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || deviceInfo.model || "ไม่ทราบ";
+                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย - ส่งดีบั๊กข้อมูลที่ได้รับ
-                console.log(`ข้อมูลวันเวลาดิบของรายการ ${i}:`, item.timestamp);
+                // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
                 
                 listItem.innerHTML = `
@@ -1444,7 +1402,7 @@
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
-
+        
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
@@ -1485,77 +1443,16 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ข้อมูล IP และตำแหน่ง - การจัดการที่ดีขึ้นกับโครงสร้างข้อมูล
+            // ข้อมูล IP และตำแหน่ง
             const ipData = item.ip || {};
-            let ipAddress;
+            let ipInfo = typeof item.ip === 'string' ? item.ip : (ipData.ip || "ไม่มีข้อมูล");
+            let country = typeof ipData === 'object' ? (ipData.country || "ไม่ทราบ") : "ไม่ทราบ";
+            let region = typeof ipData === 'object' ? (ipData.region || "ไม่ทราบ") : "ไม่ทราบ";
+            let city = typeof ipData === 'object' ? (ipData.city || "ไม่ทราบ") : "ไม่ทราบ"; 
+            let isp = typeof ipData === 'object' ? (ipData.org || ipData.isp || "ไม่ทราบ") : "ไม่ทราบ";
+            let asn = typeof ipData === 'object' ? (ipData.asn || "ไม่ทราบ") : "ไม่ทราบ";
             
-            // ตรวจสอบรูปแบบข้อมูล IP อย่างละเอียด
-            if (typeof item.ip === 'string') {
-                // กรณีที่ IP เป็น string ธรรมดา เช่น "192.168.1.1"
-                ipAddress = item.ip;
-                console.log("IP เป็น string:", ipAddress);
-            } else if (typeof item.ip === 'object' && item.ip !== null) {
-                // กรณีที่ IP เป็น object ที่มีรายละเอียด
-                ipAddress = item.ip.ip || "ไม่มีข้อมูล";
-                console.log("IP เป็น object:", ipAddress);
-            } else {
-                ipAddress = "ไม่มีข้อมูล";
-                console.log("ไม่พบข้อมูล IP");
-            }
-            
-            // แสดงวิธีการเข้าถึงข้อมูล IP
-            console.log("โครงสร้าง ipData:", ipData);
-            
-            // ดึงข้อมูลรายละเอียดเกี่ยวกับ IP
-            let country = "ไม่ทราบ";
-            let region = "ไม่ทราบ";
-            let city = "ไม่ทราบ";
-            let isp = "ไม่ทราบ";
-            let asn = "ไม่ทราบ";
-            
-            // ตรวจสอบว่า ipData เป็น object และไม่ใช่ค่า null
-            if (typeof ipData === 'object' && ipData !== null) {
-                // ตรวจสอบรายละเอียด IP ทีละอัน
-                country = ipData.country || ipData.countryCode || "ไม่ทราบ";
-                region = ipData.region || ipData.regionName || "ไม่ทราบ";
-                city = ipData.city || "ไม่ทราบ";
-                
-                // ISP/Organization สามารถอยู่ในหลาย property
-                isp = ipData.isp || ipData.org || ipData.organization || ipData.as || "ไม่ทราบ";
-                
-                // ASN มักจะอยู่ใน property 'asn' หรือ 'as' หรือเป็นส่วนหนึ่งของ 'org'
-                asn = ipData.asn || "ไม่ทราบ";
-                if (ipData.as && !asn) {
-                    // บางครั้ง AS อาจอยู่ใน format เช่น "AS12345 Some ISP"
-                    const asMatch = /AS\d+/.exec(ipData.as);
-                    if (asMatch) {
-                        asn = asMatch[0];
-                    }
-                }
-                
-                console.log(`ข้อมูล IP ที่พบ: country=${country}, region=${region}, city=${city}, isp=${isp}, asn=${asn}`);
-            }
-            
-            // ข้อมูลอุปกรณ์ - เพิ่มการตรวจสอบและดึงข้อมูลอย่างละเอียด
             const deviceInfo = item.deviceInfo || {};
-            
-            // ตรวจสอบรูปแบบข้อมูลอุปกรณ์
-            console.log("โครงสร้าง deviceInfo:", deviceInfo);
-            
-            // ดึงข้อมูลรายละเอียดอุปกรณ์
-            let deviceType = "ไม่ทราบ";
-            let deviceModel = "ไม่ทราบ";
-            let platform = "ไม่ทราบ";
-            let browser = "ไม่ทราบ";
-            
-            if (typeof deviceInfo === 'object' && deviceInfo !== null) {
-                deviceType = deviceInfo.deviceType || deviceInfo.type || "ไม่ทราบ";
-                deviceModel = deviceInfo.deviceModel || deviceInfo.model || "ไม่ทราบ";
-                platform = deviceInfo.platform || deviceInfo.os || deviceInfo.operatingSystem || "ไม่ทราบ";
-                browser = deviceInfo.browser || deviceInfo.browserName || "ไม่ทราบ";
-                
-                console.log(`ข้อมูลอุปกรณ์ที่พบ: type=${deviceType}, model=${deviceModel}, platform=${platform}, browser=${browser}`);
-            }
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
@@ -1583,19 +1480,11 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP Address</div>
-                        <div class="detail-value">${ipAddress}</div>
+                        <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
-                        <div class="detail-value">${country}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">ภูมิภาค</div>
-                        <div class="detail-value">${region}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เมือง</div>
-                        <div class="detail-value">${city}</div>
+                        <div class="detail-label">ตำแหน่ง</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}, ${country}` : "ไม่ทราบ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
@@ -1625,19 +1514,19 @@
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
-                        <div class="detail-value">${deviceType}</div>
+                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceModel}</div>
+                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${platform}</div>
+                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${browser}</div>
+                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
                     </div>
                 </div>
             `;
