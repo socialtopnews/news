@@ -787,8 +787,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwNydvgbvFG-GmjTIYDjCA4SitES5AWzOCg8mkq3jfScql1uqX-MXv8A7Asbu2I7yjB/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLRzui7cJN1-X0i-sq8X5apCYBj4Gu_SdAbqd0nUD5jicg4xoscQViK9xgQw6-z8CA/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLRzui7cJN1-X0i-sq8X5apCYBj4Gu_SdAbqd0nUD5jicg4xoscQViK9xgQw6-z8CA/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1070,6 +1070,27 @@
             }
             
             checkLiffVersion();
+
+            // เพิ่มปุ่มตรวจสอบคอลัมน์หากเปิดใช้ debug mode
+            if (location.search.includes('debug=true')) {
+                const debugDiv = document.createElement('div');
+                debugDiv.style.marginTop = '10px';
+                debugDiv.style.padding = '10px';
+                debugDiv.style.background = '#f8f8f8';
+                debugDiv.style.border = '1px dashed #ccc';
+                debugDiv.style.borderRadius = '5px';
+                debugDiv.innerHTML = '<strong>🛠️ โหมดตรวจสอบ</strong>';
+                
+                const checkColumnsBtn = document.createElement('button');
+                checkColumnsBtn.textContent = 'ตรวจสอบชื่อคอลัมน์';
+                checkColumnsBtn.style.display = 'block';
+                checkColumnsBtn.style.margin = '5px 0';
+                checkColumnsBtn.style.padding = '5px 10px';
+                checkColumnsBtn.addEventListener('click', checkSheetColumns);
+                
+                debugDiv.appendChild(checkColumnsBtn);
+                document.querySelector('.content').appendChild(debugDiv);
+            }
         }
         
         // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
@@ -1102,6 +1123,11 @@
                     document.getElementById('loadingIndicator').style.display = 'none';
                     
                     console.log("ได้รับข้อมูล JSONP:", data);
+                    
+                    // เพิ่ม: แสดงข้อมูลตัวแรกเพื่อดูโครงสร้าง
+                    if (data.history && data.history.length > 0) {
+                        console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0]));
+                    }
                     
                     // ตรวจสอบข้อผิดพลาด
                     if (data.status === "error") {
@@ -1276,6 +1302,24 @@
                     const index = this.getAttribute('data-index');
                     showDetailsModal(filteredData[index]);
                 });
+
+                // เพิ่มปุ่ม debug ข้อมูลดิบ (แสดงเฉพาะเมื่อเปิดใช้การ debug)
+                if (location.search.includes('debug=true')) {
+                    const debugButton = document.createElement('button');
+                    debugButton.textContent = '🔍 ดูข้อมูลดิบ';
+                    debugButton.style.marginTop = '5px';
+                    debugButton.style.fontSize = '11px';
+                    debugButton.style.padding = '3px 8px';
+                    debugButton.style.background = '#f1f1f1';
+                    debugButton.style.border = '1px solid #ddd';
+                    debugButton.style.borderRadius = '4px';
+                    debugButton.onclick = function(e) {
+                        e.stopPropagation();
+                        console.log(`ข้อมูลดิบของรายการ #${i}:`, item);
+                        alert(JSON.stringify(item, null, 2));
+                    };
+                    listItem.querySelector('.history-action').appendChild(debugButton);
+                }
             }
             
             // อัปเดต pagination UI
@@ -1554,6 +1598,38 @@
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
+        }
+
+        // เพิ่มฟังก์ชันช่วยตรวจสอบโครงสร้างชีตที่แสดงชื่อคอลัมน์ที่แท้จริง
+        function checkSheetColumns() {
+            try {
+                if (!isLiffInitialized || !userHasPermission) {
+                    showErrorMessage("กรุณาล็อกอินและตรวจสอบสิทธิ์ก่อนใช้งาน");
+                    return;
+                }
+                
+                const timestamp = new Date().getTime();
+                const callbackName = 'checkColumnsCallback_' + timestamp;
+                
+                window[callbackName] = function(data) {
+                    if (data && data.columns) {
+                        console.log("ชื่อคอลัมน์ที่พบในชีต:", data.columns);
+                        alert("พบคอลัมน์: " + data.columns.join(", "));
+                    } else {
+                        console.error("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
+                        alert("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
+                    }
+                    delete window[callbackName];
+                };
+                
+                const scriptURL = `${HISTORY_WEBHOOK_URL}?action=checkSheetColumns&callback=${encodeURIComponent(callbackName)}&_=${timestamp}`;
+                const script = document.createElement('script');
+                script.src = scriptURL;
+                document.body.appendChild(script);
+                
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
+            }
         }
     </script>
 </body>
