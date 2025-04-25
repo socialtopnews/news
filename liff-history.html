@@ -343,7 +343,7 @@
 
         .view-details-btn {
             background-color: var(--secondary-color);
-            color: var(--primary-dark);
+            color: var (--primary-dark);
             border: none;
             padding: 6px 12px;
             border-radius: 4px;
@@ -786,9 +786,9 @@
         const LIFF_ID = '2007293657-Lw86gYw1';
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
-        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLRzui7cJN1-X0i-sq8X5apCYBj4Gu_SdAbqd0nUD5jicg4xoscQViK9xgQw6-z8CA/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyLRzui7cJN1-X0i-sq8X5apCYBj4Gu_SdAbqd0nUD5jicg4xoscQViK9xgQw6-z8CA/exec';
+        const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwzSoF91s4zSGUINoEyW0cd90EcqrmJKWfJCL7Si4Cja2B1h7cx8YYGJ_6d3e4N1BrNFg/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwlCCfp7fmBqNi5gCmDe1go2cg41DpaOhtfVDR-0yXwlw62jvMP8L3xLSYqoPQen97D/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwlCCfp7fmBqNi5gCmDe1go2cg41DpaOhtfVDR-0yXwlw62jvMP8L3xLSYqoPQen97D/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1124,9 +1124,17 @@
                     
                     console.log("ได้รับข้อมูล JSONP:", data);
                     
-                    // เพิ่ม: แสดงข้อมูลตัวแรกเพื่อดูโครงสร้าง
+                    // แสดงข้อมูลเพื่อการแก้ไขปัญหา
                     if (data.history && data.history.length > 0) {
-                        console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0]));
+                        console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0], null, 2));
+                        // ตรวจสอบค่า location ในข้อมูลตัวแรก
+                        if (data.history[0].location) {
+                            console.log("ค่า location:", JSON.stringify(data.history[0].location, null, 2));
+                        } else {
+                            console.log("ไม่พบค่า location ในข้อมูล");
+                        }
+                    } else {
+                        console.log("ไม่พบข้อมูลประวัติหรือข้อมูลเป็นค่าว่าง");
                     }
                     
                     // ตรวจสอบข้อผิดพลาด
@@ -1269,12 +1277,30 @@
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
+                console.log(`กำลังแสดงข้อมูลรายการที่ ${i}:`, item);
+                
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
+                // สร้างตัวแปรสำหรับแสดงข้อมูล location อย่างปลอดภัย
                 let locationText = "ไม่มีข้อมูล";
-                if (item.location && typeof item.location === "object" && item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
+                if (item.location) {
+                    console.log(`ข้อมูล location ของรายการที่ ${i}:`, item.location);
+                    // ตรวจสอบว่า location เป็น object และมีค่า lat, long ที่ใช้งานได้
+                    if (typeof item.location === "object" && item.location !== null) {
+                        if (item.location.lat !== undefined && item.location.long !== undefined) {
+                            locationText = `${item.location.lat}, ${item.location.long}`;
+                            console.log("สามารถแสดงข้อมูลพิกัดได้:", locationText);
+                        } else {
+                            console.log("พบ object location แต่ไม่มี lat หรือ long");
+                        }
+                    } else if (typeof item.location === "string" && item.location.includes(",")) {
+                        // กรณี location เป็น string ในรูปแบบ "lat,long"
+                        locationText = item.location;
+                        console.log("location เป็น string:", locationText);
+                    }
+                } else {
+                    console.log(`ไม่พบข้อมูล location ในรายการที่ ${i}`);
                 }
                 
                 const deviceInfo = item.deviceInfo || {};
@@ -1303,23 +1329,21 @@
                     showDetailsModal(filteredData[index]);
                 });
 
-                // เพิ่มปุ่ม debug ข้อมูลดิบ (แสดงเฉพาะเมื่อเปิดใช้การ debug)
-                if (location.search.includes('debug=true')) {
-                    const debugButton = document.createElement('button');
-                    debugButton.textContent = '🔍 ดูข้อมูลดิบ';
-                    debugButton.style.marginTop = '5px';
-                    debugButton.style.fontSize = '11px';
-                    debugButton.style.padding = '3px 8px';
-                    debugButton.style.background = '#f1f1f1';
-                    debugButton.style.border = '1px solid #ddd';
-                    debugButton.style.borderRadius = '4px';
-                    debugButton.onclick = function(e) {
-                        e.stopPropagation();
-                        console.log(`ข้อมูลดิบของรายการ #${i}:`, item);
-                        alert(JSON.stringify(item, null, 2));
-                    };
-                    listItem.querySelector('.history-action').appendChild(debugButton);
-                }
+                // เพิ่มปุ่ม debug ข้อมูลดิบ (แสดงเสมอเพื่อช่วยแก้ไขปัญหา)
+                const debugButton = document.createElement('button');
+                debugButton.textContent = '🔍 ดูข้อมูลดิบ';
+                debugButton.style.marginTop = '5px';
+                debugButton.style.fontSize = '11px';
+                debugButton.style.padding = '3px 8px';
+                debugButton.style.background = '#f1f1f1';
+                debugButton.style.border = '1px solid #ddd';
+                debugButton.style.borderRadius = '4px';
+                debugButton.onclick = function(e) {
+                    e.stopPropagation();
+                    console.log(`ข้อมูลดิบของรายการ #${i}:`, item);
+                    alert(JSON.stringify(item, null, 2));
+                };
+                listItem.querySelector('.history-action').appendChild(debugButton);
             }
             
             // อัปเดต pagination UI
@@ -1335,24 +1359,50 @@
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
             
+            console.log("กำลังแสดงรายละเอียดของข้อมูล:", item);
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            if (item.location && typeof item.location === "object") {
-                if (item.location.lat && item.location.long) {
-                    locationText = `${item.location.lat}, ${item.location.long}`;
-                    mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                } else {
-                    console.log("Location object ไม่มีข้อมูล lat/long:", item.location);
+            let gpsAccuracy = "";
+            
+            if (item.location) {
+                console.log("ค่า location สำหรับ Modal:", item.location);
+                
+                // ตรวจสอบรูปแบบข้อมูล location
+                if (typeof item.location === "object" && item.location !== null) {
+                    // กรณีเป็น object
+                    if (item.location.lat !== undefined && item.location.long !== undefined) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                        mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                        gpsAccuracy = item.location.accuracy ? `±${item.location.accuracy} เมตร` : "ไม่มีข้อมูล";
+                        console.log("สามารถแสดงข้อมูลพิกัดใน Modal ได้:", locationText);
+                    } else {
+                        console.log("พบ object location ใน Modal แต่ไม่มี lat หรือ long");
+                    }
+                } else if (typeof item.location === "string") {
+                    // กรณีเป็น string
+                    locationText = item.location;
+                    
+                    // พยายามแยกค่า lat, long จาก string
+                    if (locationText.includes(",")) {
+                        const coords = locationText.split(",").map(coord => coord.trim());
+                        if (coords.length === 2) {
+                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                        }
+                    }
+                    
+                    console.log("location เป็น string ใน Modal:", locationText);
                 }
             } else {
-                console.log("Location ไม่ใช่ object:", typeof item.location);
+                console.log("ไม่พบข้อมูล location สำหรับ Modal");
             }
             
             const deviceInfo = item.deviceInfo || {};
             const connectionInfo = deviceInfo.connection || {};
             const batteryInfo = deviceInfo.battery || {};
             
+            // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
@@ -1368,6 +1418,10 @@
                         <div class="detail-label">ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
+                    </div>
                 </div>
                 
                 <div class="detail-group">
@@ -1380,10 +1434,10 @@
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${item.location && item.location.accuracy ? `
+                    ${gpsAccuracy ? `
                     <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
-                        <div class="detail-value">±${item.location.accuracy} เมตร</div>
+                        <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
@@ -1412,36 +1466,15 @@
                     </div>
                 </div>
                 
-                ${connectionInfo && (connectionInfo.networkType || connectionInfo.effectiveType) ? `
                 <div class="detail-group">
-                    <h3><i class="fas fa-wifi"></i> การเชื่อมต่อ</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ประเภทเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.networkType || "ไม่ระบุ"}</div>
+                    <h3><i class="fas fa-code"></i> ข้อมูลดิบสำหรับแก้ไขปัญหา</h3>
+                    <div class="detail-item" style="flex-direction: column;">
+                        <div class="detail-label" style="margin-bottom: 5px;">ข้อมูล JSON</div>
+                        <div class="detail-value">
+                            <pre style="background: #f5f5f5; padding: 10px; overflow-x: auto; font-size: 12px;">${JSON.stringify(item, null, 2)}</pre>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <div class="detail-label">คุณภาพเครือข่าย</div>
-                        <div class="detail-value">${connectionInfo.effectiveType || "ไม่ระบุ"}</div>
-                    </div>
-                    ${connectionInfo.downlink ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความเร็ว</div>
-                        <div class="detail-value">${connectionInfo.downlink} Mbps</div>
-                    </div>` : ''}
-                </div>` : ''}
-                
-                ${batteryInfo && (batteryInfo.level || batteryInfo.charging) ? `
-                <div class="detail-group">
-                    <h3><i class="fas fa-battery-half"></i> แบตเตอรี่</h3>
-                    <div class="detail-item">
-                        <div class="detail-label">ระดับแบตเตอรี่</div>
-                        <div class="detail-value">${batteryInfo.level || "ไม่ระบุ"}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">สถานะการชาร์จ</div>
-                        <div class="detail-value">${batteryInfo.charging || "ไม่ระบุ"}</div>
-                    </div>
-                </div>` : ''}
+                </div>
             `;
             
             modal.style.display = 'block';
