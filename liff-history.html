@@ -50,14 +50,14 @@
         }
 
         .app-container {
-            max-width: 800px; /* Increased width for table */
+            max-width: 600px; /* Adjusted for potentially wider table */
             margin: 0 auto;
             padding: 0 0 20px 0;
             min-height: 100vh;
             background-color: #ffffff;
             box-shadow: var(--shadow-md);
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden; /* Prevent horizontal scroll on main container */
         }
 
         .header {
@@ -262,164 +262,6 @@
             color: #721c24;
         }
 
-        /* History Table Styles */
-        .history-section, .details-section {
-            margin-top: 2rem;
-            background-color: #ffffff;
-            padding: 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .history-section h2, .details-section h2 {
-            font-size: 1.3rem;
-            color: var(--primary-dark);
-            margin-bottom: 1.2rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--secondary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .history-section h2 i, .details-section h2 i {
-            color: var(--primary-color);
-        }
-
-        #historyTable {
-            width: 100% !important; /* Ensure table takes full width */
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        #historyTable th, #historyTable td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        #historyTable th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: var(--text-color);
-        }
-
-        #historyTable tbody tr:hover {
-            background-color: #f1f5f9;
-        }
-
-        #historyTable .tracking-key {
-            font-weight: 500;
-            color: var(--primary-color);
-            cursor: pointer;
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        #historyTable .tracking-key:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-        }
-
-        /* DataTables specific styles */
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter,
-        .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            font-size: 14px;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 0.4em 0.8em;
-            margin-left: 2px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            background-color: #fff;
-            color: var(--primary-color) !important; /* Override default link color */
-            cursor: pointer;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-            background-color: var(--primary-color);
-            color: white !important;
-            border-color: var(--primary-color);
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background-color: #eee;
-            border-color: #ccc;
-        }
-
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-            color: #aaa !important;
-            background-color: #f5f5f5;
-            border-color: #ddd;
-            cursor: default;
-        }
-
-        .dataTables_wrapper .dataTables_filter input {
-            margin-left: 0.5em;
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .dataTables_wrapper .dataTables_length select {
-            margin: 0 0.5em;
-            padding: 6px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        /* Details Section Styles */
-        .details-section {
-            display: none; /* Hidden by default */
-            margin-top: 2rem;
-        }
-
-        .details-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .detail-item {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            border-left: 4px solid var(--secondary-color);
-        }
-
-        .detail-item strong {
-            display: block;
-            color: var(--primary-dark);
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-item span {
-            font-size: 1rem;
-            color: var(--text-light);
-            word-wrap: break-word; /* Ensure long text wraps */
-        }
-
-        .detail-item a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-        .detail-item a:hover {
-            text-decoration: underline;
-        }
-
         /* Status Message */
         .status {
             margin-top: 20px;
@@ -489,6 +331,93 @@
             font-size: 14px;
         }
 
+        /* History Table Styles */
+        .history-container {
+            margin-top: 1.5rem;
+            overflow-x: auto; /* Enable horizontal scroll for table */
+        }
+
+        #historyTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        #historyTable th, #historyTable td {
+            border: 1px solid #E0E0E0;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        #historyTable th {
+            background-color: var(--primary-light);
+            color: white;
+            font-weight: 500;
+        }
+
+        #historyTable tbody tr:nth-child(even) {
+            background-color: #F9F9F9;
+        }
+
+        #historyTable tbody tr:hover {
+            background-color: var(--secondary-color);
+            cursor: pointer; /* Optional: Indicate rows are clickable */
+        }
+
+        /* DataTables specific styles */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            margin-bottom: 1rem;
+            font-size: 14px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0.4em 0.8em;
+            margin-left: 2px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            color: var(--primary-color) !important; /* Override default link color */
+            cursor: pointer;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background-color: var(--primary-color);
+            color: white !important;
+            border-color: var(--primary-color);
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--primary-light);
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+            color: #aaa !important;
+            background-color: #f5f5f5;
+            border-color: #ddd;
+            cursor: default;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            margin-left: 0.5em;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            margin: 0 0.5em;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -535,52 +464,45 @@
         }
 
         /* Responsive Adjustments */
-        @media (max-width: 768px) {
+        @media (max-width: 576px) {
             .app-container {
                 max-width: 100%;
                 min-height: 100svh;
                 box-shadow: none;
             }
-            .details-content {
-                grid-template-columns: 1fr; /* Stack details on smaller screens */
-            }
-        }
-        @media (max-width: 576px) {
+
             .header {
                 padding: 1.2rem;
             }
+
             .header h1 {
                 font-size: 20px;
             }
+
             .content {
                 padding: 16px;
             }
+
             .user-info .profile-img {
                 width: 50px;
                 height: 50px;
             }
+
             .message-box {
                 padding: 12px 15px;
             }
-            .history-section, .details-section {
-                padding: 1rem;
+
+            #historyTable {
+                font-size: 13px; /* Smaller font on mobile */
             }
             #historyTable th, #historyTable td {
                 padding: 8px 10px;
-                font-size: 13px;
             }
-            /* Improve table responsiveness */
             .dataTables_wrapper .dataTables_length,
-            .dataTables_wrapper .dataTables_filter {
-                text-align: left;
-                float: none;
-            }
-            .dataTables_wrapper .dataTables_filter {
-                margin-top: 0.5rem;
-            }
+            .dataTables_wrapper .dataTables_filter,
+            .dataTables_wrapper .dataTables_info,
             .dataTables_wrapper .dataTables_paginate {
-                text-align: center;
-                padding-top: 0.5rem;
+                font-size: 13px;
             }
         }
     </style>
@@ -594,8 +516,9 @@
 
     <div class="app-container">
         <div class="header">
+            <!-- History Icon -->
             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path d="M128 32C110.7 32 96 46.7 96 64V448c0 17.3 14.3 31.4 31.4 31.9C144.1 480.5 160 465.7 160 448V64c0-17.7-14.3-32-32-32zM384 32c-17.7 0-32 14.3-32 32V448c0 17.7 14.3 32 32 32s32-14.3 32-32V64c0-17.7-14.3-32-32-32zM256 32c-17.7 0-32 14.3-32 32V448c0 17.7 14.3 32 32 32s32-14.3 32-32V64c0-17.7-14.3-32-32-32zM48 128c-17.7 0-32 14.3-32 32V352c0 17.7 14.3 32 32 32s32-14.3 32-32V160c0-17.7-14.3-32-32-32zM464 128c-17.7 0-32 14.3-32 32V352c0 17.7 14.3 32 32 32s32-14.3 32-32V160c0-17.7-14.3-32-32-32z"/>
+                <path d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
             </svg>
             <div class="header-text">
                 <h1>ประวัติการสร้าง</h1>
@@ -618,54 +541,40 @@
                 </div>
             </div>
 
-            <!-- ข้อความแจ้งเตือน (ถ้าไม่มีสิทธิ์) -->
+            <!-- ข้อความแจ้งเตือนหากไม่มีสิทธิ์ -->
             <div id="permissionMessage" class="message-box" style="display: none;">
                 <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้ หรือกรุณารอการอนุมัติจากผู้ดูแลระบบ</p>
             </div>
 
             <!-- ส่วนแสดงประวัติ -->
-            <div id="historySection" class="history-section" style="display: none;">
-                 <h2><i class="fas fa-history"></i> ประวัติการสร้างเคส</h2>
-                 <div class="loader" id="historyLoader">
-                     <div class="loader-spinner"></div>
-                     <p>กำลังโหลดประวัติ...</p>
-                 </div>
-                 <div id="historyTableContainer" style="display: none; overflow-x: auto;"> <!-- Added container for responsiveness -->
+            <div id="historySection" style="display: none;">
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังโหลดประวัติ...</p>
+                </div>
+                <div id="statusMessage" class="status"></div>
+
+                <div class="history-container">
                     <table id="historyTable" class="display compact" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Tracking Key</th>
-                                <th>ชื่อเคส</th>
                                 <th>วันที่สร้าง</th>
-                                <th>รูปภาพ</th>
+                                <th>ชื่อเคส</th>
+                                <th>Tracking Key</th>
+                                <!-- เพิ่มคอลัมน์อื่นๆ ที่ต้องการแสดงได้ที่นี่ -->
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Data will be populated by JavaScript -->
+                            <!-- ข้อมูลจะถูกเติมที่นี่โดย JavaScript -->
                         </tbody>
                     </table>
-                 </div>
-                 <div id="statusMessageHistory" class="status"></div>
-            </div>
-
-            <!-- ส่วนแสดงรายละเอียด -->
-            <div id="detailsSection" class="details-section" style="display: none;">
-                <h2><i class="fas fa-search-location"></i> รายละเอียด Tracking Key: <span id="detailsTrackingKey"></span></h2>
-                <div class="loader" id="detailsLoader">
-                    <div class="loader-spinner"></div>
-                    <p>กำลังโหลดรายละเอียด...</p>
                 </div>
-                <div id="detailsContent" class="details-content" style="display: none;">
-                    <!-- Details will be populated by JavaScript -->
-                </div>
-                <div id="statusMessageDetails" class="status"></div>
             </div>
-
         </div>
 
         <div class="footer">
             <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
-            <p>&copy; 2025 Phishing History - Detective-X</p>
+            <p>&copy; 2025 Image Phishing History - Detective-X</p>
         </div>
     </div>
 
@@ -675,23 +584,22 @@
     <script type="text/javascript" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
     <script>
-        // ตัวแปรหลัก
+        // ตัวแปรหลักสำหรับเก็บข้อมูล
         let userId = "";
         let displayName = "";
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let historyDataTable = null; // Variable to hold the DataTable instance
+        let historyDataTable = null; // ตัวแปรสำหรับเก็บ instance ของ DataTable
 
         // ค่า Config สำคัญ (ควรตรงกับ liff.html)
         const LIFF_ID = '2007293657-Lw86gYw1'; // ใช้ LIFF ID เดียวกัน
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzrL6p_TpGtLKh2FwDAljAdblbaw-euEHHXUPGcFUFQ8rP_T0O-ofr389k32fROFuBw/exec'; // URL ตรวจสอบสิทธิ์
-        const DATA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzrL6p_TpGtLKh2FwDAljAdblbaw-euEHHXUPGcFUFQ8rP_T0O-ofr389k32fROFuBw/exec'; // URL ดึงข้อมูล (อาจเป็น URL เดียวกันกับ Permission)
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwvWDeTvWE22hEmCeM5u49yI7rVXkikKObJbdOkgaS_lVYtPVRtWOCF178vcxq97StC/exec'; // URL สำหรับตรวจสอบสิทธิ์
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwvWDeTvWE22hEmCeM5u49yI7rVXkikKObJbdOkgaS_lVYtPVRtWOCF178vcxq97StC/exec'; // URL สำหรับดึงประวัติ (อาจเป็น URL เดียวกันกับ Permission แต่ใช้ action ต่างกัน)
 
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
             initializeLiff();
-            // Event listeners for table clicks will be added after table initialization
         });
 
         // ฟังก์ชันเริ่มต้นการทำงาน LIFF
@@ -704,6 +612,7 @@
                     return;
                 }
 
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
                 const profile = await liff.getProfile();
                 userId = profile.userId;
                 displayName = profile.displayName;
@@ -711,38 +620,49 @@
 
                 console.log(`ผู้ใช้: ${displayName} (${userId})`);
 
+                // แสดงข้อมูลผู้ใช้
                 document.getElementById('userName').textContent = displayName;
                 document.getElementById('profileImage').src = pictureUrl;
                 document.getElementById('userInfoSection').style.display = 'block';
 
+                // ตรวจสอบสิทธิ์ผู้ใช้
                 userHasPermission = await checkUserPermission(userId);
 
                 if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
                     document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
                     document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
                     document.getElementById('statusBadge').className = 'badge approved';
                     document.getElementById('historySection').style.display = 'block';
-                    fetchUserHistory(); // Fetch history after permission check
+                    // เริ่มโหลดข้อมูลประวัติ
+                    fetchHistory(userId);
                 } else {
+                    // ไม่มีสิทธิ์ใช้งาน
                     document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
                     document.getElementById('statusBadge').textContent = 'รออนุมัติ';
                     document.getElementById('statusBadge').className = 'badge pending';
                     document.getElementById('permissionMessage').style.display = 'block';
+                    document.getElementById('historySection').style.display = 'none';
                 }
 
                 isLiffInitialized = true;
+
+                // ซ่อนหน้าโหลดดิ้ง
                 document.getElementById('loadingScreen').style.display = 'none';
 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
-                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false, 'statusMessageHistory');
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
                 document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('permissionMessage').style.display = 'block'; // แสดงข้อความว่ามีปัญหา
+                document.getElementById('permissionMessage').innerHTML = '<p>เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE กรุณาลองใหม่อีกครั้ง</p>';
+                document.getElementById('permissionMessage').classList.add('error');
             }
         }
 
-        // ตรวจสอบสิทธิ์ผู้ใช้ (เหมือนใน liff.html)
+        // ตรวจสอบสิทธิ์ผู้ใช้ (เหมือนกับใน liff.html)
         async function checkUserPermission(userId) {
-             try {
+            try {
                 console.log("กำลังตรวจสอบสิทธิ์ผู้ใช้:", userId);
                 const statusEl = document.getElementById('userStatus');
                 const originalText = statusEl.textContent;
@@ -754,7 +674,7 @@
                     const currentTime = new Date().getTime();
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
-                        statusEl.textContent = originalText; // Restore original text
+                        statusEl.textContent = originalText; // คืนค่าข้อความเดิม
                         return savedPermission === 'true';
                     }
                 } catch (e) { console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e); }
@@ -768,19 +688,15 @@
                         let hasPermission = false;
                         if (data && typeof data === 'object' && data.hasPermission !== undefined) {
                             hasPermission = data.hasPermission === true;
-                            console.log("สถานะสิทธิ์จาก API:", hasPermission);
                             try {
                                 localStorage.setItem('user_permission_' + userId, hasPermission ? 'true' : 'false');
                                 localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-                                if (data.userStatus) {
-                                    localStorage.setItem('user_status_' + userId, data.userStatus);
-                                }
                             } catch (e) { console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e); }
                         } else {
                             console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง/สมบูรณ์, ใช้การตรวจสอบสำรอง");
                             hasPermission = checkUserPermissionFallback(userId);
                         }
-                        statusEl.textContent = originalText; // Restore original text
+                        statusEl.textContent = originalText; // คืนค่าข้อความเดิม
                         delete window[callbackName];
                         resolve(hasPermission);
                     };
@@ -792,12 +708,12 @@
                     url.searchParams.append('callback', encodeURIComponent(callbackName));
                     url.searchParams.append('_', timestamp);
 
-                    console.log("เรียกใช้ API URL:", url.toString());
+                    console.log("เรียกใช้ API URL (Permission):", url.toString());
                     script.src = url.toString();
                     script.onerror = function(e) {
                         console.error('เกิดข้อผิดพลาดในการโหลด permission script:', e);
-                        showStatus('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ตรวจสอบสิทธิ์ได้ กำลังใช้ระบบสำรอง', false, 'statusMessageHistory');
-                        statusEl.textContent = originalText; // Restore original text
+                        showStatus('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ตรวจสอบสิทธิ์ได้ กำลังใช้ระบบสำรอง', false);
+                        statusEl.textContent = originalText; // คืนค่าข้อความเดิม
                         delete window[callbackName];
                         resolve(checkUserPermissionFallback(userId));
                     };
@@ -806,12 +722,12 @@
                     setTimeout(() => {
                         if (window[callbackName]) {
                             console.log("การตรวจสอบสิทธิ์หมดเวลา, ใช้การตรวจสอบสำรอง");
-                            showStatus('การตรวจสอบสิทธิ์ใช้เวลานานเกินไป กำลังใช้ระบบสำรอง', false, 'statusMessageHistory');
-                            statusEl.textContent = originalText; // Restore original text
+                            showStatus('การตรวจสอบสิทธิ์ใช้เวลานานเกินไป กำลังใช้ระบบสำรอง', false);
+                            statusEl.textContent = originalText; // คืนค่าข้อความเดิม
                             delete window[callbackName];
                             resolve(checkUserPermissionFallback(userId));
                         }
-                    }, 10000);
+                    }, 10000); // 10 วินาที timeout
                 });
             } catch (error) {
                 console.error('Error checking permission:', error);
@@ -819,23 +735,22 @@
             }
         }
 
-        // ตรวจสอบสิทธิ์แบบสำรอง (เหมือนใน liff.html)
+        // ตรวจสอบสิทธิ์แบบสำรอง (เหมือนกับใน liff.html)
         function checkUserPermissionFallback(userId) {
             console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
             const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021', // Admin ID
-                // Add other approved IDs here if needed in emergency
+                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                // เพิ่ม ID อื่นๆ ที่นี่ถ้าจำเป็น
             ];
-
             if (userId === 'U69aa2cb90c9f40291278c346c50dc021') return true;
 
             try {
                 const savedPermission = localStorage.getItem('user_permission_' + userId);
-                if (savedPermission !== null) return savedPermission === 'true';
+                if (savedPermission === 'true') return true;
+                if (savedPermission === 'false') return false;
             } catch (e) { console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e); }
 
             const hasAccess = approvedUserIds.includes(userId);
-            console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
             try {
                 localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
                 localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
@@ -843,299 +758,144 @@
             return hasAccess;
         }
 
+        // ฟังก์ชันดึงข้อมูลประวัติ
+        async function fetchHistory(userId) {
+            const loader = document.querySelector('#historySection .loader');
+            loader.style.display = 'block'; // แสดง loader
+            showStatus('', true); // ล้าง status เก่า
 
-        // ดึงข้อมูลประวัติของผู้ใช้
-        async function fetchUserHistory() {
-            if (!userHasPermission) return;
+            try {
+                const timestamp = new Date().getTime();
+                const callbackName = 'historyCallback_' + timestamp;
 
-            console.log("Fetching user history for:", userId);
-            showLoader('historyLoader', true);
-            hideElement('historyTableContainer');
-            showStatus('', true, 'statusMessageHistory'); // Clear previous status
-
-            const timestamp = new Date().getTime();
-            const callbackName = 'historyCallback_' + timestamp;
-
-            return new Promise((resolve, reject) => {
-                window[callbackName] = function(data) {
-                    console.log("Received history data:", data);
-                    showLoader('historyLoader', false);
-                    delete window[callbackName]; // Clean up callback
-
-                    if (data && data.success && Array.isArray(data.history)) {
-                        displayHistoryTable(data.history);
-                        showElement('historyTableContainer');
-                        resolve(data.history);
-                    } else {
-                        const errorMsg = data ? data.message : 'รูปแบบข้อมูลไม่ถูกต้อง';
-                        console.error('Failed to fetch history:', errorMsg);
-                        showStatus('ไม่สามารถโหลดประวัติได้: ' + errorMsg, false, 'statusMessageHistory');
-                        reject(new Error(errorMsg));
-                    }
-                };
-
-                const script = document.createElement('script');
-                const url = new URL(DATA_WEBHOOK_URL);
-                url.searchParams.append('action', 'getUserHistory'); // Action for Google Script
-                url.searchParams.append('userId', encodeURIComponent(userId));
-                url.searchParams.append('callback', encodeURIComponent(callbackName));
-                url.searchParams.append('_', timestamp); // Prevent caching
-
-                console.log("Calling History API URL:", url.toString());
-                script.src = url.toString();
-                script.onerror = function(e) {
-                    console.error('Error loading history script:', e);
-                    showLoader('historyLoader', false);
-                    showStatus('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อโหลดประวัติ', false, 'statusMessageHistory');
-                    delete window[callbackName]; // Clean up callback on error
-                    reject(new Error('Network error loading history script'));
-                };
-                document.body.appendChild(script);
-
-                // Timeout for the request
-                setTimeout(() => {
-                    if (window[callbackName]) {
-                        console.log("History request timed out");
-                        showLoader('historyLoader', false);
-                        showStatus('การโหลดประวัติใช้เวลานานเกินไป', false, 'statusMessageHistory');
+                return new Promise((resolve, reject) => {
+                    window[callbackName] = function(data) {
+                        loader.style.display = 'none'; // ซ่อน loader
+                        console.log("ได้รับข้อมูลประวัติ:", data);
+                        if (data && data.success && Array.isArray(data.history)) {
+                            renderHistoryTable(data.history);
+                            resolve(data.history);
+                        } else {
+                            const errorMsg = data && data.message ? data.message : 'รูปแบบข้อมูลประวัติไม่ถูกต้อง';
+                            console.error("Error fetching history:", errorMsg);
+                            showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลประวัติ: ' + errorMsg, false);
+                            renderHistoryTable([]); // แสดงตารางว่าง
+                            reject(new Error(errorMsg));
+                        }
                         delete window[callbackName];
-                        reject(new Error('History request timed out'));
-                    }
-                }, 15000); // 15 seconds timeout
-            });
+                    };
+
+                    const script = document.createElement('script');
+                    const url = new URL(HISTORY_WEBHOOK_URL);
+                    url.searchParams.append('action', 'getUserHistory'); // Action ใหม่สำหรับดึงประวัติ
+                    url.searchParams.append('userId', encodeURIComponent(userId));
+                    url.searchParams.append('callback', encodeURIComponent(callbackName));
+                    url.searchParams.append('_', timestamp); // ป้องกัน cache
+
+                    console.log("เรียกใช้ API URL (History):", url.toString());
+                    script.src = url.toString();
+                    script.onerror = function(e) {
+                        loader.style.display = 'none'; // ซ่อน loader
+                        console.error('เกิดข้อผิดพลาดในการโหลด history script:', e);
+                        showStatus('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อโหลดประวัติได้', false);
+                        renderHistoryTable([]); // แสดงตารางว่าง
+                        delete window[callbackName];
+                        reject(new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์'));
+                    };
+                    document.body.appendChild(script);
+
+                    // Timeout สำหรับการดึงข้อมูลประวัติ (เช่น 20 วินาที)
+                    setTimeout(() => {
+                        if (window[callbackName]) {
+                            loader.style.display = 'none'; // ซ่อน loader
+                            console.log("การดึงข้อมูลประวัติหมดเวลา");
+                            showStatus('การโหลดข้อมูลประวัติใช้เวลานานเกินไป', false);
+                            renderHistoryTable([]); // แสดงตารางว่าง
+                            delete window[callbackName];
+                            reject(new Error('การดึงข้อมูลหมดเวลา'));
+                        }
+                    }, 20000);
+                });
+
+            } catch (error) {
+                loader.style.display = 'none'; // ซ่อน loader
+                console.error('Error fetching history:', error);
+                showStatus('เกิดข้อผิดพลาดในการโหลดข้อมูลประวัติ: ' + error.message, false);
+                renderHistoryTable([]); // แสดงตารางว่าง
+            }
         }
 
-        // แสดงข้อมูลประวัติในตาราง
-        function displayHistoryTable(historyData) {
-            console.log("Displaying history table with data:", historyData);
+        // ฟังก์ชันแสดงข้อมูลในตาราง (ใช้ DataTables)
+        function renderHistoryTable(historyData) {
+            const tableBody = document.querySelector('#historyTable tbody');
+            if (!tableBody) {
+                console.error("Table body not found!");
+                return;
+            }
 
-            // Destroy existing DataTable if it exists
+            // ทำลาย DataTable เก่า ถ้ามี
             if (historyDataTable) {
                 historyDataTable.destroy();
-                $('#historyTable tbody').empty(); // Clear previous data
+                tableBody.innerHTML = ''; // ล้างข้อมูลเก่าใน tbody
             }
 
-            // Initialize DataTable
-            historyDataTable = $('#historyTable').DataTable({
-                data: historyData,
-                columns: [
-                    {
-                        data: 'TrackingKey',
-                        render: function(data, type, row) {
-                            // Make TrackingKey clickable
-                            return `<a href="#" class="tracking-key" data-key="${data}">${data}</a>`;
-                        }
+            // เติมข้อมูลใหม่
+            if (historyData.length === 0) {
+                // อาจแสดงข้อความว่าไม่มีข้อมูล
+                // tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;">ไม่พบประวัติการสร้าง</td></tr>';
+            } else {
+                historyData.forEach(item => {
+                    const row = tableBody.insertRow();
+                    // Format date if needed
+                    let createDate = item.createDate || 'N/A';
+                    if (createDate !== 'N/A') {
+                        try {
+                            // Assuming item.createDate is like "6/4/2568 20:18:15" (d/m/yyyy H:M:S)
+                            // Need to parse correctly or ensure GAS sends ISO format
+                            // Let's try a simple display first
+                            // For better formatting, GAS should send ISO 8601 or timestamp
+                            // Example: new Date(item.createDate).toLocaleString('th-TH') might work if format is standard
+                        } catch (e) { console.warn("Date formatting error", e); }
+                    }
+
+                    row.insertCell(0).textContent = createDate;
+                    row.insertCell(1).textContent = item.caseName || 'N/A';
+                    row.insertCell(2).textContent = item.trackingKey || 'N/A';
+                    // Add more cells if needed
+                });
+            }
+
+            // เริ่มต้น DataTables
+            try {
+                historyDataTable = $('#historyTable').DataTable({
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json" // ภาษาไทย
                     },
-                    { data: 'CaseName' },
-                    {
-                        data: 'CreateDate',
-                        render: function(data, type, row) {
-                            // Format date if needed
-                            return data ? new Date(data).toLocaleString('th-TH') : 'N/A';
-                        }
-                     },
-                    {
-                        data: 'ImageUrl',
-                        render: function(data, type, row) {
-                            // Display image thumbnail or link
-                            if (data) {
-                                return `<a href="${data}" target="_blank"><img src="${data}" alt="Preview" style="width: 50px; height: auto; border-radius: 4px;"></a>`;
-                            }
-                            return 'ไม่มีรูปภาพ';
-                        }
-                    }
-                ],
-                order: [[2, 'desc']], // Default sort by CreateDate descending
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/th.json' // Thai language
-                },
-                responsive: true, // Enable responsiveness
-                paging: true,
-                searching: true,
-                info: true,
-                lengthChange: true,
-                pageLength: 10 // Default number of rows per page
-            });
-
-            // Add event listener for clicking on tracking keys AFTER table is drawn
-            $('#historyTable tbody').off('click', '.tracking-key').on('click', '.tracking-key', function(e) {
-                e.preventDefault();
-                const key = $(this).data('key');
-                console.log("Tracking key clicked:", key);
-                fetchTrackingDetails(key);
-            });
-        }
-
-
-        // ดึงข้อมูลรายละเอียด Tracking Key
-        async function fetchTrackingDetails(trackingKey) {
-            console.log("Fetching details for:", trackingKey);
-            showElement('detailsSection');
-            showLoader('detailsLoader', true);
-            hideElement('detailsContent');
-            showStatus('', true, 'statusMessageDetails'); // Clear previous status
-            document.getElementById('detailsTrackingKey').textContent = trackingKey; // Show key in title
-
-            const timestamp = new Date().getTime();
-            const callbackName = 'detailsCallback_' + timestamp;
-
-            return new Promise((resolve, reject) => {
-                window[callbackName] = function(data) {
-                    console.log("Received details data:", data);
-                    showLoader('detailsLoader', false);
-                    delete window[callbackName]; // Clean up callback
-
-                    if (data && data.success && data.details) {
-                        displayTrackingDetails(data.details);
-                        showElement('detailsContent');
-                        // Scroll to details section smoothly
-                        document.getElementById('detailsSection').scrollIntoView({ behavior: 'smooth' });
-                        resolve(data.details);
-                    } else {
-                        const errorMsg = data ? data.message : 'ไม่พบข้อมูลหรือรูปแบบไม่ถูกต้อง';
-                        console.error('Failed to fetch details:', errorMsg);
-                        showStatus('ไม่สามารถโหลดรายละเอียดได้: ' + errorMsg, false, 'statusMessageDetails');
-                        hideElement('detailsContent'); // Hide content area on error
-                        reject(new Error(errorMsg));
-                    }
-                };
-
-                const script = document.createElement('script');
-                const url = new URL(DATA_WEBHOOK_URL);
-                url.searchParams.append('action', 'getTrackingDetails'); // Action for Google Script
-                url.searchParams.append('trackingKey', encodeURIComponent(trackingKey));
-                url.searchParams.append('callback', encodeURIComponent(callbackName));
-                url.searchParams.append('_', timestamp); // Prevent caching
-
-                console.log("Calling Details API URL:", url.toString());
-                script.src = url.toString();
-                script.onerror = function(e) {
-                    console.error('Error loading details script:', e);
-                    showLoader('detailsLoader', false);
-                    showStatus('เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อโหลดรายละเอียด', false, 'statusMessageDetails');
-                    delete window[callbackName]; // Clean up callback on error
-                    reject(new Error('Network error loading details script'));
-                };
-                document.body.appendChild(script);
-
-                // Timeout for the request
-                setTimeout(() => {
-                    if (window[callbackName]) {
-                        console.log("Details request timed out");
-                        showLoader('detailsLoader', false);
-                        showStatus('การโหลดรายละเอียดใช้เวลานานเกินไป', false, 'statusMessageDetails');
-                        delete window[callbackName];
-                        reject(new Error('Details request timed out'));
-                    }
-                }, 15000); // 15 seconds timeout
-            });
-        }
-
-        // แสดงข้อมูลรายละเอียด
-        function displayTrackingDetails(details) {
-            const detailsContent = document.getElementById('detailsContent');
-            detailsContent.innerHTML = ''; // Clear previous details
-
-            // Define the order and labels for details based on PhisingLog sheet
-            const detailFields = [
-                { key: 'Timestamp', label: 'เวลาที่เข้าชม', type: 'datetime' },
-                { key: 'TrackingKey', label: 'Tracking Key' },
-                { key: 'CaseName', label: 'ชื่อเคส' },
-                { key: 'IPAddress', label: 'IP Address' },
-                { key: 'City', label: 'เมือง' },
-                { key: 'Region', label: 'ภูมิภาค' },
-                { key: 'Country', label: 'ประเทศ' },
-                { key: 'Location', label: 'พิกัด (ละติจูด, ลองจิจูด)', type: 'location' },
-                { key: 'ISP', label: 'ผู้ให้บริการอินเทอร์เน็ต (ISP)' },
-                { key: 'ASN', label: 'ASN' },
-                { key: 'Organization', label: 'องค์กร' },
-                { key: 'UserAgent', label: 'User Agent' },
-                { key: 'Platform', label: 'แพลตฟอร์ม' },
-                { key: 'OS', label: 'ระบบปฏิบัติการ (OS)' },
-                { key: 'Device', label: 'อุปกรณ์' },
-                { key: 'Browser', label: 'เบราว์เซอร์' },
-                { key: 'ScreenResolution', label: 'ความละเอียดหน้าจอ' },
-                { key: 'Language', label: 'ภาษา' },
-                { key: 'Referrer', label: 'Referrer', type: 'link' },
-                { key: 'TimeZone', label: 'โซนเวลา' },
-                { key: 'CookiesEnabled', label: 'เปิดใช้งานคุกกี้' },
-                { key: 'JavaScriptEnabled', label: 'เปิดใช้งาน JavaScript' },
-                { key: 'NetworkType', label: 'ประเภทเครือข่าย' },
-                { key: 'EffectiveNetworkType', label: 'ประเภทเครือข่ายที่มีผล' },
-                { key: 'RTT', label: 'Round Trip Time (RTT)' },
-                { key: 'Downlink', label: 'Downlink Speed' },
-                { key: 'SaveData', label: 'เปิดใช้งาน Save Data' },
-                { key: 'DeviceMemory', label: 'หน่วยความจำอุปกรณ์ (GB)' },
-                { key: 'CPUConcurrency', label: 'CPU Concurrency' },
-                { key: 'BatteryLevel', label: 'ระดับแบตเตอรี่', type: 'percentage' },
-                { key: 'IsCharging', label: 'กำลังชาร์จ' },
-                { key: 'ConnectionType', label: 'ประเภทการเชื่อมต่อ' }, // Assuming this exists
-                { key: 'RequestId', label: 'Request ID' } // Assuming this exists
-                // Add more fields as needed from the PhisingLog sheet
-            ];
-
-            detailFields.forEach(field => {
-                if (details.hasOwnProperty(field.key) && details[field.key] !== null && details[field.key] !== '') {
-                    const value = details[field.key];
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'detail-item';
-
-                    let displayValue = value;
-
-                    // Format specific types
-                    if (field.type === 'datetime' && value) {
-                        displayValue = new Date(value).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'medium' });
-                    } else if (field.type === 'location' && value) {
-                        const [lat, lon] = value.split(',').map(s => s.trim());
-                        displayValue = `<a href="https://www.google.com/maps?q=${lat},${lon}" target="_blank">${value} <i class="fas fa-external-link-alt fa-xs"></i></a>`;
-                    } else if (field.type === 'link' && value) {
-                        displayValue = `<a href="${value}" target="_blank">${value} <i class="fas fa-external-link-alt fa-xs"></i></a>`;
-                    } else if (field.type === 'percentage' && typeof value === 'number') {
-                         displayValue = `${(value * 100).toFixed(0)}%`;
-                    } else if (typeof value === 'boolean') {
-                        displayValue = value ? 'ใช่' : 'ไม่ใช่';
-                    }
-
-                    itemDiv.innerHTML = `<strong>${field.label}</strong><span>${displayValue}</span>`;
-                    detailsContent.appendChild(itemDiv);
-                }
-            });
-
-             if (detailsContent.children.length === 0) {
-                 detailsContent.innerHTML = '<p>ไม่พบข้อมูลรายละเอียดสำหรับ Tracking Key นี้</p>';
-             }
-        }
-
-        // แสดง/ซ่อน Loader
-        function showLoader(loaderId, show) {
-            const loader = document.getElementById(loaderId);
-            if (loader) {
-                loader.style.display = show ? 'block' : 'none';
+                    order: [[0, 'desc']], // เรียงตามวันที่สร้างล่าสุดก่อน
+                    pageLength: 10, // จำนวนรายการต่อหน้า
+                    lengthMenu: [10, 25, 50, 100], // ตัวเลือกจำนวนรายการ
+                    responsive: true, // ทำให้ตารางตอบสนองต่อขนาดหน้าจอ (อาจต้องเพิ่ม CSS/JS ของ Responsive extension)
+                    // เพิ่ม options อื่นๆ ตามต้องการ
+                });
+            } catch (e) {
+                console.error("Error initializing DataTables:", e);
+                showStatus("เกิดข้อผิดพลาดในการแสดงตาราง", false);
             }
         }
 
-        // แสดง/ซ่อน Element
-        function showElement(elementId) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.style.display = 'block';
-            }
-        }
-
-        function hideElement(elementId) {
-             const element = document.getElementById(elementId);
-             if (element) {
-                 element.style.display = 'none';
-             }
-         }
 
         // แสดงสถานะการทำงาน
-        function showStatus(message, isSuccess, elementId) {
-            const statusEl = document.getElementById(elementId);
-            if (!statusEl) return; // Exit if element not found
+        function showStatus(message, isSuccess) {
+            const statusEl = document.getElementById('statusMessage');
+            if (!statusEl) return; // ตรวจสอบว่า element มีอยู่จริง
 
-            statusEl.innerHTML = message; // Use innerHTML to allow icons etc.
-            statusEl.style.display = message ? 'block' : 'none';
+            if (!message) {
+                 statusEl.style.display = 'none';
+                 return;
+            }
+
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
 
             if (isSuccess) {
                 statusEl.className = 'status success';
@@ -1143,15 +903,12 @@
                 statusEl.className = 'status error';
             }
 
-            // Auto-hide after 5 seconds only if it's not an empty message
-            if (message) {
-                setTimeout(() => {
-                    // Check if the message is still the same before hiding
-                    if (statusEl.innerHTML === message) {
-                         statusEl.style.display = 'none';
-                    }
-                }, 5000);
-            }
+            // ซ่อนสถานะหลังจาก 5 วินาที (ถ้าไม่ต้องการให้ซ่อนอัตโนมัติ ให้ลบส่วนนี้)
+            // setTimeout(() => {
+            //     if (statusEl.textContent === message) { // ตรวจสอบว่าเป็นข้อความเดิมหรือไม่ ก่อนซ่อน
+            //         statusEl.style.display = 'none';
+            //     }
+            // }, 5000);
         }
 
     </script>
