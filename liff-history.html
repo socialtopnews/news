@@ -355,7 +355,7 @@
             border-radius: 6px;
             font-size: 13px;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             font-weight: 500;
@@ -1314,24 +1314,26 @@
                 
                 // ตรวจสอบว่า date เป็นวันที่ที่ถูกต้องหรือไม่
                 if (isNaN(date.getTime())) {
+                    console.log("Invalid date format:", dateTimeStr);
                     return dateTimeStr; // วันที่ไม่ถูกต้อง ส่งคืนสตริงเดิม
+                }
+
+                // ถ้าเป็นรูปแบบ "วันที่/เดือน/ปี เวลา" ให้คืนค่าเดิมเพื่อรักษารูปแบบ
+                if (dateTimeStr.match(/^\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{1,2}:\d{1,2}$/)) {
+                    return dateTimeStr;
                 }
                 
                 // ฟอร์แมตวันที่เวลาในรูปแบบไทย
-                const thaiMonths = [
-                    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", 
-                    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
-                ];
-                
                 const day = date.getDate();
-                const month = thaiMonths[date.getMonth()];
+                const month = date.getMonth() + 1; // เดือนเริ่มต้นที่ 0
                 const year = date.getFullYear() + 543; // แปลงเป็นปี พ.ศ.
                 
                 const hours = date.getHours().toString().padStart(2, '0');
                 const minutes = date.getMinutes().toString().padStart(2, '0');
                 const seconds = date.getSeconds().toString().padStart(2, '0');
                 
-                return `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
+                // รูปแบบ: วันที่/เดือน/ปี เวลา
+                return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
             } catch (error) {
                 console.error("ข้อผิดพลาดในการแปลงรูปแบบวันที่:", error);
                 return dateTimeStr; // ส่งคืนสตริงเดิมในกรณีที่มีข้อผิดพลาด
@@ -1370,7 +1372,7 @@
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
+                // ใช้ฟอร์แมตวันที่เวลาแบบเดิม
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
                 
                 listItem.innerHTML = `
@@ -1402,7 +1404,7 @@
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
-        
+
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
@@ -1440,19 +1442,41 @@
                 }
             }
             
-            // แปลงวันที่เวลาให้เป็นภาษาไทย
+            // แปลงวันที่เวลาให้เป็นรูปแบบเดิม
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
             // ข้อมูล IP และตำแหน่ง
             const ipData = item.ip || {};
-            let ipInfo = typeof item.ip === 'string' ? item.ip : (ipData.ip || "ไม่มีข้อมูล");
-            let country = typeof ipData === 'object' ? (ipData.country || "ไม่ทราบ") : "ไม่ทราบ";
-            let region = typeof ipData === 'object' ? (ipData.region || "ไม่ทราบ") : "ไม่ทราบ";
-            let city = typeof ipData === 'object' ? (ipData.city || "ไม่ทราบ") : "ไม่ทราบ"; 
-            let isp = typeof ipData === 'object' ? (ipData.org || ipData.isp || "ไม่ทราบ") : "ไม่ทราบ";
-            let asn = typeof ipData === 'object' ? (ipData.asn || "ไม่ทราบ") : "ไม่ทราบ";
+            let ipInfo = "ไม่มีข้อมูล";
+            let country = "ไม่ทราบ";
+            let region = "ไม่ทราบ";
+            let city = "ไม่ทราบ";
+            let isp = "ไม่ทราบ";
+            let asn = "ไม่ทราบ";
+            
+            // ตรวจสอบรูปแบบข้อมูล IP
+            if (typeof item.ip === 'string') {
+                ipInfo = item.ip;
+            } else if (typeof item.ip === 'object' && item.ip !== null) {
+                ipInfo = item.ip.ip || "ไม่มีข้อมูล";
+                country = item.ip.country || "ไม่ทราบ";
+                region = item.ip.region || "ไม่ทราบ";
+                city = item.ip.city || "ไม่ทราบ";
+                // ตรวจสอบข้อมูลผู้ให้บริการอินเทอร์เน็ต
+                if (item.ip.org) isp = item.ip.org;
+                else if (item.ip.isp) isp = item.ip.isp;
+                
+                // รหัสเซิร์ฟเวอร์ (ASN)
+                if (item.ip.asn) asn = item.ip.asn;
+                else if (typeof item.ip.org === 'string' && item.ip.org.match(/^AS\d+/)) {
+                    const asnMatch = item.ip.org.match(/^(AS\d+)/);
+                    if (asnMatch) asn = asnMatch[1];
+                }
+            }
             
             const deviceInfo = item.deviceInfo || {};
+            let platform = deviceInfo.platform || "ไม่ทราบ";
+            let browser = deviceInfo.browser || "ไม่ทราบ";
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
@@ -1483,8 +1507,16 @@
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ตำแหน่ง</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}, ${country}` : "ไม่ทราบ"}</div>
+                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-value">${country}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ภูมิภาค</div>
+                        <div class="detail-value">${region}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">เมือง</div>
+                        <div class="detail-value">${city}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
@@ -1522,11 +1554,11 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${deviceInfo.platform || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${platform}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
-                        <div class="detail-value">${deviceInfo.browser || "ไม่ระบุ"}</div>
+                        <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
