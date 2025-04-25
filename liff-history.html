@@ -188,7 +188,7 @@
             font-size: 12px;
             font-weight: 500;
             margin-left: 8px;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
         }
 
         .badge.approved {
@@ -484,7 +484,7 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1267,17 +1267,26 @@
             displayHistoryData();
         }
         
-        // ฟังก์ชันสำหรับฟอร์แมตวันที่เวลาให้เป็นภาษาไทย (ปรับปรุงใหม่)
+        // ฟังก์ชันสำหรับฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
         function formatThaiDateTime(dateTimeStr) {
             if (!dateTimeStr) return "ไม่ระบุเวลา";
             
             try {
                 let date;
+                
+                // แสดงรูปแบบวันที่ดิบเพื่อการตรวจสอบ
+                console.log("รูปแบบวันที่ดิบที่ได้รับ:", dateTimeStr);
+                
                 // ตรวจสอบรูปแบบวันที่
                 if (typeof dateTimeStr === 'object' && dateTimeStr instanceof Date) {
                     // กรณีเป็น Date object อยู่แล้ว
                     date = dateTimeStr;
-                } else if (dateTimeStr.includes('T')) {
+                } else if (typeof dateTimeStr !== 'string') {
+                    // แปลงเป็นสตริงก่อนดำเนินการต่อ
+                    dateTimeStr = String(dateTimeStr);
+                }
+
+                if (dateTimeStr.includes('T')) {
                     // รูปแบบ ISO format: "2023-04-24T04:15:27.000Z"
                     date = new Date(dateTimeStr);
                 } else if (dateTimeStr.includes('/')) {
@@ -1311,7 +1320,7 @@
                         date = new Date(dateTimeStr);
                     }
                 } else if (dateTimeStr.includes('-')) {
-                    // รูปแบบ "2023-04-24" หรือ "2023-04-24 13:54:21"
+                    // รูปแบบ "2023-04-24" หรือ "2023-04-24 04:15:27"
                     const parts = dateTimeStr.split(' ');
                     const dateParts = parts[0].split('-');
                     
@@ -1332,23 +1341,16 @@
                             date = new Date(year, month, day);
                         }
                     } else {
-                        // รูปแบบไม่ถูกต้อง ใช้ Date constructor เลย
                         date = new Date(dateTimeStr);
                     }
-                } else if (!isNaN(Date.parse(dateTimeStr))) {
-                    // รูปแบบอื่นๆ ที่ JavaScript รองรับ
-                    date = new Date(dateTimeStr);
-                } else if (!isNaN(dateTimeStr) && dateTimeStr.toString().length > 8) {
-                    // อาจเป็น timestamp (มิลลิวินาที)
-                    date = new Date(parseInt(dateTimeStr));
                 } else {
-                    console.log("ไม่สามารถแปลงรูปแบบวันที่ได้:", dateTimeStr);
-                    return dateTimeStr; // คืนค่าเดิม
+                    // รูปแบบอื่นๆ ใช้ Date constructor
+                    date = new Date(dateTimeStr);
                 }
                 
                 // ตรวจสอบว่า date เป็นวันที่ที่ถูกต้องหรือไม่
                 if (isNaN(date.getTime())) {
-                    console.log("วันที่ไม่ถูกต้อง:", dateTimeStr);
+                    console.log("แปลงวันที่ไม่สำเร็จ สำหรับค่า:", dateTimeStr);
                     return dateTimeStr; // วันที่ไม่ถูกต้อง ส่งคืนสตริงเดิม
                 }
                 
@@ -1358,23 +1360,20 @@
                     "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
                 ];
                 
-                const thaiFullMonths = [
-                    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
-                    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-                ];
-                
                 const day = date.getDate();
                 const month = thaiMonths[date.getMonth()];
-                const fullMonth = thaiFullMonths[date.getMonth()];
                 const year = date.getFullYear() + 543; // แปลงเป็นปี พ.ศ.
                 
                 const hours = date.getHours().toString().padStart(2, '0');
                 const minutes = date.getMinutes().toString().padStart(2, '0');
                 
-                // ใช้รูปแบบ: "31 ธ.ค. 2566 เวลา 23:59 น."
-                return `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
+                // ค่าที่จะคืนกลับ
+                const formattedDate = `${day} ${month} ${year} เวลา ${hours}:${minutes} น.`;
+                console.log("วันที่หลังจากแปลง:", formattedDate);
+                
+                return formattedDate;
             } catch (error) {
-                console.error("ข้อผิดพลาดในการแปลงรูปแบบวันที่:", error, "สำหรับข้อมูล:", dateTimeStr);
+                console.error("ข้อผิดพลาดในการแปลงรูปแบบวันที่:", error);
                 return dateTimeStr; // ส่งคืนสตริงเดิมในกรณีที่มีข้อผิดพลาด
             }
         }
@@ -1407,17 +1406,13 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
+                // ดึงข้อมูลอุปกรณ์แบบปลอดภัยยิ่งขึ้น
                 const deviceInfo = item.deviceInfo || {};
-                let deviceType = "ไม่ทราบ";
-                let deviceModel = "ไม่ทราบ";
+                const deviceType = deviceInfo.deviceType || deviceInfo.type || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || deviceInfo.model || "ไม่ทราบ";
                 
-                // ปรับปรุงการดึงข้อมูลเกี่ยวกับอุปกรณ์
-                if (deviceInfo) {
-                    deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                    deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-                }
-                
-                // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
+                // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย - ส่งดีบั๊กข้อมูลที่ได้รับ
+                console.log(`ข้อมูลวันเวลาดิบของรายการ ${i}:`, item.timestamp);
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
                 
                 listItem.innerHTML = `
@@ -1428,7 +1423,6 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            ${item.ip && typeof item.ip === 'object' && item.ip.country ? `<div><i class="fas fa-globe"></i> ${item.ip.country}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -1451,7 +1445,7 @@
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
 
-        // แสดง Modal รายละเอียด (ปรับปรุงใหม่)
+        // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
@@ -1491,41 +1485,77 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ปรับปรุงการแสดงข้อมูล IP และตำแหน่ง
-            let ipInfo, country, region, city, isp, asn;
+            // ข้อมูล IP และตำแหน่ง - การจัดการที่ดีขึ้นกับโครงสร้างข้อมูล
+            const ipData = item.ip || {};
+            let ipAddress;
             
+            // ตรวจสอบรูปแบบข้อมูล IP อย่างละเอียด
             if (typeof item.ip === 'string') {
-                // กรณีที่ IP เป็น string ให้ใช้ค่านั้นเลย
-                ipInfo = item.ip;
-                country = "ไม่ทราบ";
-                region = "ไม่ทราบ";
-                city = "ไม่ทราบ";
-                isp = "ไม่ทราบ";
-                asn = "ไม่ทราบ";
+                // กรณีที่ IP เป็น string ธรรมดา เช่น "192.168.1.1"
+                ipAddress = item.ip;
+                console.log("IP เป็น string:", ipAddress);
             } else if (typeof item.ip === 'object' && item.ip !== null) {
-                // กรณีที่ IP เป็น object ให้ดึงค่าจาก properties
-                ipInfo = item.ip.ip || "ไม่ทราบ";
-                country = item.ip.country || "ไม่ทราบ";
-                region = item.ip.region || "ไม่ทราบ";
-                city = item.ip.city || "ไม่ทราบ";
-                isp = item.ip.org || item.ip.isp || "ไม่ทราบ";
-                asn = item.ip.asn || "ไม่ทราบ";
+                // กรณีที่ IP เป็น object ที่มีรายละเอียด
+                ipAddress = item.ip.ip || "ไม่มีข้อมูล";
+                console.log("IP เป็น object:", ipAddress);
             } else {
-                // กรณีไม่มีข้อมูล
-                ipInfo = "ไม่มีข้อมูล";
-                country = "ไม่ทราบ";
-                region = "ไม่ทราบ";
-                city = "ไม่ทราบ";
-                isp = "ไม่ทราบ";
-                asn = "ไม่ทราบ";
+                ipAddress = "ไม่มีข้อมูล";
+                console.log("ไม่พบข้อมูล IP");
             }
             
-            // ปรับปรุงการแสดงข้อมูลอุปกรณ์
+            // แสดงวิธีการเข้าถึงข้อมูล IP
+            console.log("โครงสร้าง ipData:", ipData);
+            
+            // ดึงข้อมูลรายละเอียดเกี่ยวกับ IP
+            let country = "ไม่ทราบ";
+            let region = "ไม่ทราบ";
+            let city = "ไม่ทราบ";
+            let isp = "ไม่ทราบ";
+            let asn = "ไม่ทราบ";
+            
+            // ตรวจสอบว่า ipData เป็น object และไม่ใช่ค่า null
+            if (typeof ipData === 'object' && ipData !== null) {
+                // ตรวจสอบรายละเอียด IP ทีละอัน
+                country = ipData.country || ipData.countryCode || "ไม่ทราบ";
+                region = ipData.region || ipData.regionName || "ไม่ทราบ";
+                city = ipData.city || "ไม่ทราบ";
+                
+                // ISP/Organization สามารถอยู่ในหลาย property
+                isp = ipData.isp || ipData.org || ipData.organization || ipData.as || "ไม่ทราบ";
+                
+                // ASN มักจะอยู่ใน property 'asn' หรือ 'as' หรือเป็นส่วนหนึ่งของ 'org'
+                asn = ipData.asn || "ไม่ทราบ";
+                if (ipData.as && !asn) {
+                    // บางครั้ง AS อาจอยู่ใน format เช่น "AS12345 Some ISP"
+                    const asMatch = /AS\d+/.exec(ipData.as);
+                    if (asMatch) {
+                        asn = asMatch[0];
+                    }
+                }
+                
+                console.log(`ข้อมูล IP ที่พบ: country=${country}, region=${region}, city=${city}, isp=${isp}, asn=${asn}`);
+            }
+            
+            // ข้อมูลอุปกรณ์ - เพิ่มการตรวจสอบและดึงข้อมูลอย่างละเอียด
             const deviceInfo = item.deviceInfo || {};
-            const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-            const platform = deviceInfo.platform || "ไม่ทราบ";
-            const browser = deviceInfo.browser || "ไม่ทราบ";
+            
+            // ตรวจสอบรูปแบบข้อมูลอุปกรณ์
+            console.log("โครงสร้าง deviceInfo:", deviceInfo);
+            
+            // ดึงข้อมูลรายละเอียดอุปกรณ์
+            let deviceType = "ไม่ทราบ";
+            let deviceModel = "ไม่ทราบ";
+            let platform = "ไม่ทราบ";
+            let browser = "ไม่ทราบ";
+            
+            if (typeof deviceInfo === 'object' && deviceInfo !== null) {
+                deviceType = deviceInfo.deviceType || deviceInfo.type || "ไม่ทราบ";
+                deviceModel = deviceInfo.deviceModel || deviceInfo.model || "ไม่ทราบ";
+                platform = deviceInfo.platform || deviceInfo.os || deviceInfo.operatingSystem || "ไม่ทราบ";
+                browser = deviceInfo.browser || deviceInfo.browserName || "ไม่ทราบ";
+                
+                console.log(`ข้อมูลอุปกรณ์ที่พบ: type=${deviceType}, model=${deviceModel}, platform=${platform}, browser=${browser}`);
+            }
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
@@ -1553,15 +1583,19 @@
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
                         <div class="detail-label">IP Address</div>
-                        <div class="detail-value">${ipInfo}</div>
+                        <div class="detail-value">${ipAddress}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ประเทศ</div>
-                        <div class="detail-value">${country !== "ไม่ทราบ" ? country : "ไม่มีข้อมูล"}</div>
+                        <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : "ไม่มีข้อมูล"}</div>
+                        <div class="detail-label">ภูมิภาค</div>
+                        <div class="detail-value">${region}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">เมือง</div>
+                        <div class="detail-value">${city}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
@@ -1677,12 +1711,12 @@
             return false;
         }
 
-        // ฟังก์ชันจัดการข้อมูลจำลองสำหรับการทดสอบ (ปรับปรุงเพิ่มข้อมูลให้ครบถ้วนขึ้น)
+        // ฟังก์ชันจัดการข้อมูลจำลองสำหรับการทดสอบ
         function handleMockDataResponse() {
             console.log("กำลังใช้ข้อมูลจำลองสำหรับการทดสอบ");
             document.getElementById('loadingIndicator').style.display = 'none';
             
-            // สร้างข้อมูลจำลองที่มีข้อมูลครบถ้วน
+            // สร้างข้อมูลจำลอง
             const mockData = [
                 {
                     timestamp: "15/02/2023 14:32:21",
@@ -1691,18 +1725,16 @@
                     creatorFullName: "นายทดสอบ ระบบ",
                     ip: {
                         ip: "203.0.113.1",
-                        country: "Thailand",
+                        country: "TH",
                         region: "กรุงเทพมหานคร",
                         city: "Bangkok",
                         org: "True Corporation",
-                        isp: "True Internet Corporation",
                         asn: "AS7470"
                     },
                     location: {
                         lat: 13.756331,
                         long: 100.501762,
-                        accuracy: 15,
-                        gmapLink: "https://www.google.com/maps?q=13.756331,100.501762"
+                        accuracy: 15
                     },
                     deviceInfo: {
                         deviceType: "iPhone",
@@ -1718,51 +1750,22 @@
                     creatorFullName: "นางสาวทดสอบ ระบบ",
                     ip: {
                         ip: "203.0.113.2",
-                        country: "Thailand",
+                        country: "TH",
                         region: "เชียงใหม่",
                         city: "Chiang Mai",
-                        org: "Advanced Wireless Network",
-                        isp: "AIS",
+                        org: "AIS Corporation",
                         asn: "AS9890"
                     },
                     location: {
                         lat: 13.736717,
                         long: 100.523186,
-                        accuracy: 8,
-                        gmapLink: "https://www.google.com/maps?q=13.736717,100.523186"
+                        accuracy: 8
                     },
                     deviceInfo: {
                         deviceType: "Android",
                         deviceModel: "Samsung Galaxy S22",
                         platform: "Android 13",
                         browser: "Chrome"
-                    }
-                },
-                {
-                    timestamp: "2023-03-15T08:45:22.000Z",
-                    trackingKey: "track_789012",
-                    caseName: "เคสทดสอบ 3",
-                    creatorFullName: "นางทดสอบ ระบบ",
-                    ip: {
-                        ip: "203.0.113.3",
-                        country: "Thailand",
-                        region: "ชลบุรี",
-                        city: "Pattaya",
-                        org: "DTAC TriNet Co.,Ltd.",
-                        isp: "DTAC",
-                        asn: "AS23969"
-                    },
-                    location: {
-                        lat: 13.729568,
-                        long: 100.545328,
-                        accuracy: 20,
-                        gmapLink: "https://www.google.com/maps?q=13.729568,100.545328"
-                    },
-                    deviceInfo: {
-                        deviceType: "Desktop",
-                        deviceModel: "Windows PC",
-                        platform: "Windows 11",
-                        browser: "Microsoft Edge"
                     }
                 }
             ];
