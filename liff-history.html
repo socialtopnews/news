@@ -211,7 +211,7 @@
             margin: 1.5rem 0;
             border-radius: 4px;
             position: relative;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
         }
 
         .message-box:before {
@@ -282,7 +282,7 @@
 
         .history-item {
             background-color: white;
-            border-radius: var (--border-radius);
+            border-radius: var(--border-radius);
             padding: 18px 15px;
             margin-bottom: 15px;
             box-shadow: var(--shadow-sm);
@@ -1443,21 +1443,21 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ข้อมูล IP และตำแหน่ง
+            // ข้อมูล IP และตำแหน่ง - ปรับปรุงการแกะข้อมูล
             let ipInfo = "ไม่มีข้อมูล";
             let country = "ไม่ทราบ";
-            let region = "ไม่ทราบ"; 
-            let city = "ไม่ทราบ";
+            let region = "ไม่ทราบ";
+            let city = "ไม่ทราบ"; 
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
             
-            // ตรวจสอบและดึงข้อมูล IP โดยละเอียด
             if (item.ip) {
+                // กรณีเป็น string
                 if (typeof item.ip === 'string') {
-                    // กรณีเป็น string ธรรมดา
                     ipInfo = item.ip;
-                } else if (typeof item.ip === 'object' && item.ip !== null) {
-                    // กรณีเป็น object
+                } 
+                // กรณีเป็น object
+                else if (typeof item.ip === 'object' && item.ip !== null) {
                     ipInfo = item.ip.ip || "ไม่มีข้อมูล";
                     country = item.ip.country || "ไม่ทราบ";
                     region = item.ip.region || "ไม่ทราบ";
@@ -1504,7 +1504,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ประเทศ</div>
-                        <div class="detail-value">${country !== "ไม่ทราบ" ? country : "ไม่ทราบ"}</div>
+                        <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เมือง/ภูมิภาค</div>
@@ -1530,7 +1530,7 @@
                     ${mapLink ? `
                     <div class="detail-item">
                         <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank" rel="noopener noreferrer">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank" onclick="openGoogleMaps('${mapLink}'); return false;">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                 </div>
                 
@@ -1755,6 +1755,37 @@
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
             }
+        }
+
+        // เพิ่มฟังก์ชันใหม่สำหรับเปิด Google Maps ที่รองรับทั้ง LINE Browser และ Browser ทั่วไป
+        function openGoogleMaps(mapUrl) {
+            try {
+                console.log("กำลังพยายามเปิด Google Maps:", mapUrl);
+                
+                // ตรวจสอบว่าเป็น LINE Browser หรือไม่
+                if (isLimitedBrowser() || navigator.userAgent.toLowerCase().includes('line')) {
+                    console.log("ตรวจพบ LINE Browser กำลังใช้ liff.openWindow");
+                    
+                    // ถ้าเป็น LINE Browser และมี LIFF SDK ให้ใช้ liff.openWindow
+                    if (liff && liff.isInClient && liff.openWindow) {
+                        liff.openWindow({
+                            url: mapUrl,
+                            external: true
+                        });
+                    } else {
+                        // ถ้าไม่มี LIFF SDK ให้ใช้ window.open
+                        window.open(mapUrl, '_blank');
+                    }
+                } else {
+                    // สำหรับบราวเซอร์ทั่วไป
+                    window.open(mapUrl, '_blank');
+                }
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการเปิด Google Maps:", error);
+                alert("ไม่สามารถเปิดแผนที่ได้ กรุณาคัดลอกลิงค์และเปิดด้วยตัวเอง");
+            }
+            
+            return false;
         }
     </script>
 </body>
