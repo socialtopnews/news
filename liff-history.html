@@ -211,7 +211,7 @@
             margin: 1.5rem 0;
             border-radius: 4px;
             position: relative;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
         }
 
         .message-box:before {
@@ -355,7 +355,7 @@
             border-radius: 6px;
             font-size: 13px;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             font-weight: 500;
@@ -1423,7 +1423,17 @@
                     // กรณีเป็น object
                     if (item.location.lat !== undefined && item.location.long !== undefined) {
                         locationText = `${item.location.lat}, ${item.location.long}`;
-                        mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                        
+                        // สร้างลิงก์ Google Maps โดยตรง (แก้ไขตรงนี้)
+                        mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                        
+                        // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
+                        if (item.location.gmapLink && 
+                            (item.location.gmapLink.includes('google.com/maps') || 
+                             item.location.gmapLink.includes('goo.gl/maps'))) {
+                            mapLink = item.location.gmapLink;
+                        }
+                        
                         gpsAccuracy = item.location.accuracy ? `±${item.location.accuracy} เมตร` : "ไม่มีข้อมูล";
                     }
                 } else if (typeof item.location === "string") {
@@ -1434,6 +1444,7 @@
                     if (locationText.includes(",")) {
                         const coords = locationText.split(",").map(coord => coord.trim());
                         if (coords.length === 2) {
+                            // สร้างลิงก์ Google Maps โดยตรง (แก้ไขตรงนี้)
                             mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
                         }
                     }
@@ -1443,36 +1454,47 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ข้อมูล IP และตำแหน่ง - ปรับปรุงการแกะข้อมูล
-            let ipInfo = "ไม่มีข้อมูล";
+            // ข้อมูล IP และตำแหน่ง - ปรับปรุงการเข้าถึงข้อมูล
+            const ipData = item.ip || {};
+            
+            // แก้ไขการเข้าถึงข้อมูล IP
+            let ipInfo;
             let country = "ไม่ทราบ";
             let region = "ไม่ทราบ";
             let city = "ไม่ทราบ"; 
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
+
+            // ล็อกข้อมูล IP เพื่อตรวจสอบโครงสร้าง
+            console.log("โครงสร้างข้อมูล IP:", typeof ipData, ipData);
             
-            if (item.ip) {
-                // กรณีเป็น string
-                if (typeof item.ip === 'string') {
-                    ipInfo = item.ip;
-                } 
-                // กรณีเป็น object
-                else if (typeof item.ip === 'object' && item.ip !== null) {
-                    ipInfo = item.ip.ip || "ไม่มีข้อมูล";
-                    country = item.ip.country || "ไม่ทราบ";
-                    region = item.ip.region || "ไม่ทราบ";
-                    city = item.ip.city || "ไม่ทราบ";
-                    isp = item.ip.org || item.ip.isp || "ไม่ทราบ";
-                    asn = item.ip.asn || "ไม่ทราบ";
-                }
+            if (typeof ipData === 'string') {
+                // กรณีที่ข้อมูล IP เป็นสตริง (เช่น "192.168.1.1")
+                ipInfo = ipData;
+            } else if (typeof ipData === 'object' && ipData !== null) {
+                // กรณีที่ข้อมูล IP เป็น object
+                ipInfo = ipData.ip || "ไม่มีข้อมูล";
+                
+                // ดึงข้อมูลเพิ่มเติมจาก object
+                country = ipData.country || ipData.countryCode || "ไม่ทราบ";
+                region = ipData.region || ipData.regionName || "ไม่ทราบ";
+                city = ipData.city || "ไม่ทราบ";
+                
+                // ดึงข้อมูล ISP (ลำดับความสำคัญ: isp > org > asOrg)
+                isp = ipData.isp || ipData.org || ipData.asOrg || ipData.organization || "ไม่ทราบ";
+                
+                // ดึงข้อมูล ASN
+                asn = ipData.asn || ipData.as || (ipData.asn ? `AS${ipData.asn}` : "ไม่ทราบ");
+            } else {
+                // กรณีไม่มีข้อมูล IP
+                ipInfo = "ไม่มีข้อมูล";
             }
             
-            // ข้อมูลอุปกรณ์
             const deviceInfo = item.deviceInfo || {};
-            const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
-            const platform = deviceInfo.platform || "ไม่ทราบ";
-            const browser = deviceInfo.browser || "ไม่ทราบ";
+            
+            // เพิ่มข้อมูลระบบปฏิบัติการและเบราว์เซอร์
+            const platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
+            const browser = deviceInfo.browser || "ไม่ระบุ";
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
@@ -1530,7 +1552,7 @@
                     ${mapLink ? `
                     <div class="detail-item">
                         <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank" onclick="openGoogleMaps('${mapLink}'); return false;">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                 </div>
                 
@@ -1538,11 +1560,11 @@
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
-                        <div class="detail-value">${deviceType}</div>
+                        <div class="detail-value">${deviceInfo.deviceType || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceModel}</div>
+                        <div class="detail-value">${deviceInfo.deviceModel || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
@@ -1755,37 +1777,6 @@
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
             }
-        }
-
-        // เพิ่มฟังก์ชันใหม่สำหรับเปิด Google Maps ที่รองรับทั้ง LINE Browser และ Browser ทั่วไป
-        function openGoogleMaps(mapUrl) {
-            try {
-                console.log("กำลังพยายามเปิด Google Maps:", mapUrl);
-                
-                // ตรวจสอบว่าเป็น LINE Browser หรือไม่
-                if (isLimitedBrowser() || navigator.userAgent.toLowerCase().includes('line')) {
-                    console.log("ตรวจพบ LINE Browser กำลังใช้ liff.openWindow");
-                    
-                    // ถ้าเป็น LINE Browser และมี LIFF SDK ให้ใช้ liff.openWindow
-                    if (liff && liff.isInClient && liff.openWindow) {
-                        liff.openWindow({
-                            url: mapUrl,
-                            external: true
-                        });
-                    } else {
-                        // ถ้าไม่มี LIFF SDK ให้ใช้ window.open
-                        window.open(mapUrl, '_blank');
-                    }
-                } else {
-                    // สำหรับบราวเซอร์ทั่วไป
-                    window.open(mapUrl, '_blank');
-                }
-            } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการเปิด Google Maps:", error);
-                alert("ไม่สามารถเปิดแผนที่ได้ กรุณาคัดลอกลิงค์และเปิดด้วยตัวเอง");
-            }
-            
-            return false;
         }
     </script>
 </body>
