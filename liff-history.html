@@ -799,8 +799,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwpcIGZVFoUGbxtceOxNbRbXVW7BrH8zMH0M8qexlIdHIQQOoINyMrIpfDRShGV2p0-/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwpcIGZVFoUGbxtceOxNbRbXVW7BrH8zMH0M8qexlIdHIQQOoINyMrIpfDRShGV2p0-/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/u/2/s/AKfycbwpcIGZVFoUGbxtceOxNbRbXVW7BrH8zMH0M8qexlIdHIQQOoINyMrIpfDRShGV2p0-/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/u/2/s/AKfycbwpcIGZVFoUGbxtceOxNbRbXVW7BrH8zMH0M8qexlIdHIQQOoINyMrIpfDRShGV2p0-/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1103,6 +1103,9 @@
                 debugDiv.appendChild(checkColumnsBtn);
                 document.querySelector('.content').appendChild(debugDiv);
             }
+
+            // เพิ่มปุ่มสำหรับ Debug
+            addDebugButton();
         }
         
         // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
@@ -1161,22 +1164,8 @@
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
                         
-                        // แปลงข้อมูล IP เพิ่มเติม
-                        currentHistoryData = data.history.map(item => {
-                            // สร้าง ipInfo จากข้อมูลที่มี
-                            if (!item.ipInfo) {
-                                item.ipInfo = {
-                                    country: item.country || "ไม่ระบุ",
-                                    region: item.region || "ไม่ระบุ",
-                                    city: item.city || "ไม่ระบุ",
-                                    org: item.org || "ไม่ระบุ",
-                                    isp: item.isp || "ไม่ระบุ",
-                                    asn: item.asn || "ไม่ระบุ"
-                                };
-                            }
-                            return item;
-                        });
-                        
+                        // ไม่ต้องแปลงข้อมูล IP เพิ่มเติม เนื่องจากข้อมูลที่ได้รับมีโครงสร้างที่แตกต่างกัน
+                        currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
                         
@@ -1344,7 +1333,7 @@
             }
         }
 
-        // แก้ไขฟังก์ชัน displayHistoryData - เอาพิกัดออกจากหน้ารายการ แสดงประเทศและ ISP แทน
+        // แก้ไขฟังก์ชัน displayHistoryData เพื่อให้รองรับโครงสร้างข้อมูลที่หลากหลาย
         function displayHistoryData() {
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = '';
@@ -1367,21 +1356,29 @@
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
+                console.log(`กำลังแสดงข้อมูลรายการที่ ${i}:`, item);
                 
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
-                // ดึงข้อมูล IP และข้อมูลเครือข่าย
-                const ip = item.ip || "ไม่ทราบ";
-                const ipInfo = item.ipInfo || {};
-                const country = ipInfo.country || "ไม่ระบุ";
-                const isp = ipInfo.org || ipInfo.isp || "ไม่ระบุ";
+                // ข้อมูลประเทศและ ISP อาจอยู่ในหลายรูปแบบ
+                let country = "ไม่ระบุ";
+                let isp = "ไม่ระบุ";
                 
-                // จัดรูปแบบเวลาใหม่
+                // ตรวจสอบทุกรูปแบบที่เป็นไปได้ของข้อมูล
+                if (item.ipInfo) {
+                    country = item.ipInfo.country || "ไม่ระบุ";
+                    isp = item.ipInfo.org || item.ipInfo.isp || "ไม่ระบุ";
+                } else if (item.ip && typeof item.ip === 'object') {
+                    country = item.ip.country || "ไม่ระบุ";
+                    isp = item.ip.org || item.ip.isp || "ไม่ระบุ";
+                } else if (item.country) {
+                    country = item.country;
+                }
+                
                 const formattedTime = formatDateTime(item.timestamp);
                 
                 listItem.innerHTML = `
@@ -1392,7 +1389,6 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-globe icon-country"></i> ${country}</div>
-                            <div><i class="fas fa-network-wired icon-isp"></i> ${isp}</div>
                             <div><i class="fas fa-mobile-alt icon-device"></i> ${deviceType}</div>
                         </div>
                     </div>
@@ -1416,10 +1412,12 @@
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
 
-        // แก้ไขฟังก์ชัน showDetailsModal - ปรับปรุงการแสดงรายละเอียดและลบข้อมูลดิบออก
+        // แก้ไขฟังก์ชัน showDetailsModal เพื่อให้รองรับโครงสร้างข้อมูลที่หลากหลาย
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
+            
+            console.log("กำลังแสดงรายละเอียดของข้อมูล:", item);
             
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
@@ -1449,16 +1447,40 @@
                 }
             }
             
+            // ดึงข้อมูลอุปกรณ์
             const deviceInfo = item.deviceInfo || {};
-            const ipInfo = item.ipInfo || {};
             
-            // ดึงข้อมูล IP เพิ่มเติม
-            const ip = item.ip || "ไม่ระบุ";
-            const country = ipInfo.country || "ไม่ระบุ";
-            const region = ipInfo.region || "ไม่ระบุ";
-            const city = ipInfo.city || "ไม่ระบุ";
-            const isp = ipInfo.org || ipInfo.isp || "ไม่ระบุ";
-            const asn = ipInfo.asn || "ไม่ระบุ";
+            // ข้อมูลเครือข่ายอาจอยู่ในหลายรูปแบบ
+            let ip = item.ip || "ไม่ระบุ";
+            let country = "ไม่ระบุ";
+            let region = "ไม่ระบุ";
+            let city = "ไม่ระบุ";
+            let isp = "ไม่ระบุ";
+            let asn = "ไม่ระบุ";
+            
+            // ตรวจสอบทุกรูปแบบของข้อมูล IP
+            if (item.ipInfo) {
+                country = item.ipInfo.country || "ไม่ระบุ";
+                region = item.ipInfo.region || "ไม่ระบุ";
+                city = item.ipInfo.city || "ไม่ระบุ";
+                isp = item.ipInfo.org || item.ipInfo.isp || "ไม่ระบุ";
+                asn = item.ipInfo.asn || "ไม่ระบุ";
+            } else if (typeof ip === 'object') {
+                // กรณีที่ ip เป็น object
+                ip = item.ip.ip || "ไม่ระบุ";
+                country = item.ip.country || item.country || "ไม่ระบุ";
+                region = item.ip.region || item.region || "ไม่ระบุ";
+                city = item.ip.city || item.city || "ไม่ระบุ";
+                isp = item.ip.org || item.ip.isp || item.org || item.isp || "ไม่ระบุ";
+                asn = item.ip.asn || item.asn || "ไม่ระบุ";
+            } else {
+                // กรณีอื่นๆ ใช้ข้อมูลที่อาจอยู่ในระดับ top-level
+                country = item.country || "ไม่ระบุ";
+                region = item.region || "ไม่ระบุ";
+                city = item.city || "ไม่ระบุ";
+                isp = item.org || item.isp || "ไม่ระบุ";
+                asn = item.asn || "ไม่ระบุ";
+            }
             
             // จัดรูปแบบเวลาใหม่
             const formattedTime = formatDateTime(item.timestamp);
@@ -1733,6 +1755,30 @@
                 
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
+            }
+        }
+
+        // เพิ่มปุ่มสำหรับ Debug
+        function addDebugButton() {
+            if (location.search.includes('debug=true')) {
+                const content = document.querySelector('.content');
+                const debugButton = document.createElement('button');
+                debugButton.textContent = "แสดงข้อมูล Raw";
+                debugButton.style.padding = "8px 16px";
+                debugButton.style.background = "#ff9800";
+                debugButton.style.color = "white";
+                debugButton.style.border = "none";
+                debugButton.style.borderRadius = "4px";
+                debugButton.style.margin = "10px 0";
+                debugButton.style.cursor = "pointer";
+                
+                debugButton.addEventListener('click', function() {
+                    console.log("ข้อมูลดิบทั้งหมด:", currentHistoryData);
+                    alert("ดูข้อมูลดิบในคอนโซล (F12)");
+                });
+                
+                const firstChild = content.firstChild;
+                content.insertBefore(debugButton, firstChild);
             }
         }
     </script>
