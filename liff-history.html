@@ -1454,19 +1454,43 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพื ่มเติม ==========
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพื่อความครอบคลุม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
-            // ปรับปรุง: แก้ไขการเข้าถึงข้อมูล IP กรณีที่ข้อมูลอาจเป็น JSON string
+            // ปรับปรุง: แก้ไขการเข้าถึงข้อมูล IP กรณีที่ข้อมูลอาจเป็น JSON string หรือรูปแบบอื่น
             let ipObj = item.ip;
             
+            // ตรวจสอบกรณีที่ ipObj เป็น undefined หรือ null
+            if (!ipObj) {
+                console.log("ไม่พบข้อมูล IP");
+                ipObj = {};
+            }
+            
             // หากเป็น string แต่อาจเป็น JSON string ที่ serialize มาให้ลองแปลง
-            if (typeof ipObj === 'string' && (ipObj.startsWith('{') || ipObj.startsWith('['))) {
-                try {
-                    ipObj = JSON.parse(ipObj);
-                    console.log("แปลงข้อมูล IP จาก JSON string เป็น Object สำเร็จ:", ipObj);
-                } catch (e) {
-                    console.log("ไม่สามารถแปลง IP string เป็น object ได้:", e);
+            if (typeof ipObj === 'string') {
+                console.log("ข้อมูล IP เป็น string:", ipObj);
+                
+                // ถ้าดูเหมือน JSON string
+                if (ipObj.startsWith('{') || ipObj.startsWith('[')) {
+                    try {
+                        ipObj = JSON.parse(ipObj);
+                        console.log("แปลงข้อมูล IP จาก JSON string เป็น Object สำเร็จ:", ipObj);
+                    } catch (e) {
+                        console.log("ไม่สามารถแปลง IP string เป็น object ได้:", e);
+                    }
+                } else if (ipObj.includes(',')) {
+                    // อาจเป็นข้อมูลที่คั่นด้วยเครื่องหมายคอมม่า
+                    const parts = ipObj.split(',');
+                    ipObj = {
+                        ip: parts[0].trim()
+                    };
+                    if (parts.length > 1) {
+                        ipObj.country = parts[1].trim();
+                    }
+                    if (parts.length > 2) {
+                        ipObj.region = parts[2].trim();
+                    }
+                    console.log("แปลงข้อมูล IP จาก comma-separated string เป็น Object:", ipObj);
                 }
             }
             
@@ -1482,12 +1506,19 @@
                 // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
                 ipInfo = ipObj;
             } else if (typeof ipObj === 'object' && ipObj !== null) {
-                // กรณีที่ข้อมูล IP เป็น object
+                console.log("กำลังสกัดข้อมูลจาก IP object");
                 
                 // ดึงค่า IP address - ตรวจสอบหลายฟิลด์ที่เป็นไปได้
                 if (ipObj.ip) ipInfo = ipObj.ip;
                 else if (ipObj.query) ipInfo = ipObj.query;
                 else if (ipObj.address) ipInfo = ipObj.address;
+                else if (ipObj.ipAddress) ipInfo = ipObj.ipAddress;
+                
+                console.log("IP address ที่สกัดได้:", ipInfo);
+                
+                // ตรวจสอบดูว่ามี fields สำคัญใน ipObj หรือไม่
+                const ipKeys = Object.keys(ipObj);
+                console.log("ฟิลด์ทั้งหมดใน IP object:", ipKeys.join(', '));
                 
                 // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
                 if (ipObj.country) country = ipObj.country;
@@ -1496,13 +1527,19 @@
                 else if (ipObj.country_name) country = ipObj.country_name;
                 else if (ipObj.country_code) country = ipObj.country_code;
                 
+                console.log("ประเทศที่สกัดได้:", country);
+                
                 // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
                 if (ipObj.region) region = ipObj.region;
                 else if (ipObj.regionName) region = ipObj.regionName;
                 else if (ipObj.region_name) region = ipObj.region_name;
                 
+                console.log("ภูมิภาคที่สกัดได้:", region);
+                
                 // ดึงข้อมูลเมือง
                 if (ipObj.city) city = ipObj.city;
+                
+                console.log("เมืองที่สกัดได้:", city);
                 
                 // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
                 if (ipObj.isp) isp = ipObj.isp;
@@ -1512,15 +1549,23 @@
                 else if (ipObj.asOrg) isp = ipObj.asOrg;
                 else if (ipObj.service_provider) isp = ipObj.service_provider;
                 
+                console.log("ISP ที่สกัดได้:", isp);
+                
                 // ดึงข้อมูล ASN
                 if (ipObj.as) asn = ipObj.as;
                 else if (ipObj.asn) asn = typeof ipObj.asn === 'number' ? `AS${ipObj.asn}` : ipObj.asn;
                 else if (ipObj.autonomous_system_number) asn = `AS${ipObj.autonomous_system_number}`;
                 else if (ipObj.as_number) asn = `AS${ipObj.as_number}`;
+                
+                console.log("ASN ที่สกัดได้:", asn);
             }
+            
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             
             // เพิ่มข้อมูลอุปกรณ์จากแหล่งอื่น หากมี
             let deviceInfoObj = item.deviceInfo || {};
+            
+            console.log("ข้อมูลอุปกรณ์ดิบ:", typeof deviceInfoObj, deviceInfoObj);
             
             // หากเป็น string แต่อาจเป็น JSON string ให้ลองแปลง
             if (typeof deviceInfoObj === 'string' && (deviceInfoObj.startsWith('{') || deviceInfoObj.startsWith('['))) {
@@ -1532,21 +1577,44 @@
                 }
             }
             
-            console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfoObj, null, 2));
+            // ตรวจสอบดูว่ามีการเก็บข้อมูลอุปกรณ์ในรูปแบบอื่นหรือไม่
+            if (!deviceInfoObj || Object.keys(deviceInfoObj).length === 0) {
+                console.log("ไม่พบข้อมูลอุปกรณ์หรือข้อมูลว่างเปล่า ลองตรวจสอบในโครงสร้างหลัก");
+                
+                // ดูว่ามีฟิลด์ browser, deviceType, platform โดยตรงในตัวแปร item หรือไม่
+                if (item.browser || item.deviceType || item.platform || item.deviceModel) {
+                    deviceInfoObj = {
+                        browser: item.browser,
+                        deviceType: item.deviceType, 
+                        platform: item.platform || item.os,
+                        deviceModel: item.deviceModel
+                    };
+                    console.log("พบข้อมูลอุปกรณ์ในระดับบน:", deviceInfoObj);
+                }
+            }
+            
+            console.log("โครงสร้างข้อมูลอุปกรณ์หลังแปลง:", deviceInfoObj);
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfoObj.deviceType || item.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfoObj.deviceModel || item.deviceModel || "ไม่ระบุ";
             
-            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            // แยกสกัดข้อมูลระบบปฏิบัติการจากทุกแหล่งที่เป็นไปได้
             let platform = deviceInfoObj.platform || deviceInfoObj.os || item.os || item.platform || "ไม่ระบุ";
             let browser = deviceInfoObj.browser || item.browser || "ไม่ระบุ";
+            
+            console.log("ข้อมูลพื้นฐานที่สกัดได้:", {
+                deviceType,
+                deviceModel,
+                platform,
+                browser
+            });
             
             // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
             if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
                 // กรณี iPhone หรือ iOS
                 if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
-                    const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                    const iosMatch = deviceModel.match(/iOS\s+([\ด\.]+)/);
                     if (iosMatch && iosMatch[1]) {
                         platform = `iOS ${iosMatch[1]}`;
                     } else {
@@ -1564,8 +1632,10 @@
                 }
             }
             
-            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
+            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้ เช่น userAgent
             const userAgent = deviceInfoObj.userAgent || item.userAgent || "";
+            console.log("User Agent:", userAgent);
+            
             if (userAgent) {
                 // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (browser === "ไม่ระบุ") {
@@ -1578,6 +1648,7 @@
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
                     else if (ua.includes("samsung")) browser = "Samsung Internet";
                     else if (ua.includes("ucbrowser")) browser = "UC Browser";
+                    else if (ua.includes("line")) browser = "LINE Browser";
                 }
                 
                 // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
@@ -1590,6 +1661,11 @@
                     else if (ua.includes("linux")) platform = "Linux";
                 }
             }
+            
+            console.log("ข้อมูลที่สกัดเสร็จสมบูรณ์:", {
+                ipInfo, country, region, city, isp, asn,
+                deviceType, deviceModel, platform, browser
+            });
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
