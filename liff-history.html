@@ -237,7 +237,7 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var (--error-color);
+            border-left: 4px solid var(--error-color);
         }
 
         .message-box.error p {
@@ -1454,8 +1454,7 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ============ ปรับปรุงการแกะข้อมูล IP และตำแหน่ง ============
-            // ตรวจสอบข้อมูล IP อย่างละเอียด
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติมให้รองรับทุกรูปแบบ ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
             // แก้ไขการเข้าถึงข้อมูล IP
@@ -1466,40 +1465,63 @@
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
             
+            // ใช้ฟังก์ชันช่วยในการดึงข้อมูลที่เป็นไปได้หลายรูปแบบ
+            function extractValue(obj, fieldNames, defaultValue) {
+                if (!obj) return defaultValue;
+                for (let field of fieldNames) {
+                    if (obj[field] !== undefined && obj[field] !== null && obj[field] !== "") {
+                        return obj[field];
+                    }
+                }
+                return defaultValue;
+            }
+            
             // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
             if (typeof item.ip === 'string') {
                 // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
                 ipInfo = item.ip;
+                
+                // พยายามแปลงเป็น JSON หากเป็น JSON string
+                try {
+                    const parsedIp = JSON.parse(item.ip);
+                    if (typeof parsedIp === 'object' && parsedIp !== null) {
+                        country = extractValue(parsedIp, ['country', 'countryCode', 'countryName'], country);
+                        region = extractValue(parsedIp, ['region', 'regionName'], region);
+                        city = extractValue(parsedIp, ['city'], city);
+                        isp = extractValue(parsedIp, ['isp', 'org', 'organization', 'asOrg'], isp);
+                        asn = extractValue(parsedIp, ['as', 'asn'], asn);
+                        if (parsedIp.ip) ipInfo = parsedIp.ip;
+                    }
+                } catch (e) {
+                    // ไม่ใช่ JSON string - ใช้ค่า IP โดยตรง
+                    console.log("ข้อมูล IP เป็น string ทั่วไป - ไม่ใช่ JSON");
+                }
             } else if (typeof item.ip === 'object' && item.ip !== null) {
                 // กรณีที่ข้อมูล IP เป็น object
                 
-                // ดึงค่า IP address - ตรวจสอบหลายรูปแบบ
-                if (item.ip.ip) ipInfo = item.ip.ip;
+                // ดึงค่า IP address
+                ipInfo = item.ip.ip || item.ip.query || "ไม่มีข้อมูล";
                 
                 // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
-                if (item.ip.country) country = item.ip.country;
-                else if (item.ip.countryCode) country = item.ip.countryCode;
-                else if (item.ip.countryName) country = item.ip.countryName;
+                country = extractValue(item.ip, ['country', 'countryCode', 'countryName'], country);
                 
                 // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
-                if (item.ip.region) region = item.ip.region;
-                else if (item.ip.regionName) region = item.ip.regionName;
+                region = extractValue(item.ip, ['region', 'regionName'], region);
                 
                 // ดึงข้อมูลเมือง
-                if (item.ip.city) city = item.ip.city;
+                city = extractValue(item.ip, ['city'], city);
                 
                 // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
-                if (item.ip.isp) isp = item.ip.isp;
-                else if (item.ip.org) isp = item.ip.org;
-                else if (item.ip.organization) isp = item.ip.organization;
-                else if (item.ip.asOrg) isp = item.ip.asOrg;
+                isp = extractValue(item.ip, ['isp', 'org', 'organization', 'asOrg'], isp);
                 
                 // ดึงข้อมูล ASN
-                if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
+                asn = extractValue(item.ip, ['as', 'asn'], asn);
+                if (item.ip.asn && !String(item.ip.asn).toLowerCase().includes('as')) {
+                    asn = `AS${item.ip.asn}`;
+                }
             }
             
-            // ============ ปรับปรุงการแกะข้อมูลอุปกรณ์ ============
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
             
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
@@ -1509,8 +1531,8 @@
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
             // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
-            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
-            let browser = deviceInfo.browser || "ไม่ระบุ";
+            let platform = extractValue(deviceInfo, ['platform', 'os', 'operatingSystem'], "ไม่ระบุ");
+            let browser = extractValue(deviceInfo, ['browser', 'browserName', 'browserInfo'], "ไม่ระบุ");
             
             // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
             if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
@@ -1541,10 +1563,12 @@
                     const ua = deviceInfo.userAgent.toLowerCase();
                     if (ua.includes("chrome")) browser = "Chrome";
                     else if (ua.includes("firefox")) browser = "Firefox";
-                    else if (ua.includes("safari")) browser = "Safari";
+                    else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
                     else if (ua.includes("edge")) browser = "Edge";
                     else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+                    else if (ua.includes("samsung")) browser = "Samsung Internet";
+                    else if (ua.includes("line")) browser = "LINE Browser";
                 }
                 
                 // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
@@ -1592,7 +1616,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : "ไม่ทราบ"}</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
