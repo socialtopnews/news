@@ -1454,17 +1454,10 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ========== แก้ไขการดึงข้อมูล IP และตำแหน่ง ==========
-            console.log("โครงสร้างข้อมูลทั้งหมดที่ได้รับ:", item);
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขใหม่ ==========
+            console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
-            // บันทึกค่าดิบแต่ละฟิลด์เพื่อตรวจสอบ
-            console.log("ข้อมูล country ดิบ:", item.country);
-            console.log("ข้อมูล region ดิบ:", item.region);
-            console.log("ข้อมูล city ดิบ:", item.city);
-            console.log("ข้อมูล isp/org ดิบ:", item.isp, item.org);
-            console.log("ข้อมูล asn ดิบ:", item.asn);
-            
-            // ดึงข้อมูล IP และตำแหน่งจากทุกแหล่งที่เป็นไปได้
+            // แก้ไขการเข้าถึงข้อมูล IP
             let ipInfo = "ไม่มีข้อมูล";
             let country = "ไม่ทราบ";
             let region = "ไม่ทราบ";
@@ -1472,71 +1465,93 @@
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
             
-            // 1. ดึงข้อมูล IP 
-            if (typeof item.ip === 'string') {
-                ipInfo = item.ip;
-            } else if (typeof item.ip === 'object' && item.ip !== null) {
-                ipInfo = item.ip.ip || item.ip.ipAddress || "ไม่มีข้อมูล";
-                
-                // 2. ดึงข้อมูลประเทศจาก item.ip (ถ้าเป็น object)
-                country = item.ip.country || item.ip.countryCode || item.ip.countryName || country;
-                
-                // 3. ดึงข้อมูลภูมิภาคจาก item.ip
-                region = item.ip.region || item.ip.regionName || region;
-                
-                // 4. ดึงข้อมูลเมืองจาก item.ip
-                city = item.ip.city || item.ip.cityName || city;
-                
-                // 5. ดึงข้อมูล ISP จาก item.ip
-                isp = item.ip.isp || item.ip.org || item.ip.organization || item.ip.asOrg || isp;
-                
-                // 6. ดึงข้อมูล ASN จาก item.ip
-                asn = item.ip.as || (item.ip.asn ? `AS${item.ip.asn}` : asn);
+            // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
+            if (item.ip) {
+                if (typeof item.ip === 'string') {
+                    // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
+                    ipInfo = item.ip;
+                } else if (typeof item.ip === 'object' && item.ip !== null) {
+                    // กรณีที่ข้อมูล IP เป็น object
+                    
+                    // ดึงค่า IP address
+                    ipInfo = item.ip.ip || item.ip.address || item.ip.ipAddress || "ไม่มีข้อมูล";
+                    
+                    // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
+                    country = item.ip.country || item.ip.countryCode || item.ip.countryName || "ไม่ทราบ";
+                    
+                    // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
+                    region = item.ip.region || item.ip.regionName || item.ip.state || "ไม่ทราบ";
+                    
+                    // ดึงข้อมูลเมือง
+                    city = item.ip.city || "ไม่ทราบ";
+                    
+                    // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
+                    isp = item.ip.isp || item.ip.org || item.ip.organization || item.ip.asOrg || item.ip.serviceProvider || "ไม่ทราบ";
+                    
+                    // ดึงข้อมูล ASN
+                    if (item.ip.as) asn = item.ip.as;
+                    else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : "ไม่ทราบ";
+                    else asn = "ไม่ทราบ";
+                }
             }
             
-            // ดึงข้อมูลจาก item โดยตรง (บางแอปอาจแยกข้อมูลออกมาไว้ที่ราก)
-            country = item.country || item["ประเทศ"] || item["Country"] || country;
-            region = item.region || item["ภูมิภาค"] || item["เมือง/ภูมิภาค"] || item["Region"] || region;
-            city = item.city || item["เมือง"] || item["City"] || city;
-            isp = item.isp || item.org || item.organization || item["องค์กร/ISP"] || item["ISP"] || item["ผู้ให้บริการเน็ต"] || isp;
-            asn = item.as || item.asn || item.ASN || item["รหัสเซิร์ฟเวอร์"] || item["AS"] || asn;
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขใหม่ ==========
+            const deviceInfo = item.deviceInfo || {};
             
-            // ปรับการแสดงผลเมือง/ภูมิภาคให้สวยงาม
-            let cityRegionDisplay = "ไม่ทราบ";
-            if (city !== "ไม่ทราบ" && region !== "ไม่ทราบ") {
-                cityRegionDisplay = `${city}, ${region}`;
-            } else if (city !== "ไม่ทราบ") {
-                cityRegionDisplay = city;
-            } else if (region !== "ไม่ทราบ") {
-                cityRegionDisplay = region;
-            }
-            
-            // ========== แก้ไขการดึงข้อมูลอุปกรณ์ ==========
-            let deviceInfo = item.deviceInfo || {};
-            
-            console.log("ข้อมูลอุปกรณ์ดิบ:", deviceInfo);
-            console.log("ข้อมูลเบราว์เซอร์ดิบ:", item.browser, deviceInfo.browser);
-            console.log("ข้อมูล OS ดิบ:", item.platform, deviceInfo.platform, item.os, deviceInfo.os);
+            console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
-            let deviceType = deviceInfo.deviceType || item.deviceType || item["ประเภทอุปกรณ์"] || "ไม่ระบุ";
-            let deviceModel = deviceInfo.deviceModel || item.deviceModel || item["รุ่นอุปกรณ์"] || "ไม่ระบุ";
+            const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
+            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // ดึงข้อมูลระบบปฏิบัติการ
-            let platform = deviceInfo.platform || deviceInfo.os || item.platform || item.os || item["ระบบปฏิบัติการ"] || "ไม่ระบุ";
+            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
+            let browser = deviceInfo.browser || "ไม่ระบุ";
             
-            // ดึงข้อมูลเบราว์เซอร์จากทุกที่ที่เป็นไปได้
-            let browser = deviceInfo.browser || item.browser || item["เบราว์เซอร์"] || "ไม่ระบุ";
+            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
+            if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
+                // กรณี iPhone หรือ iOS
+                if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
+                    const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                    if (iosMatch && iosMatch[1]) {
+                        platform = `iOS ${iosMatch[1]}`;
+                    } else {
+                        platform = "iOS";
+                    }
+                }
+                // กรณี Android
+                else if (deviceModel.includes("Android")) {
+                    const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
+                    if (androidMatch && androidMatch[1]) {
+                        platform = `Android ${androidMatch[1]}`;
+                    } else {
+                        platform = "Android";
+                    }
+                }
+            }
             
-            // ดึงข้อมูลเบราว์เซอร์จาก userAgent ถ้ายังไม่พบ
-            if (browser === "ไม่ระบุ" && deviceInfo.userAgent) {
-                const ua = deviceInfo.userAgent.toLowerCase();
-                if (ua.includes("chrome")) browser = "Chrome";
-                else if (ua.includes("firefox")) browser = "Firefox";
-                else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
-                else if (ua.includes("edge")) browser = "Edge";
-                else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
-                else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
+            if (deviceInfo.userAgent) {
+                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                if (browser === "ไม่ระบุ") {
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("chrome")) browser = "Chrome";
+                    else if (ua.includes("firefox")) browser = "Firefox";
+                    else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari"; // Safari มักจะมี Chrome ในตัวด้วย
+                    else if (ua.includes("edg") || ua.includes("edge")) browser = "Edge";
+                    else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+                    else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+                }
+                
+                // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                if (platform === "ไม่ระบุ") {
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
+                    else if (ua.includes("android")) platform = "Android";
+                    else if (ua.includes("windows")) platform = "Windows";
+                    else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
+                    else if (ua.includes("linux")) platform = "Linux";
+                }
             }
             
             // สร้าง HTML สำหรับ Modal
@@ -1573,7 +1588,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${cityRegionDisplay}</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : region !== "ไม่ทราบ" ? region : "ไม่ทราบ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
