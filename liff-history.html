@@ -1454,7 +1454,7 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
+            // ========== ข้อมูล IP และตำแหน่ง - ปรับปรุงการประมวลผล ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
             // แก้ไขการเข้าถึงข้อมูล IP
@@ -1469,11 +1469,28 @@
             if (typeof item.ip === 'string') {
                 // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
                 ipInfo = item.ip;
+                
+                // ลองแปลงเป็น JSON ถ้าเป็นสตริง JSON
+                try {
+                    if (item.ip.startsWith('{') && item.ip.endsWith('}')) {
+                        const ipObject = JSON.parse(item.ip);
+                        if (ipObject) {
+                            ipInfo = ipObject.ip || ipInfo;
+                            country = ipObject.country || country;
+                            region = ipObject.region || ipObject.regionName || region;
+                            city = ipObject.city || city;
+                            isp = ipObject.isp || ipObject.org || ipObject.organization || isp;
+                            asn = ipObject.as || (ipObject.asn ? `AS${ipObject.asn}` : asn);
+                        }
+                    }
+                } catch (e) {
+                    console.log("ไม่สามารถแปลงข้อมูล IP จากสตริง JSON ได้:", e);
+                }
             } else if (typeof item.ip === 'object' && item.ip !== null) {
                 // กรณีที่ข้อมูล IP เป็น object
                 
                 // ดึงค่า IP address
-                ipInfo = item.ip.ip || "ไม่มีข้อมูล";
+                ipInfo = item.ip.ip || ipInfo;
                 
                 // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
                 if (item.ip.country) country = item.ip.country;
@@ -1498,14 +1515,58 @@
                 else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
             }
             
-            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
+            // ========== ข้อมูลอุปกรณ์ - ปรับปรุงการประมวลผล ==========
             const deviceInfo = item.deviceInfo || {};
             
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
-            const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
+            let deviceType = deviceInfo.deviceType || "ไม่ระบุ";
+            let deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
+            
+            // ตรวจสอบข้อมูลเพิ่มเติมในกรณีที่ข้อมูลเป็น string
+            if (typeof deviceInfo === 'string') {
+                try {
+                    const parsedDeviceInfo = JSON.parse(deviceInfo);
+                    if (parsedDeviceInfo) {
+                        deviceType = parsedDeviceInfo.deviceType || deviceType;
+                        deviceModel = parsedDeviceInfo.deviceModel || deviceModel;
+                    }
+                } catch (e) {
+                    // ถ้าไม่สามารถแปลง JSON ได้ อาจเป็นข้อความธรรมดา
+                    if (deviceInfo.includes("iPhone") || deviceInfo.includes("iPad")) {
+                        deviceType = "iOS Device";
+                        deviceModel = deviceInfo;
+                    } else if (deviceInfo.includes("Android")) {
+                        deviceType = "Android Device";
+                        deviceModel = deviceInfo;
+                    }
+                }
+            }
+            
+            // ถ้าไม่มีข้อมูลอุปกรณ์ที่ชัดเจน และมีข้อมูล userAgent ให้ลองวิเคราะห์จาก userAgent
+            if ((deviceType === "ไม่ระบุ" || deviceModel === "ไม่ระบุ") && item.userAgent) {
+                const ua = item.userAgent.toLowerCase();
+                if (ua.includes("iphone")) {
+                    deviceType = deviceType === "ไม่ระบุ" ? "iPhone" : deviceType;
+                    if (deviceModel === "ไม่ระบุ") {
+                        const matches = ua.match(/iphone(?:\s+os)?\s+([\d_]+)/i);
+                        deviceModel = matches ? `iPhone (iOS ${matches[1].replace(/_/g, '.')})` : "iPhone";
+                    }
+                } else if (ua.includes("ipad")) {
+                    deviceType = deviceType === "ไม่ระบุ" ? "iPad" : deviceType;
+                    if (deviceModel === "ไม่ระบุ") {
+                        const matches = ua.match(/ipad(?:\s+os)?\s+([\d_]+)/i);
+                        deviceModel = matches ? `iPad (iOS ${matches[1].replace(/_/g, '.')})` : "iPad";
+                    }
+                } else if (ua.includes("android")) {
+                    deviceType = deviceType === "ไม่ระบุ" ? "Android" : deviceType;
+                    if (deviceModel === "ไม่ระบุ") {
+                        const matches = ua.match(/android\s+([\d\.]+)/i);
+                        deviceModel = matches ? `Android ${matches[1]}` : "Android Device";
+                    }
+                }
+            }
             
             // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
             let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
@@ -1534,23 +1595,36 @@
             }
             
             // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
-            if (deviceInfo.userAgent) {
+            if (deviceInfo.userAgent || item.userAgent) {
+                const ua = (deviceInfo.userAgent || item.userAgent || "").toLowerCase();
                 // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (browser === "ไม่ระบุ") {
-                    const ua = deviceInfo.userAgent.toLowerCase();
-                    if (ua.includes("chrome")) browser = "Chrome";
+                    if (ua.includes("chrome") && !ua.includes("edg") && !ua.includes("opr")) browser = "Chrome";
                     else if (ua.includes("firefox")) browser = "Firefox";
-                    else if (ua.includes("safari")) browser = "Safari";
-                    else if (ua.includes("edge")) browser = "Edge";
+                    else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
+                    else if (ua.includes("edg")) browser = "Edge";
                     else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
                 }
                 
                 // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (platform === "ไม่ระบุ") {
-                    const ua = deviceInfo.userAgent.toLowerCase();
-                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
-                    else if (ua.includes("android")) platform = "Android";
+                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
+                        platform = "iOS";
+                        // ลองค้นหาเวอร์ชัน iOS
+                        const iosMatch = ua.match(/os (\d+[._]\d+)/i);
+                        if (iosMatch && iosMatch[1]) {
+                            platform += " " + iosMatch[1].replace('_', '.');
+                        }
+                    }
+                    else if (ua.includes("android")) {
+                        platform = "Android";
+                        // ลองค้นหาเวอร์ชัน Android
+                        const androidMatch = ua.match(/android (\d+(\.\d+)+)/i);
+                        if (androidMatch && androidMatch[1]) {
+                            platform += " " + androidMatch[1];
+                        }
+                    }
                     else if (ua.includes("windows")) platform = "Windows";
                     else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
                     else if (ua.includes("linux")) platform = "Linux";
@@ -1591,7 +1665,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : "ไม่ทราบ"}</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : region !== "ไม่ทราบ" ? region : "ไม่ทราบ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
