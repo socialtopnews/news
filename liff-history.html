@@ -1367,17 +1367,33 @@
                 listItem.className = 'history-item';
                 
                 const deviceInfo = item.deviceInfo || {};
-                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
+                const deviceType = deviceInfo.deviceType || item.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || item.deviceModel || "ไม่ทราบ";
                 
-                // เพิ่มการแสดงข้อมูลประเทศและเมือง
-                let location = "ไม่ทราบ";
-                if (item.ip && typeof item.ip === 'object') {
-                    if (item.ip.city && item.ip.country) {
-                        location = `${item.ip.city}, ${item.ip.country}`;
-                    } else if (item.ip.country) {
-                        location = item.ip.country;
+                // ดึงข้อมูลประเทศและเมือง
+                let country = "ไม่ทราบ";
+                let city = "ไม่ทราบ";
+                
+                // ตรวจสอบข้อมูล IP
+                if (item.ip) {
+                    if (typeof item.ip === 'object' && item.ip !== null) {
+                        country = item.ip.country || item.country || "ไม่ทราบ";
+                        city = item.ip.city || item.city || "ไม่ทราบ";
                     }
+                } else {
+                    // ถ้าไม่มีข้อมูล IP object ลองดูที่ฟิลด์หลักของ item
+                    country = item.country || "ไม่ทราบ";
+                    city = item.city || "ไม่ทราบ";
+                }
+                
+                // สร้างข้อความแสดงตำแหน่ง
+                let locationText = "ไม่ทราบ";
+                if (city !== "ไม่ทราบ" && country !== "ไม่ทราบ") {
+                    locationText = `${city}, ${country}`;
+                } else if (city !== "ไม่ทราบ") {
+                    locationText = city;
+                } else if (country !== "ไม่ทราบ") {
+                    locationText = country;
                 }
                 
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
@@ -1391,7 +1407,7 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            <div><i class="fas fa-globe"></i> ${location}</div>
+                            <div><i class="fas fa-globe"></i> ${locationText}</div>
                         </div>
                     </div>
                 `;
@@ -1413,7 +1429,7 @@
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
-
+        
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
@@ -1551,7 +1567,7 @@
                     const ua = deviceInfo.userAgent.toLowerCase();
                     if (ua.includes("chrome")) browser = "Chrome";
                     else if (ua.includes("firefox")) browser = "Firefox";
-                    else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
+                    else if (ua.includes("safari")) browser = "Safari";
                     else if (ua.includes("edge")) browser = "Edge";
                     else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
@@ -1833,23 +1849,7 @@
                 window[callbackName] = function(data) {
                     if (data && data.columns) {
                         console.log("ชื่อคอลัมน์ที่พบในชีต:", data.columns);
-                        
-                        // เพิ่มการแสดงข้อมูลในรูปแบบที่ดีขึ้น
-                        let columnInfo = "พบคอลัมน์ทั้งหมด " + data.columns.length + " คอลัมน์:\n\n";
-                        
-                        // แยกคอลัมน์ตามชีต
-                        const phisingLogCols = data.phisingLogColumns || [];
-                        const mappingCols = data.trackingMappingColumns || [];
-                        
-                        if (phisingLogCols.length > 0) {
-                            columnInfo += "--- PhisingLog ---\n" + phisingLogCols.join(", ") + "\n\n";
-                        }
-                        
-                        if (mappingCols.length > 0) {
-                            columnInfo += "--- TrackingMapping ---\n" + mappingCols.join(", ");
-                        }
-                        
-                        alert(columnInfo);
+                        alert("พบคอลัมน์: " + data.columns.join(", "));
                     } else {
                         console.error("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
                         alert("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
@@ -1864,7 +1864,6 @@
                 
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
-                alert("เกิดข้อผิดพลาด: " + error.message);
             }
         }
     </script>
