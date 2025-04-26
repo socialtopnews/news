@@ -1407,215 +1407,280 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
-            const modalFooter = document.querySelector('#detailsModal .modal-footer'); // Get modal footer
-
+            
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
-
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
-            let gpsAccuracy = "ไม่ทราบ"; // Initialize gpsAccuracy
-
-            if (item.location && typeof item.location === 'object' && item.location.lat && item.location.long) {
-                locationText = `${item.location.lat}, ${item.location.long}`;
-                mapLink = item.location.gmapLink || `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                // Check and format accuracy
-                if (item.location.accuracy && !isNaN(parseFloat(item.location.accuracy))) {
-                    gpsAccuracy = `±${Math.round(parseFloat(item.location.accuracy))} เมตร`;
-                } else {
-                    gpsAccuracy = "ไม่ทราบ";
+            let gpsAccuracy = "";
+            
+            if (item.location) {
+                console.log("ค่า location สำหรับ Modal:", item.location);
+                
+                // ตรวจสอบรูปแบบข้อมูล location
+                if (typeof item.location === "object" && item.location !== null) {
+                    // กรณีเป็น object
+                    if (item.location.lat !== undefined && item.location.long !== undefined) {
+                        locationText = `${item.location.lat}, ${item.location.long}`;
+                        
+                        // สร้างลิงก์ Google Maps โดยตรง
+                        mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                        
+                        // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
+                        if (item.location.gmapLink && 
+                            (item.location.gmapLink.includes('google.com/maps') || 
+                             item.location.gmapLink.includes('goo.gl/maps'))) {
+                            mapLink = item.location.gmapLink;
+                        }
+                        
+                        gpsAccuracy = item.location.accuracy ? `±${item.location.accuracy} เมตร` : "ไม่มีข้อมูล";
+                    }
+                } else if (typeof item.location === "string") {
+                    // กรณีเป็น string
+                    locationText = item.location;
+                    
+                    // พยายามแยกค่า lat, long จาก string
+                    if (locationText.includes(",")) {
+                        const coords = locationText.split(",").map(coord => coord.trim());
+                        if (coords.length === 2) {
+                            // สร้างลิงก์ Google Maps โดยตรง
+                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                        }
+                    }
                 }
-                console.log("GPS Accuracy value:", item.location.accuracy, "Formatted:", gpsAccuracy);
-            } else {
-                 console.log("No valid GPS location data found.");
             }
-
-
+            
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-
-            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
+            
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขการประมวลผล ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
-
-            // แก้ไขการเข้าถึงข้อมูล IP
-            let ipAddress = "ไม่มีข้อมูล"; // Renamed from ipInfo for clarity
+            
+            // แก้ไขการเข้าถึงและประมวลผลข้อมูล IP อย่างละเอียด
+            let ipInfo = "ไม่มีข้อมูล";
             let country = "ไม่ทราบ";
             let region = "ไม่ทราบ";
-            let city = "ไม่ทราบ";
+            let city = "ไม่ทราบ"; 
             let isp = "ไม่ทราบ";
-            let asn = "ไม่ทราบ"; // Changed from 'รหัสเซิร์ฟเวอร์' to 'ASN' for consistency
-
-            // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
-            if (typeof item.ip === 'string') {
-                // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
-                ipAddress = item.ip;
-            } else if (typeof item.ip === 'object' && item.ip !== null) {
-                // กรณีที่ข้อมูล IP เป็น object
-
-                // ดึงค่า IP address
-                ipAddress = item.ip.ip || item.ip.query || "ไม่มีข้อมูล"; // Added fallback for 'query'
-
-                // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
-                country = item.ip.country || item.ip.countryCode || item.ip.countryName || "ไม่ทราบ";
-
-                // ดึงข้อมูลภูมิภาค/เมือง - ลองหลายฟิลด์
-                region = item.ip.regionName || item.ip.region || "ไม่ทราบ";
-                city = item.ip.city || "ไม่ทราบ";
-                const cityRegion = city !== "ไม่ทราบ" ? (region !== "ไม่ทราบ" ? `${city}/${region}` : city) : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ");
-
-
-                // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
-                isp = item.ip.isp || item.ip.org || item.ip.organization || item.ip.asOrg || "ไม่ทราบ";
-
-                // ดึงข้อมูล ASN
-                asn = item.ip.as || (item.ip.asn ? `AS${item.ip.asn}` : "ไม่ทราบ"); // Format ASN correctly
-            } else if (item.ip && typeof item.ip !== 'object') {
-                 // Handle cases where item.ip might be a simple value but not a string or expected object
-                 ipAddress = String(item.ip); // Convert to string if possible
+            let asn = "ไม่ทราบ";
+            
+            // ตรวจสอบและแกะข้อมูล IP ให้ละเอียดขึ้น
+            if (item.ip) {
+                // กรณีที่เป็นข้อความหรือตัวเลข (IP address แบบธรรมดา)
+                if (typeof item.ip === 'string' || typeof item.ip === 'number') {
+                    ipInfo = String(item.ip);
+                } 
+                // กรณีที่เป็น object (โครงสร้างข้อมูลเต็ม)
+                else if (typeof item.ip === 'object' && item.ip !== null) {
+                    // ดึงค่า IP address (ลองหลายฟิลด์)
+                    if (item.ip.ip) ipInfo = item.ip.ip;
+                    else if (item.ip.address) ipInfo = item.ip.address;
+                    else if (item.ip.addr) ipInfo = item.ip.addr;
+                    else if (item.ip.query) ipInfo = item.ip.query;
+                    
+                    // ดึงข้อมูลประเทศ (ลองหลายฟิลด์)
+                    if (item.ip.country) country = item.ip.country;
+                    else if (item.ip.countryCode) country = item.ip.countryCode;
+                    else if (item.ip.country_name) country = item.ip.country_name;
+                    else if (item.ip.countryName) country = item.ip.countryName;
+                    
+                    // ดึงข้อมูลภูมิภาค (ลองหลายฟิลด์)
+                    if (item.ip.region) region = item.ip.region;
+                    else if (item.ip.regionName) region = item.ip.regionName;
+                    else if (item.ip.region_name) region = item.ip.region_name;
+                    
+                    // ดึงข้อมูลเมือง (ลองหลายฟิลด์)
+                    if (item.ip.city) city = item.ip.city;
+                    else if (item.ip.cityName) city = item.ip.cityName;
+                    else if (item.ip.city_name) city = item.ip.city_name;
+                    
+                    // ดึงข้อมูล ISP/ผู้ให้บริการ (ลองหลายฟิลด์)
+                    if (item.ip.isp) isp = item.ip.isp;
+                    else if (item.ip.org) isp = item.ip.org;
+                    else if (item.ip.organization) isp = item.ip.organization;
+                    else if (item.ip.asOrg) isp = item.ip.asOrg;
+                    else if (item.ip.service_provider) isp = item.ip.service_provider;
+                    else if (item.ip.as_name) isp = item.ip.as_name;
+                    
+                    // ดึงข้อมูล ASN (ลองหลายฟิลด์)
+                    if (item.ip.as) asn = item.ip.as;
+                    else if (item.ip.asn) asn = typeof item.ip.asn === 'number' ? `AS${item.ip.asn}` : item.ip.asn;
+                    else if (item.ip.as_number) asn = item.ip.as_number;
+                    
+                    // หากยังไม่พบข้อมูล ASN แต่พบใน as/org/isp ให้ลองแยกจากตรงนั้น
+                    if (asn === "ไม่ทราบ" && isp !== "ไม่ทราบ") {
+                        const asnMatch = isp.match(/AS\d+/);
+                        if (asnMatch) {
+                            asn = asnMatch[0];
+                        }
+                    }
+                }
             }
-
-
-            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
+            
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขการประมวลผล ==========
             const deviceInfo = item.deviceInfo || {};
-
+            
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
-
+            
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
-
-            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            
+            // แยกสกัดข้อมูลระบบปฏิบัติการ
             let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
-            let browser = deviceInfo.browser || "ไม่ระบุ";
-
-            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
-            if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
-                // กรณี iPhone หรือ iOS
-                if (deviceModel.toLowerCase().includes("iphone") || deviceModel.toLowerCase().includes("ios")) {
-                    platform = deviceModel; // Use the model string which likely contains iOS version
+            
+            // ดึงข้อมูลเบราว์เซอร์อย่างละเอียด
+            let browser = "ไม่ระบุ";
+            if (deviceInfo.browser) {
+                browser = deviceInfo.browser;
+            } else if (deviceInfo.browserName) {
+                browser = deviceInfo.browserName;
+            } else if (deviceInfo.browserInfo && deviceInfo.browserInfo.name) {
+                browser = deviceInfo.browserInfo.name;
+            } else if (deviceInfo.userAgent) {
+                // พยายามสกัดข้อมูลเบราว์เซอร์จาก userAgent
+                const ua = deviceInfo.userAgent.toLowerCase();
+                if (ua.includes("chrome") && !ua.includes("edg")) browser = "Chrome";
+                else if (ua.includes("firefox")) browser = "Firefox";
+                else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
+                else if (ua.includes("edg")) browser = "Microsoft Edge";
+                else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+                else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+            }
+            
+            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel หรือ userAgent
+            if (platform === "ไม่ระบุ") {
+                if (deviceModel !== "ไม่ระบุ") {
+                    // กรณี iPhone หรือ iOS
+                    if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
+                        const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                        if (iosMatch && iosMatch[1]) {
+                            platform = `iOS ${iosMatch[1]}`;
+                        } else {
+                            platform = "iOS";
+                        }
+                    }
+                    // กรณี Android
+                    else if (deviceModel.includes("Android")) {
+                        const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
+                        if (androidMatch && androidMatch[1]) {
+                            platform = `Android ${androidMatch[1]}`;
+                        } else {
+                            platform = "Android";
+                        }
+                    }
                 }
-                // กรณี Android
-                else if (deviceModel.toLowerCase().includes("android")) {
-                     platform = "Android"; // Or try to extract version if available
+                
+                // ถ้ายังไม่มีข้อมูล ลองสกัดจาก userAgent
+                if (platform === "ไม่ระบุ" && deviceInfo.userAgent) {
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
+                        platform = "iOS";
+                        // ลองหาเวอร์ชัน
+                        const iosMatch = ua.match(/os\s+([\d_]+)/);
+                        if (iosMatch && iosMatch[1]) {
+                            platform = `iOS ${iosMatch[1].replace(/_/g, '.')}`;
+                        }
+                    }
+                    else if (ua.includes("android")) {
+                        platform = "Android";
+                        // ลองหาเวอร์ชัน
+                        const androidMatch = ua.match(/android\s+([\d\.]+)/);
+                        if (androidMatch && androidMatch[1]) {
+                            platform = `Android ${androidMatch[1]}`;
+                        }
+                    }
+                    else if (ua.includes("windows")) platform = "Windows";
+                    else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
+                    else if (ua.includes("linux")) platform = "Linux";
                 }
             }
-
-            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
-            if (deviceInfo.userAgent) {
-                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent (Basic check)
-                if (browser === "ไม่ระบุ") {
-                     const ua = deviceInfo.userAgent.toLowerCase();
-                     if (ua.includes("firefox")) browser = "Firefox";
-                     else if (ua.includes("chrome") && !ua.includes("edg")) browser = "Chrome";
-                     else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
-                     else if (ua.includes("edg")) browser = "Edge";
-                     else if (ua.includes("opr") || ua.includes("opera")) browser = "Opera";
-                     // Add more checks if needed
-                }
-
-                // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
-                if (platform === "ไม่ระบุ") {
-                     const ua = deviceInfo.userAgent.toLowerCase();
-                     if (ua.includes("windows")) platform = "Windows";
-                     else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
-                     else if (ua.includes("android")) platform = "Android";
-                     else if (ua.includes("linux")) platform = "Linux";
-                     // Add more checks if needed
-                }
-            }
-
+            
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
-                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
+                    <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <span class="detail-label">IP Address</span>
-                        <span class="detail-value">${ipAddress}</span>
+                        <div class="detail-label">วันเวลา</div>
+                        <div class="detail-value">${formattedDateTime}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">ประเทศ</span>
-                        <span class="detail-value">${country}</span>
+                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">เมือง/ภูมิภาค</span>
-                        <span class="detail-value">${city !== "ไม่ทราบ" ? (region !== "ไม่ทราบ" ? `${city}/${region}` : city) : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</span>
+                        <div class="detail-label">ชื่อเคส</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">ผู้ให้บริการเน็ต</span>
-                        <span class="detail-value">${isp}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">รหัสเซิร์ฟเวอร์</span>
-                        <span class="detail-value">${asn}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">พิกัด GPS</span>
-                        <span class="detail-value">${locationText}</span>
-                    </div>
-                     <div class="detail-item">
-                        <span class="detail-label">ความแม่นยำ</span>
-                        <span class="detail-value">${gpsAccuracy}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">แผนที่</span>
-                        <span class="detail-value">${mapLink ? `<a href="${mapLink}" target="_blank" rel="noopener noreferrer">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a>` : 'ไม่มีข้อมูล'}</span>
+                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
-
+                
+                <div class="detail-group">
+                    <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">IP Address</div>
+                        <div class="detail-value">${ipInfo}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-value">${country}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">เมือง/ภูมิภาค</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : region !== "ไม่ทราบ" ? region : "ไม่ทราบ"}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้ให้บริการเน็ต</div>
+                        <div class="detail-value">${isp}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-value">${asn}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">พิกัด GPS</div>
+                        <div class="detail-value">${locationText}</div>
+                    </div>
+                    ${gpsAccuracy ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-value">${gpsAccuracy}</div>
+                    </div>` : ''}
+                    ${mapLink ? `
+                    <div class="detail-item">
+                        <div class="detail-label">แผนที่</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                    </div>` : ''}
+                </div>
+                
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <span class="detail-label">ประเภทอุปกรณ์</span>
-                        <span class="detail-value">${deviceType}</span>
+                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-value">${deviceType}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">รุ่นอุปกรณ์</span>
-                        <span class="detail-value">${deviceModel}</span>
+                        <div class="detail-label">รุ่นอุปกรณ์</div>
+                        <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">ระบบปฏิบัติการ</span>
-                        <span class="detail-value">${platform}</span>
+                        <div class="detail-label">ระบบปฏิบัติการ</div>
+                        <div class="detail-value">${platform}</div>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label">เบราว์เซอร์</span>
-                        <span class="detail-value">${browser}</span>
-                    </div>
-                </div>
-
-                <div class="detail-group">
-                    <h3><i class="fas fa-info-circle"></i> ข้อมูลเพิ่มเติม</h3>
-                     <div class="detail-item">
-                        <span class="detail-label">Tracking Key</span>
-                        <span class="detail-value">${item.trackingKey || 'ไม่มีข้อมูล'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">ชื่อเคส</span>
-                        <span class="detail-value">${item.caseName || 'ไม่ระบุ'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">เวลาที่บันทึก</span>
-                        <span class="detail-value">${formattedDateTime}</span>
-                    </div>
-                     <div class="detail-item">
-                        <span class="detail-label">ผู้สร้าง</span>
-                        <span class="detail-value">${item.creatorFullName || item.creatorName || 'ไม่ระบุ'}</span>
+                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
-
-            // Clear previous buttons and add close button
-            modalFooter.innerHTML = ''; // Clear existing buttons
-            const closeButton = document.createElement('button');
-            closeButton.id = 'closeModalBtn'; // Keep the ID if needed elsewhere
-            closeButton.className = 'modal-btn';
-            closeButton.textContent = 'ปิด';
-            closeButton.addEventListener('click', closeModal);
-            modalFooter.appendChild(closeButton);
-
-
+            
             modal.style.display = 'block';
         }
-
+        
         // ปิด Modal
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
