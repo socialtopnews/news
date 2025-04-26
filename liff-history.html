@@ -1106,7 +1106,7 @@
             }
         }
         
-        // ฟังก์ชันดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
+        // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
         function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -1140,23 +1140,6 @@
                     // แสดงข้อมูลเพื่อการแก้ไขปัญหา
                     if (data.history && data.history.length > 0) {
                         console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0], null, 2));
-                        // แสดงตัวอย่างข้อมูล IP ในข้อมูลแรก
-                        if (data.history[0].ip) {
-                            console.log("ตัวอย่างข้อมูล IP:", JSON.stringify(data.history[0].ip, null, 2));
-                            
-                            // ตรวจสอบเพื่อแก้ปัญหากรณี IP เป็นสตริง
-                            if (typeof data.history[0].ip === 'string') {
-                                console.log("ข้อมูล IP เป็นสตริง ต้องแปลงรูปแบบ");
-                                // วนลูปแปลงข้อมูล IP ในประวัติทั้งหมด
-                                data.history.forEach(item => {
-                                    if (typeof item.ip === 'string') {
-                                        // แปลงรูปแบบให้เป็น object
-                                        item.ip = { ip: item.ip };
-                                    }
-                                });
-                            }
-                        }
-                        
                         // ตรวจสอบค่า location ในข้อมูลตัวแรก
                         if (data.history[0].location) {
                             console.log("ค่า location:", JSON.stringify(data.history[0].location, null, 2));
@@ -1387,6 +1370,16 @@
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
                 const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
+                // เพิ่มการแสดงข้อมูลประเทศและเมือง
+                let location = "ไม่ทราบ";
+                if (item.ip && typeof item.ip === 'object') {
+                    if (item.ip.city && item.ip.country) {
+                        location = `${item.ip.city}, ${item.ip.country}`;
+                    } else if (item.ip.country) {
+                        location = item.ip.country;
+                    }
+                }
+                
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
                 
@@ -1398,6 +1391,7 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                            <div><i class="fas fa-globe"></i> ${location}</div>
                         </div>
                     </div>
                 `;
@@ -1419,7 +1413,7 @@
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
-        
+
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
@@ -1471,7 +1465,7 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ========== ข้อมูล IP และตำแหน่ง - ปรับปรุงการดึงข้อมูล ==========
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
             // แก้ไขการเข้าถึงข้อมูล IP
@@ -1490,18 +1484,16 @@
                 // กรณีที่ข้อมูล IP เป็น object
                 
                 // ดึงค่า IP address
-                ipInfo = item.ip.ip || item.ip.address || item.ip.ipAddress || "ไม่มีข้อมูล";
+                ipInfo = item.ip.ip || "ไม่มีข้อมูล";
                 
                 // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
-                if (item.ip.country_name) country = item.ip.country_name;
-                else if (item.ip.countryName) country = item.ip.countryName;
-                else if (item.ip.country) country = item.ip.country;
+                if (item.ip.country) country = item.ip.country;
                 else if (item.ip.countryCode) country = item.ip.countryCode;
+                else if (item.ip.countryName) country = item.ip.countryName;
                 
                 // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
-                if (item.ip.region_name) region = item.ip.region_name;
+                if (item.ip.region) region = item.ip.region;
                 else if (item.ip.regionName) region = item.ip.regionName;
-                else if (item.ip.region) region = item.ip.region;
                 
                 // ดึงข้อมูลเมือง
                 if (item.ip.city) city = item.ip.city;
@@ -1511,24 +1503,23 @@
                 else if (item.ip.org) isp = item.ip.org;
                 else if (item.ip.organization) isp = item.ip.organization;
                 else if (item.ip.asOrg) isp = item.ip.asOrg;
-                else if (item.ip.service_provider) isp = item.ip.service_provider;
                 
                 // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = typeof item.ip.asn === 'number' ? `AS${item.ip.asn}` : item.ip.asn;
+                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
             }
             
-            // ========== ข้อมูลอุปกรณ์ - ปรับปรุงการดึงข้อมูล ==========
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
             
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
-            const deviceType = deviceInfo.deviceType || "มือถือ"; // Default เป็นมือถือเพราะส่วนใหญ่เป็น mobile
-            const deviceModel = deviceInfo.deviceModel || deviceInfo.model || "ไม่ระบุ";
+            const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
+            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
             // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
-            let platform = deviceInfo.platform || deviceInfo.os || deviceInfo.operatingSystem || "ไม่ระบุ";
+            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
             let browser = deviceInfo.browser || "ไม่ระบุ";
             
             // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
@@ -1564,28 +1555,13 @@
                     else if (ua.includes("edge")) browser = "Edge";
                     else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
-                    else if (ua.includes("line")) browser = "LINE";
                 }
                 
                 // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (platform === "ไม่ระบุ") {
                     const ua = deviceInfo.userAgent.toLowerCase();
-                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) {
-                        platform = "iOS";
-                        // ลองหาเวอร์ชัน iOS
-                        const iosVersionMatch = ua.match(/os (\d+_\d+)/);
-                        if (iosVersionMatch && iosVersionMatch[1]) {
-                            platform = `iOS ${iosVersionMatch[1].replace('_', '.')}`;
-                        }
-                    }
-                    else if (ua.includes("android")) {
-                        platform = "Android";
-                        // ลองหาเวอร์ชัน Android
-                        const androidVersionMatch = ua.match(/android (\d+(\.\d+)?)/);
-                        if (androidVersionMatch && androidVersionMatch[1]) {
-                            platform = `Android ${androidVersionMatch[1]}`;
-                        }
-                    }
+                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
+                    else if (ua.includes("android")) platform = "Android";
                     else if (ua.includes("windows")) platform = "Windows";
                     else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
                     else if (ua.includes("linux")) platform = "Linux";
@@ -1626,7 +1602,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : region !== "ไม่ทราบ" ? region : "ไม่ทราบ"}</div>
+                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : "ไม่ทราบ"}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ผู้ให้บริการเน็ต</div>
@@ -1857,7 +1833,23 @@
                 window[callbackName] = function(data) {
                     if (data && data.columns) {
                         console.log("ชื่อคอลัมน์ที่พบในชีต:", data.columns);
-                        alert("พบคอลัมน์: " + data.columns.join(", "));
+                        
+                        // เพิ่มการแสดงข้อมูลในรูปแบบที่ดีขึ้น
+                        let columnInfo = "พบคอลัมน์ทั้งหมด " + data.columns.length + " คอลัมน์:\n\n";
+                        
+                        // แยกคอลัมน์ตามชีต
+                        const phisingLogCols = data.phisingLogColumns || [];
+                        const mappingCols = data.trackingMappingColumns || [];
+                        
+                        if (phisingLogCols.length > 0) {
+                            columnInfo += "--- PhisingLog ---\n" + phisingLogCols.join(", ") + "\n\n";
+                        }
+                        
+                        if (mappingCols.length > 0) {
+                            columnInfo += "--- TrackingMapping ---\n" + mappingCols.join(", ");
+                        }
+                        
+                        alert(columnInfo);
                     } else {
                         console.error("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
                         alert("ไม่สามารถดึงข้อมูลคอลัมน์ได้");
@@ -1872,6 +1864,7 @@
                 
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
+                alert("เกิดข้อผิดพลาด: " + error.message);
             }
         }
     </script>
