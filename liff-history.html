@@ -1367,34 +1367,8 @@
                 listItem.className = 'history-item';
                 
                 const deviceInfo = item.deviceInfo || {};
-                const deviceType = deviceInfo.deviceType || item.deviceType || "ไม่ทราบ";
-                const deviceModel = deviceInfo.deviceModel || item.deviceModel || "ไม่ทราบ";
-                
-                // ดึงข้อมูลประเทศและเมือง
-                let country = "ไม่ทราบ";
-                let city = "ไม่ทราบ";
-                
-                // ตรวจสอบข้อมูล IP
-                if (item.ip) {
-                    if (typeof item.ip === 'object' && item.ip !== null) {
-                        country = item.ip.country || item.country || "ไม่ทราบ";
-                        city = item.ip.city || item.city || "ไม่ทราบ";
-                    }
-                } else {
-                    // ถ้าไม่มีข้อมูล IP object ลองดูที่ฟิลด์หลักของ item
-                    country = item.country || "ไม่ทราบ";
-                    city = item.city || "ไม่ทราบ";
-                }
-                
-                // สร้างข้อความแสดงตำแหน่ง
-                let locationText = "ไม่ทราบ";
-                if (city !== "ไม่ทราบ" && country !== "ไม่ทราบ") {
-                    locationText = `${city}, ${country}`;
-                } else if (city !== "ไม่ทราบ") {
-                    locationText = city;
-                } else if (country !== "ไม่ทราบ") {
-                    locationText = country;
-                }
+                const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
+                const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ";
                 
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
@@ -1407,7 +1381,6 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            <div><i class="fas fa-globe"></i> ${locationText}</div>
                         </div>
                     </div>
                 `;
@@ -1483,62 +1456,31 @@
             
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
+            console.log("โครงสร้างข้อมูล Device ที่ได้รับ:", typeof item.deviceInfo, JSON.stringify(item.deviceInfo, null, 2));
+            console.log("โครงสร้างข้อมูล Item ทั้งหมด:", JSON.stringify(item, null, 2)); // Log เพิ่มเติม
             
             // แก้ไขการเข้าถึงข้อมูล IP
-            let ipInfo = "ไม่มีข้อมูล";
-            let country = "ไม่ทราบ";
-            let region = "ไม่ทราบ";
-            let city = "ไม่ทราบ"; 
-            let isp = "ไม่ทราบ";
-            let asn = "ไม่ทราบ";
-            
-            // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
-            if (typeof item.ip === 'string') {
-                // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
-                ipInfo = item.ip;
-            } else if (typeof item.ip === 'object' && item.ip !== null) {
-                // กรณีที่ข้อมูล IP เป็น object
-                
-                // ดึงค่า IP address
-                ipInfo = item.ip.ip || "ไม่มีข้อมูล";
-                
-                // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
-                if (item.ip.country) country = item.ip.country;
-                else if (item.ip.countryCode) country = item.ip.countryCode;
-                else if (item.ip.countryName) country = item.ip.countryName;
-                
-                // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
-                if (item.ip.region) region = item.ip.region;
-                else if (item.ip.regionName) region = item.ip.regionName;
-                
-                // ดึงข้อมูลเมือง
-                if (item.ip.city) city = item.ip.city;
-                
-                // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
-                if (item.ip.isp) isp = item.ip.isp;
-                else if (item.ip.org) isp = item.ip.org;
-                else if (item.ip.organization) isp = item.ip.organization;
-                else if (item.ip.asOrg) isp = item.ip.asOrg;
-                
-                // ดึงข้อมูล ASN
-                if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
-            }
+            let ipInfo = item.ipAddress || (typeof item.ip === 'string' ? item.ip : (item.ip?.ip || "ไม่มีข้อมูล")); // เพิ่ม item.ipAddress
+            let country = item.country || item.ประเทศ || item.ip?.country || item.ip?.countryCode || item.ip?.countryName || "ไม่ทราบ"; // เพิ่ม item.country, item.ประเทศ
+            let region = item.region || item.ภูมิภาค || item.ip?.region || item.ip?.regionName || "ไม่ทราบ"; // เพิ่ม item.region, item.ภูมิภาค
+            let city = item.city || item.เมือง || item.ip?.city || "ไม่ทราบ"; // เพิ่ม item.city, item.เมือง
+            let isp = item.isp || item.ผู้ให้บริการเน็ต || item.ip?.isp || item.ip?.org || item.ip?.organization || item.ip?.asOrg || "ไม่ทราบ"; // เพิ่ม item.isp, item.ผู้ให้บริการเน็ต
+            let asn = item.asn || item.รหัสเซิร์ฟเวอร์ || item.ip?.as || (item.ip?.asn ? `AS${item.ip.asn}` : "ไม่ทราบ"); // เพิ่ม item.asn, item.รหัสเซิร์ฟเวอร์
             
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
             
-            console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
+            console.log("โครงสร้างข้อมูลอุปกรณ์ (หลังการตรวจสอบ):", JSON.stringify(deviceInfo, null, 2));
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
-            const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
+            const deviceType = item.deviceType || deviceInfo.deviceType || "ไม่ระบุ"; // เพิ่ม item.deviceType
+            const deviceModel = item.deviceModel || deviceInfo.deviceModel || "ไม่ระบุ"; // เพิ่ม item.deviceModel
             
             // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
-            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
-            let browser = deviceInfo.browser || "ไม่ระบุ";
+            let platform = item.platform || item.os || deviceInfo.platform || deviceInfo.os || "ไม่ระบุ"; // เพิ่ม item.platform, item.os
+            let browser = item.browser || item.เบราว์เซอร์ || deviceInfo.browser || "ไม่ระบุ"; // เพิ่ม item.browser, item.เบราว์เซอร์
             
-            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
+            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel (Fallback)
             if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
                 // กรณี iPhone หรือ iOS
                 if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
