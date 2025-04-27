@@ -709,7 +709,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx0VkikchqqU5vu30jdD6If7eN0SC1tc6vhnH5x1BLRpG9ywtJgdDdzUUunDjcTpE2_/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxVUPrz4qwGHtHyJwMS4idEpB1AmnoSvojGy_J3ZJTMqF-XQNC4VTLBZlOeo0kDqgo/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
