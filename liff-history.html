@@ -690,25 +690,6 @@
                 max-height: 90vh;
             }
         }
-
-        /* เพิ่ม styles สำหรับแสดงความเป็นเจ้าของ */
-        .owned-item {
-            position: relative;
-        }
-        
-        .owner-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 18px;
-            height: 18px;
-            background-color: var(--success-color);
-            color: white;
-            border-radius: 50%;
-            font-size: 10px;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
     </style>
 </head>
 <body>
@@ -819,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxXi9tpRKTmausJumbfDxxyNMBntGOBAlq7Jt0xdKR0xyJdexyGeIJciud-n2pmnS_B/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxXi9tpRKTmausJumbfDxxyNMBntGOBAlq7Jt0xdKR0xyJdexyGeIJciud-n2pmnS_B/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1125,7 +1106,7 @@
             }
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
+        // ฟังก์ชันดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
         function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -1159,6 +1140,13 @@
                     // แสดงข้อมูลเพื่อการแก้ไขปัญหา
                     if (data.history && data.history.length > 0) {
                         console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0], null, 2));
+                        // ตรวจสอบค่า isOwner ในข้อมูลตัวแรก
+                        if (data.history[0].isOwner !== undefined) {
+                            console.log("ค่า isOwner:", data.history[0].isOwner);
+                        } else {
+                            console.log("ไม่พบค่า isOwner ในข้อมูล");
+                        }
+                        
                         // ตรวจสอบค่า location ในข้อมูลตัวแรก
                         if (data.history[0].location) {
                             console.log("ค่า location:", JSON.stringify(data.history[0].location, null, 2));
@@ -1385,9 +1373,10 @@
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
                 
-                // ถ้าเป็นเจ้าของเคส ให้เพิ่ม class พิเศษ
+                // ถ้าเป็นเจ้าของ trackingKey นี้ ให้เพิ่ม class เพื่อแสดงว่าเป็นเจ้าของ
                 if (item.isOwner) {
-                    listItem.classList.add('owned-item');
+                    listItem.classList.add('owner-item');
+                    // เพิ่มเส้นขอบด้านซ้ายสีเขียวเพื่อแสดงว่าเป็นของผู้ใช้
                     listItem.style.borderLeft = '4px solid var(--success-color)';
                 }
                 
@@ -1398,18 +1387,15 @@
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
                 
-                // เพิ่มไอคอนแสดงความเป็นเจ้าของ
-                const ownerIcon = item.isOwner ? 
-                    '<span class="owner-badge" title="คุณเป็นเจ้าของเคสนี้"><i class="fas fa-user-check"></i></span>' : '';
-                
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${formattedDateTime}</div>
-                    <div class="history-key"><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"} ${ownerIcon}</div>
+                    <div class="history-key"><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
                     <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                            ${item.isOwner ? '<div><i class="fas fa-user-check"></i> เป็นเจ้าของ</div>' : ''}
                         </div>
                     </div>
                 `;
@@ -1431,7 +1417,7 @@
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
-
+        
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
@@ -1586,15 +1572,10 @@
                 }
             }
             
-            // เพิ่มข้อมูลการเป็นเจ้าของในรายละเอียด
-            const ownershipStatus = item.isOwner ? 
-                '<div class="detail-item"><div class="detail-label">สถานะ</div><div class="detail-value"><span style="color:var(--success-color);font-weight:500;"><i class="fas fa-user-check"></i> คุณเป็นเจ้าของเคสนี้</span></div></div>' : '';
-            
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
-                    ${ownershipStatus}
                     <div class="detail-item">
                         <div class="detail-label">วันเวลา</div>
                         <div class="detail-value">${formattedDateTime}</div>
