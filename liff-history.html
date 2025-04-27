@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxIB8Jlkzr4i-6NWfBt2i0OETpRz6iABLs61z-ZfyLh3rFu0GkdjCQQnK_zKY5-l52q/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxIB8Jlkzr4i-6NWfBt2i0OETpRz6iABLs61z-ZfyLh3rFu0GkdjCQQnK_zKY5-l52q/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxWUOJevkU1O-D2AuE2UjJL1hxtUDipAjxrQiuHn8Ki80IKlkox278W7NR9FRcdO87K/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxWUOJevkU1O-D2AuE2UjJL1hxtUDipAjxrQiuHn8Ki80IKlkox278W7NR9FRcdO87K/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1106,7 +1106,62 @@
             }
         }
         
-        // ดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
+        // ฟังก์ชันเริ่มต้นการทำงาน LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                
+                // ดึงข้อมูลโปรไฟล์ผู้ใช้
+                const profile = await liff.getProfile();
+                userId = profile.userId;
+                displayName = profile.displayName;
+                pictureUrl = profile.pictureUrl || 'https://via.placeholder.com/50';
+                
+                console.log(`ผู้ใช้: ${displayName} (${userId})`);
+                
+                // แสดงข้อมูลผู้ใช้
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('profileImage').src = pictureUrl;
+                document.getElementById('userInfoSection').style.display = 'block';
+                
+                // ตรวจสอบสิทธิ์ผู้ใช้
+                userHasPermission = await checkUserPermission(userId);
+                
+                if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
+                    document.getElementById('statusBadge').className = 'badge approved';
+                    enableHistoryFeatures();
+                    fetchUserHistory();
+                } else {
+                    // ไม่มีสิทธิ์ใช้งาน
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
+                    document.getElementById('permissionMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').style.display = 'block';
+                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-lock"></i><p>คุณยังไม่ได้รับอนุมัติให้ใช้งานระบบ</p>';
+                }
+                
+                isLiffInitialized = true;
+                
+                // ซ่อนหน้าโหลดดิ้ง
+                document.getElementById('loadingScreen').style.display = 'none';
+                
+            } catch (error) {
+                console.error('LIFF initialization failed', error);
+                document.getElementById('loadingScreen').style.display = 'none';
+                showErrorMessage('เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ' + error.message);
+            }
+        }
+        
+        // ฟังก์ชันดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
         function fetchUserHistory() {
             try {
                 // แสดง loading
@@ -1161,13 +1216,35 @@
                     
                     if (data.history && data.history.length > 0) {
                         console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
-                        currentHistoryData = data.history;
+                        
+                        // เพิ่มการกรองข้อมูลให้เฉพาะของผู้ใช้ปัจจุบันถ้าไม่ใช่ผู้ดูแลระบบ
+                        if (userId !== LINE_USER_ID) {
+                            console.log(`กรองเฉพาะข้อมูลของผู้ใช้ ${userId}`);
+                            const userHistory = data.history.filter(item => {
+                                // กรองเฉพาะข้อมูลที่มี creatorId ตรงกับผู้ใช้ปัจจุบัน
+                                const isCreator = item.creatorId === userId;
+                                // กรณีไม่มี creatorId แต่เป็น tracking key ของผู้ใช้ (จากการค้นหาใน server)
+                                return isCreator || (item.isUserData === true);
+                            });
+                            console.log(`หลังกรอง: พบข้อมูลประวัติจำนวน ${userHistory.length} รายการ`);
+                            currentHistoryData = userHistory;
+                        } else {
+                            // ผู้ดูแลระบบดูได้ทั้งหมด
+                            currentHistoryData = data.history;
+                        }
+                        
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
                         
-                        displayHistoryData();
-                        document.getElementById('historyList').style.display = 'block';
-                        document.getElementById('pagination').style.display = 'flex';
+                        if (currentHistoryData.length > 0) {
+                            displayHistoryData();
+                            document.getElementById('historyList').style.display = 'block';
+                            document.getElementById('pagination').style.display = 'flex';
+                        } else {
+                            document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งานของคุณ</p>';
+                            document.getElementById('noDataMessage').style.display = 'block';
+                            document.getElementById('pagination').style.display = 'none';
+                        }
                     } else {
                         console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
@@ -1454,10 +1531,10 @@
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
             
-            // ========== ข้อมูล IP และตำแหน่ง - ปรับปรุงการแกะข้อมูล ==========
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             
-            // ปรับปรุงการแกะข้อมูล IP แบบรองรับทุกกรณี
+            // แก้ไขการเข้าถึงข้อมูล IP
             let ipInfo = "ไม่มีข้อมูล";
             let country = "ไม่ทราบ";
             let region = "ไม่ทราบ";
@@ -1465,58 +1542,40 @@
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
             
-            // ตรวจสอบรูปแบบข้อมูล IP
-            if (item.ip) {
-                if (typeof item.ip === 'string') {
-                    // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ
-                    ipInfo = item.ip;
-                } else if (typeof item.ip === 'object' && item.ip !== null) {
-                    // กรณีที่ข้อมูล IP เป็น object
-                    
-                    // ดึงค่า IP address
-                    ipInfo = item.ip.ip || item.ip.query || "ไม่มีข้อมูล";
-                    
-                    // ดึงข้อมูลประเทศ - ตรวจสอบทุกฟิลด์ที่เป็นไปได้
-                    country = item.ip.country || 
-                            item.ip.countryCode || 
-                            item.ip.countryName || 
-                            item.ip.country_name || 
-                            item.ip.country_code || 
-                            "ไม่ทราบ";
-                    
-                    // ดึงข้อมูลภูมิภาค - ตรวจสอบทุกฟิลด์ที่เป็นไปได้
-                    region = item.ip.region || 
-                           item.ip.regionName || 
-                           item.ip.region_name || 
-                           "ไม่ทราบ";
-                    
-                    // ดึงข้อมูลเมือง - ตรวจสอบทุกฟิลด์ที่เป็นไปได้
-                    city = item.ip.city || "ไม่ทราบ";
-                    
-                    // ดึงข้อมูล ISP (ผู้ให้บริการเน็ต) - ตรวจสอบทุกฟิลด์ที่เป็นไปได้
-                    isp = item.ip.isp || 
-                        item.ip.org || 
-                        item.ip.as_org || 
-                        item.ip.asOrg || 
-                        item.ip.organization || 
-                        item.ip.service_provider || 
-                        "ไม่ทราบ";
-                    
-                    // ดึงข้อมูล ASN (รหัสเซิร์ฟเวอร์) - ตรวจสอบทุกฟิลด์ที่เป็นไปได้
-                    asn = item.ip.as || 
-                        item.ip.asn || 
-                        (item.ip.as_number ? `AS${item.ip.as_number}` : null) || 
-                        (item.ip.asn_number ? `AS${item.ip.asn_number}` : null) || 
-                        "ไม่ทราบ";
-                        
-                    // ถ้า asn เป็นตัวเลขเปล่า ให้เพิ่ม AS ข้างหน้า
-                    if (asn && !isNaN(asn) && asn !== "ไม่ทราบ") {
-                        asn = `AS${asn}`;
-                    }
-                }
+            // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
+            if (typeof item.ip === 'string') {
+                // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
+                ipInfo = item.ip;
+            } else if (typeof item.ip === 'object' && item.ip !== null) {
+                // กรณีที่ข้อมูล IP เป็น object
+                
+                // ดึงค่า IP address
+                ipInfo = item.ip.ip || "ไม่มีข้อมูล";
+                
+                // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
+                if (item.ip.country) country = item.ip.country;
+                else if (item.ip.countryCode) country = item.ip.countryCode;
+                else if (item.ip.countryName) country = item.ip.countryName;
+                
+                // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
+                if (item.ip.region) region = item.ip.region;
+                else if (item.ip.regionName) region = item.ip.regionName;
+                
+                // ดึงข้อมูลเมือง
+                if (item.ip.city) city = item.ip.city;
+                
+                // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
+                if (item.ip.isp) isp = item.ip.isp;
+                else if (item.ip.org) isp = item.ip.org;
+                else if (item.ip.organization) isp = item.ip.organization;
+                else if (item.ip.asOrg) isp = item.ip.asOrg;
+                
+                // ดึงข้อมูล ASN
+                if (item.ip.as) asn = item.ip.as;
+                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
             }
             
-            // ========== ข้อมูลอุปกรณ์ - ปรับปรุงการแกะข้อมูล ==========
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
             
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
@@ -1525,9 +1584,9 @@
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // ปรับปรุงการแกะข้อมูลระบบปฏิบัติการและเบราว์เซอร์
-            let platform = deviceInfo.platform || deviceInfo.os || deviceInfo.operatingSystem || "ไม่ระบุ";
-            let browser = deviceInfo.browser || deviceInfo.browserName || deviceInfo.browser_name || "ไม่ระบุ";
+            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
+            let browser = deviceInfo.browser || "ไม่ระบุ";
             
             // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
             if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
@@ -1553,20 +1612,20 @@
             
             // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
             if (deviceInfo.userAgent) {
-                const ua = deviceInfo.userAgent.toLowerCase();
-                
-                // ถ้า browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (browser === "ไม่ระบุ") {
-                    if (ua.includes("chrome") && !ua.includes("edg")) browser = "Chrome";
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("chrome")) browser = "Chrome";
                     else if (ua.includes("firefox")) browser = "Firefox";
-                    else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
-                    else if (ua.includes("edg")) browser = "Edge";
+                    else if (ua.includes("safari")) browser = "Safari";
+                    else if (ua.includes("edge")) browser = "Edge";
                     else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
                     else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
                 }
                 
-                // ถ้า platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
                 if (platform === "ไม่ระบุ") {
+                    const ua = deviceInfo.userAgent.toLowerCase();
                     if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
                     else if (ua.includes("android")) platform = "Android";
                     else if (ua.includes("windows")) platform = "Windows";
