@@ -24,12 +24,6 @@ function getUrlParameters() {
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
-  // ป้องกันการทำงานซ้ำโดยตรวจสอบ flag
-  if (window.trackingInitialized === true) {
-    console.log("script.js: ตรวจพบว่ามีการทำงานแล้ว ยกเลิกการทำงานซ้ำ");
-    return;
-  }
-
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -761,7 +755,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx1oi5c8dPkgS8WYuWIEs2WBz-jh05s35bwNt-eDX7QzssIxeh_qWrEzNJnvwpLpvfC/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
