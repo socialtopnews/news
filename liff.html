@@ -741,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyOF9Lh3bDLXQnDMGrUn9zo4BiV3sSDoCoOfk6iFbbqVCwEWNwPGJubqR3Jc0ng11bC/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyOF9Lh3bDLXQnDMGrUn9zo4BiV3sSDoCoOfk6iFbbqVCwEWNwPGJubqR3Jc0ng11bC/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz8UEr7tAkzFHhYL1aoHPum0I2bqELZJdDVsj-wPMZv50IWZ4oA568xEzQ7LmaJ_w4t/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz8UEr7tAkzFHhYL1aoHPum0I2bqELZJdDVsj-wPMZv50IWZ4oA568xEzQ7LmaJ_w4t/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1169,7 +1169,7 @@
             return trackingKey;
         }
         
-        // บันทึกข้อมูล Tracking Key และ Case Name - แก้ไขฟังก์ชันนี้
+        // บันทึกข้อมูล Tracking Key และ Case Name
         async function saveTrackingCaseMapping(trackKey, caseName) {
             if (!isLiffInitialized || !userId) {
                 console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
@@ -1183,113 +1183,64 @@
                 console.log('ชื่อผู้สร้าง:', displayName);
                 console.log('รูปภาพ URL:', imageUrl);
                 
-                // แสดง loading หรือข้อความกำลังบันทึก
+                // แสดงสถานะกำลังบันทึก
                 showStatus('กำลังบันทึกข้อมูล...', true);
                 
                 // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
                 const requestId = generateUniqueId();
                 
-                // สร้าง Promise ที่จะคืนค่าเมื่อการส่งข้อมูลสำเร็จหรือล้มเหลว
-                return new Promise(async (resolve) => {
-                    // ลำดับแรกพยายามใช้ fetch API (POST) ก่อน
+                // รวบรวมข้อมูลที่จะส่ง
+                const postData = {
+                    action: 'saveTrackingMapping',
+                    trackingKey: trackKey,
+                    caseName: caseName,
+                    creatorId: userId,
+                    creatorName: displayName,
+                    imageUrl: imageUrl,
+                    requestId: requestId,
+                    timestamp: new Date().toISOString()
+                };
+
+                // ทดลองส่งข้อมูลด้วย fetch API ก่อน (ตั้งค่า retry = 2 ครั้ง)
+                let success = await trySendDataWithFetch(postData, 2);
+                
+                // ถ้า fetch ไม่สำเร็จ ให้ลองใช้ JSONP เป็นตัวสำรอง
+                if (!success) {
+                    console.log('การส่งข้อมูลด้วย fetch ล้มเหลว กำลังลองใช้ JSONP แทน');
+                    success = await trySendDataWithJSONP(postData);
+                }
+                
+                // ถ้าส่งสำเร็จด้วยวิธีใดวิธีหนึ่ง
+                if (success) {
+                    console.log('บันทึก Tracking Key สำเร็จ');
+                    showStatus('บันทึกข้อมูลสำเร็จ', true);
+                    
+                    // บันทึกข้อมูลใน localStorage เพื่อเป็นสำรอง
                     try {
-                        const response = await fetch(PHISHING_WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                action: 'saveTrackingMapping',
-                                trackingKey: trackKey,
-                                caseName: caseName,
-                                creatorId: userId,
-                                creatorName: displayName,
-                                imageUrl: imageUrl,
-                                requestId: requestId,
-                                timestamp: new Date().toISOString()
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            console.log('บันทึก Tracking Key สำเร็จ (fetch API)');
-                            showStatus('บันทึกข้อมูลสำเร็จ', true);
-                            resolve(true);
-                            return;
-                        } else {
-                            console.log('การบันทึกด้วย fetch API ไม่สำเร็จ, สถานะ:', response.status);
-                            // ไปใช้วิธี JSONP แทน (ไม่ return เพื่อให้ทำงานต่อ)
-                        }
-                    } catch (fetchError) {
-                        console.error('เกิดข้อผิดพลาดในการใช้ fetch API:', fetchError);
-                        // ไปใช้วิธี JSONP แทน
+                        saveTrackingDataToLocalStorage(postData);
+                    } catch (storageErr) {
+                        console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', storageErr);
                     }
                     
-                    // วิธีสำรอง: ใช้ JSONP เพื่อหลีกเลี่ยงปัญหา CORS
-                    console.log('เปลี่ยนไปใช้วิธี JSONP แทน');
+                    return true;
+                } else {
+                    // ถ้าทุกวิธีล้มเหลว ให้บันทึกใน localStorage และแสดงสถานะ
+                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว กำลังบันทึกใน localStorage');
+                    
                     try {
-                        // สร้าง unique callback name
-                        const callbackName = 'jsonpCallback_' + new Date().getTime();
+                        saveTrackingDataToLocalStorage(postData);
                         
-                        // สร้าง global callback function
-                        window[callbackName] = function(response) {
-                            console.log('ได้รับการตอบกลับจาก JSONP:', response);
-                            
-                            if (response && response.status === "success") {
-                                showStatus('บันทึกข้อมูลสำเร็จ', true);
-                                resolve(true);
-                            } else {
-                                console.error('การบันทึกผ่าน JSONP ไม่สำเร็จ:', response);
-                                showStatus('เกิดข้อผิดพลาด แต่สามารถใช้งานต่อได้', false);
-                                resolve(true); // ให้ผู้ใช้ใช้งานต่อได้
-                            }
-                            
-                            // ลบ callback หลังจากใช้งานเสร็จ
-                            delete window[callbackName];
-                        };
+                        // แสดงสถานะว่าบันทึกแล้วแต่ไม่ได้ส่งข้อมูลไปยังเซิร์ฟเวอร์
+                        showStatus('บันทึกข้อมูลในอุปกรณ์แล้ว (รอการซิงค์)', false);
                         
-                        // สร้าง script tag สำหรับ JSONP
-                        const script = document.createElement('script');
-                        const url = new URL(PHISHING_WEBHOOK_URL);
-                        url.searchParams.append('action', 'saveTrackingMapping');
-                        url.searchParams.append('trackingKey', encodeURIComponent(trackKey));
-                        url.searchParams.append('caseName', encodeURIComponent(caseName));
-                        url.searchParams.append('creatorId', encodeURIComponent(userId));
-                        url.searchParams.append('creatorName', encodeURIComponent(displayName));
-                        url.searchParams.append('imageUrl', encodeURIComponent(imageUrl || ''));
-                        url.searchParams.append('requestId', encodeURIComponent(requestId));
-                        url.searchParams.append('timestamp', new Date().toISOString());
-                        url.searchParams.append('callback', callbackName);
-                        
-                        script.src = url.toString();
-                        script.onerror = function() {
-                            console.error('เกิดข้อผิดพลาดในการโหลด JSONP script');
-                            showStatus('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ แต่สามารถใช้งานต่อได้', false);
-                            resolve(true); // ให้ผู้ใช้ใช้งานต่อได้
-                            
-                            // ลบ callback หากเกิดข้อผิดพลาด
-                            delete window[callbackName];
-                        };
-                        
-                        // เพิ่ม script เข้าไปใน DOM
-                        document.body.appendChild(script);
-                        
-                        // ตั้งเวลาหมดเวลา 10 วินาที
-                        setTimeout(() => {
-                            if (window[callbackName]) {
-                                console.log("การบันทึกข้อมูลหมดเวลา");
-                                showStatus('การบันทึกข้อมูลใช้เวลานานเกินไป แต่สามารถใช้งานต่อได้', false);
-                                delete window[callbackName];
-                                resolve(true); // ให้ผู้ใช้ใช้งานต่อได้
-                            }
-                        }, 10000);
-                        
-                    } catch (jsonpError) {
-                        console.error('เกิดข้อผิดพลาดในการใช้ JSONP:', jsonpError);
+                        // ผู้ใช้ยังคงสามารถใช้งานต่อได้
+                        return true;
+                    } catch (storageErr) {
+                        console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', storageErr);
                         showStatus('เกิดข้อผิดพลาดในการบันทึกข้อมูล แต่สามารถใช้งานต่อได้', false);
-                        resolve(true); // ให้ผู้ใช้ใช้งานต่อได้
+                        return true;
                     }
-                });
+                }
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
                 
@@ -1298,6 +1249,160 @@
                 
                 // แม้จะมีข้อผิดพลาด แต่เราต้องให้ผู้ใช้สามารถแชร์ได้
                 return true;
+            }
+        }
+        
+        // ฟังก์ชันส่งข้อมูลด้วย fetch API พร้อมระบบ retry
+        async function trySendDataWithFetch(data, retries = 1) {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    console.log(`กำลังส่งข้อมูลด้วย fetch (พยายามครั้งที่ ${attempt + 1}/${retries + 1})`);
+                    
+                    const response = await fetch(PHISHING_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data),
+                        // เพิ่ม timeout
+                        signal: AbortSignal.timeout(10000) // 10 วินาที
+                    });
+                    
+                    if (response.ok) {
+                        console.log('บันทึก Tracking Key สำเร็จด้วย fetch API');
+                        return true;
+                    } else {
+                        console.warn(`fetch ไม่สำเร็จ (${response.status}): ${response.statusText}`);
+                        // ถ้ายังไม่ใช่ครั้งสุดท้าย ให้รอแล้วลองใหม่
+                        if (attempt < retries) {
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // รอ 1 วินาที
+                        }
+                    }
+                } catch (error) {
+                    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูลด้วย fetch (ครั้งที่ ${attempt + 1}):`, error);
+                    // ถ้ายังไม่ใช่ครั้งสุดท้าย ให้รอแล้วลองใหม่
+                    if (attempt < retries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // รอ 1 วินาที
+                    }
+                }
+            }
+            
+            // หากลองทุกครั้งแล้วไม่สำเร็จ
+            return false;
+        }
+        
+        // ฟังก์ชันส่งข้อมูลด้วย JSONP
+        async function trySendDataWithJSONP(data) {
+            return new Promise((resolve) => {
+                try {
+                    console.log('กำลังส่งข้อมูลด้วย JSONP');
+                    
+                    // สร้าง callback function
+                    const callbackName = 'jsonp_callback_' + new Date().getTime();
+                    
+                    // กำหนด global callback function
+                    window[callbackName] = function(response) {
+                        console.log('ได้รับการตอบกลับจาก JSONP:', response);
+                        
+                        // ลบ script tag และ callback function
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                        delete window[callbackName];
+                        
+                        // ตรวจสอบการตอบกลับ
+                        if (response && response.status === 'success') {
+                            console.log('บันทึกข้อมูลสำเร็จด้วย JSONP');
+                            resolve(true);
+                        } else {
+                            console.warn('JSONP ไม่สำเร็จ:', response);
+                            resolve(false);
+                        }
+                    };
+                    
+                    // สร้าง URL สำหรับ JSONP
+                    let url = new URL(PHISHING_WEBHOOK_URL);
+                    
+                    // เพิ่มพารามิเตอร์
+                    url.searchParams.append('action', data.action);
+                    url.searchParams.append('trackingKey', data.trackingKey);
+                    url.searchParams.append('caseName', data.caseName);
+                    url.searchParams.append('creatorId', data.creatorId);
+                    url.searchParams.append('creatorName', data.creatorName);
+                    url.searchParams.append('requestId', data.requestId);
+                    url.searchParams.append('callback', callbackName);
+                    
+                    if (data.imageUrl) {
+                        url.searchParams.append('imageUrl', data.imageUrl);
+                    }
+                    
+                    // สร้าง script tag
+                    const script = document.createElement('script');
+                    script.src = url.toString();
+                    
+                    // เพิ่ม timeout
+                    const timeoutId = setTimeout(() => {
+                        console.warn('JSONP timeout');
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                        delete window[callbackName];
+                        resolve(false);
+                    }, 10000); // 10 วินาที
+                    
+                    // เมื่อโหลดสำเร็จหรือล้มเหลว
+                    script.onload = script.onerror = function(event) {
+                        clearTimeout(timeoutId);
+                        if (event && event.type === 'error') {
+                            console.error('เกิดข้อผิดพลาดในการโหลด JSONP script');
+                            if (script.parentNode) script.parentNode.removeChild(script);
+                            delete window[callbackName];
+                            resolve(false);
+                        }
+                    };
+                    
+                    // เพิ่ม script ลงใน DOM
+                    document.body.appendChild(script);
+                    
+                } catch (error) {
+                    console.error('เกิดข้อผิดพลาดในการใช้ JSONP:', error);
+                    resolve(false);
+                }
+            });
+        }
+        
+        // ฟังก์ชันบันทึกข้อมูลใน localStorage (สำรอง)
+        function saveTrackingDataToLocalStorage(data) {
+            try {
+                // ดึงข้อมูลเดิม (ถ้ามี)
+                const storedData = localStorage.getItem('pendingTrackingData');
+                let pendingData = storedData ? JSON.parse(storedData) : [];
+                
+                // ตรวจสอบว่าข้อมูลมีอยู่แล้วหรือไม่ (ป้องกันซ้ำ)
+                const isDuplicate = pendingData.some(item => item.requestId === data.requestId);
+                
+                if (!isDuplicate) {
+                    // เพิ่มข้อมูลใหม่
+                    pendingData.push({
+                        ...data,
+                        savedAt: new Date().toISOString(),
+                        syncStatus: 'pending'
+                    });
+                    
+                    // บันทึกกลับ localStorage
+                    localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
+                    console.log('บันทึกข้อมูลใน localStorage สำเร็จ');
+                    
+                    // จำกัดจำนวนรายการที่เก็บ (เก็บล่าสุด 50 รายการ)
+                    if (pendingData.length > 50) {
+                        pendingData = pendingData.slice(-50); // เก็บ 50 รายการล่าสุด
+                        localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
+                    }
+                } else {
+                    console.log('ข้อมูลนี้ถูกบันทึกใน localStorage แล้ว');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('ไม่สามารถบันทึกใน localStorage:', error);
+                throw error;
             }
         }
         
