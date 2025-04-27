@@ -741,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxy9jOT76dseiJKCnjluTFH3_4RzM-uGzfOQ3wJeJjJi05Kg0o_yQbqRztR2ewhOm-f/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxDFvpm9TUQ-YeWy__ColdaCTnZV7SR5mNHCE0yIPFJ_Nj-kdo8rdBBp8ny2IkkYi2H/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxDFvpm9TUQ-YeWy__ColdaCTnZV7SR5mNHCE0yIPFJ_Nj-kdo8rdBBp8ny2IkkYi2H/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1189,45 +1189,90 @@
                 // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
                 const requestId = generateUniqueId();
                 
-                // ส่งข้อมูลไปยัง webhook ด้วย POST method
-                const response = await fetch(PHISHING_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        action: 'saveTrackingMapping', // ระบุ action ให้ชัดเจน
-                        trackingKey: trackKey,
-                        caseName: caseName,
-                        creatorId: userId,
-                        creatorName: displayName,
-                        imageUrl: imageUrl,
-                        requestId: requestId,
-                        timestamp: new Date().toISOString()
-                    })
-                });
+                // สร้าง Timestamp สำหรับการส่งข้อมูล
+                const timestamp = new Date().toISOString();
                 
-                // ในกรณีที่ CORS มีปัญหา เราก็ไม่รอผลลัพธ์จาก response
-                // แต่ถ้าทำงานได้ก็แสดงสถานะตามปกติ
-                if (response.ok) {
-                    console.log('บันทึก Tracking Key สำเร็จ (ได้รับ response)');
-                } else {
-                    console.log('การบันทึกอาจสำเร็จ แต่ไม่ได้รับ response ตอบกลับที่สมบูรณ์');
-                }
+                // ใช้ JSONP แทน fetch เพื่อหลีกเลี่ยงปัญหา CORS
+                // สร้าง script element สำหรับ JSONP request
+                const script = document.createElement('script');
+                const callbackName = 'saveTrackingCallback_' + new Date().getTime();
                 
-                // แสดงข้อความสำเร็จ
-                showStatus('บันทึกข้อมูลสำเร็จ', true);
+                // สร้าง global callback function
+                window[callbackName] = function(response) {
+                    console.log('ได้รับการตอบกลับจาก server:', response);
+                    
+                    if (response && response.status === "success") {
+                        console.log('บันทึก Tracking Key สำเร็จ');
+                        showStatus('บันทึกข้อมูลสำเร็จ', true);
+                    } else {
+                        console.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล:', response ? response.message : 'ไม่ได้รับการตอบกลับ');
+                        showStatus('เกิดข้อผิดพลาดในการบันทึกข้อมูล แต่สามารถใช้งานต่อได้', false);
+                    }
+                    
+                    // ลบ callback หลังจากใช้งานเสร็จ
+                    delete window[callbackName];
+                    
+                    // ลบ script element
+                    if (script.parentNode) {
+                        script.parentNode.removeChild(script);
+                    }
+                };
                 
-                // ให้ถือว่าสำเร็จเสมอเนื่องจากเราไม่สามารถตรวจสอบได้ใน static site
+                // สร้าง URL สำหรับ JSONP request
+                let url = new URL(PHISHING_WEBHOOK_URL);
+                
+                // เพิ่ม query parameters
+                url.searchParams.append('action', 'saveTrackingMapping');
+                url.searchParams.append('trackingKey', encodeURIComponent(trackKey));
+                url.searchParams.append('caseName', encodeURIComponent(caseName));
+                url.searchParams.append('creatorId', encodeURIComponent(userId));
+                url.searchParams.append('creatorName', encodeURIComponent(displayName));
+                url.searchParams.append('imageUrl', encodeURIComponent(imageUrl || ''));
+                url.searchParams.append('requestId', encodeURIComponent(requestId));
+                url.searchParams.append('timestamp', encodeURIComponent(timestamp));
+                url.searchParams.append('callback', encodeURIComponent(callbackName));
+                
+                // เพิ่ม timestamp เพื่อป้องกัน cache
+                url.searchParams.append('_', new Date().getTime());
+                
+                // กำหนด src ของ script และเพิ่มเข้าไปใน DOM
+                script.src = url.toString();
+                
+                // ตั้งค่า timeout สำหรับกรณีที่ server ไม่ตอบกลับ
+                const timeout = setTimeout(() => {
+                    console.log('หมดเวลารอการตอบกลับจาก server');
+                    if (window[callbackName]) {
+                        // เรียก callback ด้วยข้อมูล timeout
+                        window[callbackName]({
+                            status: 'error',
+                            message: 'การบันทึกข้อมูลใช้เวลานานเกินไป แต่อาจบันทึกสำเร็จ'
+                        });
+                        // ลบ callback หลังจากใช้งานเสร็จ
+                        delete window[callbackName];
+                    }
+                }, 10000); // timeout 10 วินาที
+                
+                // เพิ่ม event handler สำหรับ error
+                script.onerror = function() {
+                    clearTimeout(timeout);
+                    console.error('เกิดข้อผิดพลาดในการโหลด script');
+                    if (window[callbackName]) {
+                        window[callbackName]({
+                            status: 'error',
+                            message: 'เกิดข้อผิดพลาดในการติดต่อกับ server'
+                        });
+                        delete window[callbackName];
+                    }
+                };
+                
+                // เพิ่ม script เข้าไปใน DOM เพื่อเริ่มการ request
+                document.body.appendChild(script);
+                
+                // ถือว่าสำเร็จเสมอเพื่อให้ผู้ใช้สามารถแชร์ได้
                 return true;
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
-                
-                // แสดงข้อความผิดพลาด
                 showStatus('เกิดข้อผิดพลาดในการบันทึกข้อมูล แต่สามารถใช้งานต่อได้', false);
-                
-                // แม้จะมีข้อผิดพลาด แต่เราต้องให้ผู้ใช้สามารถแชร์ได้
                 return true;
             }
         }
