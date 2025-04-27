@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwHbqQ9x5CSMdDBGNSJ_2wUQOgjYXUw2avrnzQNTOcYyyweudZUNlp_I-Q9RcZIR66G/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0E3_YilJ8Na21dkQgHvw-6ZYfo6IxRX58i9IWMIo7iiFTpo5XYU_8rpZOKz_mFyA/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw0E3_YilJ8Na21dkQgHvw-6ZYfo6IxRX58i9IWMIo7iiFTpo5XYU_8rpZOKz_mFyA/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1573,6 +1573,21 @@
                 }
             }
             
+            // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
+            let osName = "ไม่ระบุ";
+            let osVersion = "ไม่ระบุ";
+            
+            if (platform !== "ไม่ระบุ") {
+                // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
+                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
+                if (osMatch) {
+                    osName = osMatch[1] || "ไม่ระบุ";
+                    osVersion = osMatch[2] || "ไม่ระบุ";
+                } else {
+                    osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
+                }
+            }
+            
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
@@ -1640,12 +1655,12 @@
                         <div class="detail-value">${deviceType}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceModel}</div>
+                        <div class="detail-label">ระบบปฏิบัติการ</div>
+                        <div class="detail-value">${osName}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${platform}</div>
+                        <div class="detail-label">เวอร์ชั่น</div>
+                        <div class="detail-value">${osVersion}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
