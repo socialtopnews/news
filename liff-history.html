@@ -484,7 +484,7 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1376,9 +1376,11 @@
                 // ถ้าเป็นเจ้าของ trackingKey นี้ ให้เพิ่ม class เพื่อแสดงว่าเป็นเจ้าของ
                 if (item.isOwner) {
                     listItem.classList.add('owner-item');
-                    // เพิ่มเส้นขอบด้านซ้ายสีเขียวเพื่อแสดงว่าเป็นของผู้ใช้
-                    listItem.style.borderLeft = '4px solid var(--success-color)';
+                    // ไม่ต้องเพิ่มเส้นขอบสีเขียวอีกต่อไป
                 }
+                
+                // กำหนดให้ทุกรายการมีเส้นขอบสีน้ำเงิน
+                listItem.style.borderLeft = '4px solid var(--primary-color)';
                 
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
@@ -1395,7 +1397,6 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            ${item.isOwner ? '<div><i class="fas fa-user-check"></i> เป็นเจ้าของ</div>' : ''}
                         </div>
                     </div>
                 `;
