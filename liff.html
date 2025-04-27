@@ -213,27 +213,6 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
-        /* เพิ่ม style สำหรับวันหมดอายุ */
-        .expiration-info {
-            margin-top: 5px;
-            font-size: 13px;
-            padding: 3px 8px;
-            border-radius: 4px;
-            display: inline-block;
-            background-color: rgba(88, 136, 231, 0.1);
-            color: var(--primary-dark);
-        }
-        
-        .expiration-info.expiring-soon {
-            background-color: rgba(255, 193, 7, 0.15);
-            color: #856404;
-        }
-        
-        .expiration-info.expired {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: #721c24;
-        }
-
         /* Message Box */
         .message-box {
             background-color: rgba(255, 193, 7, 0.1);
@@ -656,6 +635,44 @@
                 padding: 12px 15px;
             }
         }
+        
+        /* เพิ่ม styles สำหรับแสดงวันหมดอายุ */
+        .expiration-info {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        
+        .expiration-info i {
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+        
+        .expiration-date {
+            background-color: rgba(88, 136, 231, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .expiration-date.expired {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--error-color);
+        }
+        
+        .expiration-date.warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .countdown {
+            margin-left: 5px;
+            font-weight: 600;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -688,10 +705,12 @@
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
-                        <div id="expirationContainer" style="display: none;">
-                            <span id="expirationInfo" class="expiration-info">
-                                <i class="fas fa-calendar-alt"></i> <span id="expirationText">วันหมดอายุ: ไม่ระบุ</span>
-                            </span>
+                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
+                        <div class="expiration-info" id="expirationInfo" style="display: none;">
+                            <i class="fas fa-clock"></i>
+                            <span>หมดอายุ:</span>
+                            <span id="expirationDate" class="expiration-date">ไม่ระบุ</span>
+                            <span id="countdown" class="countdown"></span>
                         </div>
                     </div>
                 </div>
@@ -760,7 +779,6 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let userExpirationDate = null;
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -768,8 +786,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzqYFcTyWTaGJAOqHSgZOqxfG0sPa-UPg0XQEvahFk5mfmkJsRuxSOOYbUULmhU2ASU/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzqYFcTyWTaGJAOqHSgZOqxfG0sPa-UPg0XQEvahFk5mfmkJsRuxSOOYbUULmhU2ASU/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwsliwZ0kiDKU7R5LY3saEpnW7yAe2NVqKPjeXWB4Xfyl08drId61lvBoVC_Fs4jIhP/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwsliwZ0kiDKU7R5LY3saEpnW7yAe2NVqKPjeXWB4Xfyl08drId61lvBoVC_Fs4jIhP/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -859,11 +877,10 @@
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
                         
-                        // ดึงข้อมูลวันหมดอายุจาก localStorage ด้วย
-                        const savedExpirationDate = localStorage.getItem('user_expiration_date_' + userId);
-                        if (savedExpirationDate) {
-                            userExpirationDate = new Date(savedExpirationDate);
-                            updateExpirationDisplay();
+                        // เพิ่มการดึงวันหมดอายุจาก localStorage
+                        const expDate = localStorage.getItem('user_expiration_date_' + userId);
+                        if (expDate) {
+                            showExpirationDate(expDate);
                         }
                         
                         return savedPermission === 'true';
@@ -885,7 +902,34 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
-                            console.log("วันหมดอายุจาก API:", data.expirationDate || "ไม่ได้ระบุ");
+                            
+                            // เพิ่มการจัดการข้อมูลวันหมดอายุ
+                            if (data.expDate) {
+                                console.log("วันหมดอายุ:", data.expDate);
+                                
+                                // ตรวจสอบว่าหมดอายุหรือยัง
+                                if (data.expired === true) {
+                                    console.log("บัญชีนี้หมดอายุการใช้งานแล้ว");
+                                    
+                                    // อัพเดทสถานะใน UI เป็น "รออนุมัติ"
+                                    if (statusEl) statusEl.textContent = "รอการอนุมัติ";
+                                    const statusBadge = document.getElementById('statusBadge');
+                                    if (statusBadge) {
+                                        statusBadge.textContent = "รออนุมัติ";
+                                        statusBadge.className = "badge pending";
+                                    }
+                                }
+                                
+                                // แสดงวันหมดอายุบน UI
+                                showExpirationDate(data.expDate, data.expired);
+                                
+                                // บันทึกข้อมูลวันหมดอายุใน localStorage
+                                try {
+                                    localStorage.setItem('user_expiration_date_' + userId, data.expDate);
+                                } catch (e) {
+                                    console.error('ไม่สามารถบันทึกวันหมดอายุใน localStorage:', e);
+                                }
+                            }
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
@@ -894,12 +938,6 @@
                                 // บันทึกข้อความสถานะด้วยถ้ามี
                                 if (data.userStatus) {
                                     localStorage.setItem('user_status_' + userId, data.userStatus);
-                                }
-                                // บันทึกวันหมดอายุด้วยถ้ามี
-                                if (data.expirationDate) {
-                                    localStorage.setItem('user_expiration_date_' + userId, data.expirationDate);
-                                    userExpirationDate = new Date(data.expirationDate);
-                                    updateExpirationDisplay();
                                 }
                             } catch (e) {
                                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
@@ -1022,51 +1060,6 @@
             }
             
             return hasAccess;
-        }
-        
-        // แสดงข้อมูลวันหมดอายุ
-        function updateExpirationDisplay() {
-            const container = document.getElementById('expirationContainer');
-            const expirationInfo = document.getElementById('expirationInfo');
-            const expirationText = document.getElementById('expirationText');
-            
-            if (!userExpirationDate || isNaN(userExpirationDate)) {
-                container.style.display = 'none';
-                return;
-            }
-            
-            // แสดงวันที่หมดอายุ
-            const now = new Date();
-            const diffDays = Math.ceil((userExpirationDate - now) / (1000 * 60 * 60 * 24));
-            
-            container.style.display = 'block';
-            
-            if (userExpirationDate < now) {
-                // หมดอายุแล้ว
-                expirationInfo.className = 'expiration-info expired';
-                expirationText.innerHTML = `<i class="fas fa-exclamation-circle"></i> หมดอายุแล้ว`;
-            } else if (diffDays <= 7) {
-                // ใกล้หมดอายุ (7 วัน)
-                expirationInfo.className = 'expiration-info expiring-soon';
-                expirationText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> เหลือ ${diffDays} วัน`;
-            } else {
-                // ปกติ
-                expirationInfo.className = 'expiration-info';
-                expirationText.textContent = `วันหมดอายุ: ${formatDateThai(userExpirationDate)}`;
-            }
-        }
-        
-        // ฟอร์แมตวันที่เป็นภาษาไทย
-        function formatDateThai(date) {
-            if (!date || isNaN(date)) return "ไม่ระบุ";
-            
-            const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            
-            const day = date.getDate();
-            const month = thaiMonths[date.getMonth()];
-            const year = date.getFullYear() + 543; // แปลงเป็น พ.ศ.
-            
-            return `${day} ${month} ${year}`;
         }
         
         // เปิดใช้งานฟอร์ม
@@ -1628,6 +1621,145 @@
         // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+        
+        // เพิ่มฟังก์ชันสำหรับแสดงวันหมดอายุ
+        function showExpirationDate(expDateStr, isExpired = false) {
+            if (!expDateStr) return;
+            
+            const expirationInfo = document.getElementById('expirationInfo');
+            const expirationDate = document.getElementById('expirationDate');
+            const countdownEl = document.getElementById('countdown');
+            
+            if (!expirationInfo || !expirationDate) return;
+            
+            // แปลงวันที่
+            let expDate;
+            try {
+                // รองรับหลายรูปแบบวันที่
+                if (expDateStr.includes('/')) {
+                    // รูปแบบ dd/mm/yyyy hh:mm:ss
+                    const parts = expDateStr.split(' ');
+                    const dateParts = parts[0].split('/');
+                    const day = parseInt(dateParts[0]);
+                    const month = parseInt(dateParts[1]) - 1; // JavaScript เริ่มเดือนที่ 0
+                    const year = parseInt(dateParts[2]);
+                    
+                    if (parts.length > 1) {
+                        const timeParts = parts[1].split(':');
+                        const hour = parseInt(timeParts[0]);
+                        const minute = parseInt(timeParts[1]);
+                        const second = parseInt(timeParts[2] || 0);
+                        
+                        expDate = new Date(year, month, day, hour, minute, second);
+                    } else {
+                        expDate = new Date(year, month, day);
+                    }
+                } else {
+                    // รูปแบบ ISO หรืออื่นๆ
+                    expDate = new Date(expDateStr);
+                }
+                
+                // ตรวจสอบว่าวันที่ถูกต้อง
+                if (isNaN(expDate.getTime())) {
+                    console.error("วันที่หมดอายุไม่ถูกต้อง:", expDateStr);
+                    return;
+                }
+                
+                // จัดรูปแบบวันที่แสดงผล
+                const formattedDate = expDate.toLocaleDateString('th-TH', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                });
+                
+                expirationDate.textContent = formattedDate;
+                expirationInfo.style.display = 'flex';
+                
+                // คำนวณวันที่เหลือ
+                const now = new Date();
+                const diffTime = expDate.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                // เพิ่มคลาสสำหรับสถานะต่างๆ
+                expirationDate.className = "expiration-date";
+                
+                if (isExpired || diffTime <= 0) {
+                    expirationDate.classList.add("expired");
+                    countdownEl.textContent = "(หมดอายุแล้ว)";
+                } else if (diffDays <= 7) { // น้อยกว่าหรือเท่ากับ 7 วัน
+                    expirationDate.classList.add("warning");
+                    countdownEl.textContent = `(อีก ${diffDays} วัน)`;
+                } else {
+                    countdownEl.textContent = `(อีก ${diffDays} วัน)`;
+                }
+                
+                // เริ่มตัวนับเวลาถอยหลังถ้ายังไม่หมดอายุ
+                if (!isExpired && diffTime > 0) {
+                    startExpirationCountdown(expDate);
+                }
+                
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการแปลงวันที่หมดอายุ:", error);
+            }
+        }
+        
+        // ฟังก์ชันสำหรับเริ่มนับเวลาถอยหลัง
+        let countdownTimer = null;
+        function startExpirationCountdown(expDate) {
+            // ยกเลิกตัวนับเวลาเดิม (ถ้ามี)
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            
+            const countdownEl = document.getElementById('countdown');
+            if (!countdownEl) return;
+            
+            // อัพเดททุก 1 ชั่วโมง
+            countdownTimer = setInterval(() => {
+                const now = new Date();
+                const diffTime = expDate.getTime() - now.getTime();
+                
+                if (diffTime <= 0) {
+                    // หมดอายุแล้ว
+                    clearInterval(countdownTimer);
+                    const expirationDate = document.getElementById('expirationDate');
+                    if (expirationDate) {
+                        expirationDate.className = "expiration-date expired";
+                    }
+                    countdownEl.textContent = "(หมดอายุแล้ว)";
+                    
+                    // อัพเดทสถานะเป็น "รออนุมัติ"
+                    const statusEl = document.getElementById('userStatus');
+                    if (statusEl) statusEl.textContent = "รอการอนุมัติ";
+                    const statusBadge = document.getElementById('statusBadge');
+                    if (statusBadge) {
+                        statusBadge.textContent = "รออนุมัติ";
+                        statusBadge.className = "badge pending";
+                    }
+                    
+                    // อัพเดทสถานะใน localStorage
+                    try {
+                        localStorage.setItem('user_permission_' + userId, 'false');
+                        localStorage.setItem('user_status_' + userId, 'รอการอนุมัติ');
+                    } catch (e) {
+                        console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+                    }
+                    
+                    return;
+                }
+                
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                countdownEl.textContent = `(อีก ${diffDays} วัน)`;
+                
+                // เพิ่มคลาส warning ถ้าเหลือเวลาน้อย
+                const expirationDate = document.getElementById('expirationDate');
+                if (expirationDate) {
+                    if (diffDays <= 7) {
+                        expirationDate.className = "expiration-date warning";
+                    }
+                }
+            }, 3600000); // ตรวจสอบทุก 1 ชั่วโมง (3,600,000 มิลลิวินาที)
         }
     </script>
 </body>
