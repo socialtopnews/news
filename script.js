@@ -724,7 +724,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbw0E3_YilJ8Na21dkQgHvw-6ZYfo6IxRX58i9IWMIo7iiFTpo5XYU_8rpZOKz_mFyA/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyxX0-vdz7prnK1-jgF5HAgtB3VUh6qgyAkwPbOXvBDIZclrmn2rRb4QXRkCAqtuKh-/exec';
   
   console.log("กำลังส่งข้อมูลไปยัง webhook:", JSON.stringify(dataToSend));
   
