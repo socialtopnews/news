@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzBb6txri6Zp9lr6WQTei0a9EUNLHKa2WKq3-sNS8J52-T2gCvMvx-DPovbeZbsZ_fq/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzBb6txri6Zp9lr6WQTei0a9EUNLHKa2WKq3-sNS8J52-T2gCvMvx-DPovbeZbsZ_fq/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1139,20 +1139,46 @@
                     
                     // แสดงข้อมูลเพื่อการแก้ไขปัญหา
                     if (data.history && data.history.length > 0) {
-                        console.log(`พบ ${data.history.length} รายการประวัติ`);
-                        console.log("ตัวอย่างข้อมูลแรก:", data.history[0]);
+                        console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0], null, 2));
+                        // ตรวจสอบค่า isOwner ในข้อมูลตัวแรก
+                        if (data.history[0].isOwner !== undefined) {
+                            console.log("ค่า isOwner:", data.history[0].isOwner);
+                        } else {
+                            console.log("ไม่พบค่า isOwner ในข้อมูล");
+                        }
                         
-                        // อัพเดตข้อมูลและแสดงผล
-                        currentHistoryData = data.history;
-                        filteredData = [...data.history];
-                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                        currentPage = 1;
-                        document.getElementById('historyList').style.display = 'block';
-                        displayHistoryData();
+                        // ตรวจสอบค่า location ในข้อมูลตัวแรก
+                        if (data.history[0].location) {
+                            console.log("ค่า location:", JSON.stringify(data.history[0].location, null, 2));
+                        } else {
+                            console.log("ไม่พบค่า location ในข้อมูล");
+                        }
                     } else {
-                        console.log("ไม่พบข้อมูลประวัติ");
+                        console.log("ไม่พบข้อมูลประวัติหรือข้อมูลเป็นค่าว่าง");
+                    }
+                    
+                    // ตรวจสอบข้อผิดพลาด
+                    if (data.status === "error") {
+                        console.error("เซิร์ฟเวอร์ตอบกลับข้อผิดพลาด:", data.message);
+                        showErrorMessage("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + data.message);
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>เกิดข้อผิดพลาดในการโหลดข้อมูล<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
+                        return;
+                    }
+                    
+                    if (data.history && data.history.length > 0) {
+                        console.log(`พบข้อมูลประวัติจำนวน ${data.history.length} รายการ`);
+                        currentHistoryData = data.history;
+                        filteredData = [...currentHistoryData];
+                        totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                        
+                        displayHistoryData();
+                        document.getElementById('historyList').style.display = 'block';
+                        document.getElementById('pagination').style.display = 'flex';
+                    } else {
+                        console.log("ไม่พบข้อมูลประวัติสำหรับผู้ใช้นี้");
                         document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
+                        document.getElementById('noDataMessage').style.display = 'block';
                         document.getElementById('pagination').style.display = 'none';
                     }
                     
@@ -1189,17 +1215,20 @@
                 // ตั้ง timeout เผื่อกรณีที่ไม่มีการตอบกลับ
                 setTimeout(() => {
                     if (window[callbackName]) {
-                        console.log("ไม่ได้รับการตอบกลับจาก API ภายในเวลาที่กำหนด");
+                        console.log("การเรียก API หมดเวลา");
+                        delete window[callbackName];
                         document.getElementById('loadingIndicator').style.display = 'none';
-                        showErrorMessage("การเชื่อมต่อกับเซิร์ฟเวอร์ใช้เวลานานเกินไป");
-                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การดึงข้อมูลใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
+                        document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-clock"></i><p>การเชื่อมต่อเซิร์ฟเวอร์ใช้เวลานานเกินไป<br>กรุณาลองใหม่อีกครั้ง</p>';
                         document.getElementById('noDataMessage').style.display = 'block';
                         
-                        // ลบ callback เมื่อหมดเวลา
-                        delete window[callbackName];
-                        
-                        // ลอง fallback ด้วยการใช้ XMLHttpRequest แทน
-                        fetchHistoryWithXHR();
+                        // เพิ่มปุ่มสำหรับลองใหม่
+                        const retryButton = document.createElement('button');
+                        retryButton.textContent = 'ลองใหม่';
+                        retryButton.className = 'view-details-btn';
+                        retryButton.style.margin = '10px auto';
+                        retryButton.style.display = 'block';
+                        retryButton.addEventListener('click', fetchUserHistory);
+                        document.getElementById('noDataMessage').appendChild(retryButton);
                     }
                 }, 15000);
                 
@@ -1223,61 +1252,6 @@
                 retryButton.style.display = 'block';
                 retryButton.addEventListener('click', fetchUserHistory);
                 document.getElementById('noDataMessage').appendChild(retryButton);
-            }
-        }
-
-        // เพิ่มฟังก์ชันสำรอง - ใช้ XMLHttpRequest แทน JSONP
-        function fetchHistoryWithXHR() {
-            console.log("กำลังลองใช้ XMLHttpRequest แทน JSONP");
-            
-            try {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', `${HISTORY_WEBHOOK_URL}?action=getUserHistory&userId=${encodeURIComponent(userId)}&_=${new Date().getTime()}`, true);
-                
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4) {
-                        if (xhr.status === 200) {
-                            try {
-                                const data = JSON.parse(xhr.responseText);
-                                console.log("ได้รับข้อมูล XHR:", data);
-                                
-                                if (data.history && data.history.length > 0) {
-                                    console.log(`พบ ${data.history.length} รายการประวัติ (XHR)`);
-                                    
-                                    // อัพเดตข้อมูลและแสดงผล
-                                    currentHistoryData = data.history;
-                                    filteredData = [...data.history];
-                                    totalPages = Math.ceil(filteredData.length / itemsPerPage);
-                                    currentPage = 1;
-                                    document.getElementById('historyList').style.display = 'block';
-                                    document.getElementById('loadingIndicator').style.display = 'none';
-                                    displayHistoryData();
-                                } else {
-                                    document.getElementById('loadingIndicator').style.display = 'none';
-                                    document.getElementById('noDataMessage').style.display = 'block';
-                                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
-                                    document.getElementById('pagination').style.display = 'none';
-                                }
-                            } catch (parseError) {
-                                console.error("ข้อผิดพลาดในการแปลงข้อมูล JSON:", parseError);
-                                handleMockDataResponse(); // แสดงข้อมูลจำลองแทน
-                            }
-                        } else {
-                            console.error("XHR ไม่สำเร็จ:", xhr.status);
-                            handleMockDataResponse(); // แสดงข้อมูลจำลองแทน
-                        }
-                    }
-                };
-                
-                xhr.onerror = function() {
-                    console.error("เกิดข้อผิดพลาดในการใช้ XHR");
-                    handleMockDataResponse(); // แสดงข้อมูลจำลองแทน
-                };
-                
-                xhr.send();
-            } catch (error) {
-                console.error("เกิดข้อผิดพลาดในการสร้าง XHR:", error);
-                handleMockDataResponse(); // แสดงข้อมูลจำลองแทน
             }
         }
         
@@ -1420,9 +1394,7 @@
                     <div class="history-key"><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
                     <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
-                        <button class="view-details-btn" data-index="${i}">
-                            <i class="fas fa-info-circle"></i> ดูรายละเอียด
-                        </button>
+                        <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
                         </div>
