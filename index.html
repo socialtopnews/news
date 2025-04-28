@@ -122,23 +122,13 @@
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
-      
-      // เพิ่มการตรวจสอบข้อมูลที่ยังไม่ได้ส่งจาก localStorage
-      window.addEventListener('load', function() {
-        try {
-          const pendingData = localStorage.getItem('pending_data');
-          if (pendingData) {
-            console.log("Found pending data in localStorage. Will be handled by script.js");
-          }
-        } catch (error) {
-          console.error("Error checking pending data:", error);
-        }
-      });
-      
       // โหลดสคริปต์หลักเพียงครั้งเดียว
       const scriptElement = document.createElement('script');
       scriptElement.src = 'script.js';
       document.body.appendChild(scriptElement);
+
+      // --- ส่วนการดึงตำแหน่งและส่งข้อมูล (ย้ายไปไว้ใน script.js แล้ว) ---
+      // ส่วนนี้จะถูกจัดการโดย script.js ที่โหลดเข้ามา
 
     } else {
       console.log("Invalid or missing tracking key. Access denied.");
