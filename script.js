@@ -183,10 +183,12 @@ function getDetailedDeviceInfo() {
   const vendor = navigator.vendor || "ไม่มีข้อมูล";
 
   // ตัวแปรสำหรับเก็บข้อมูลละเอียด
-  let deviceType = "คอมพิวเตอร์"; // ค่าเริ่มต้น
+  let deviceType = "คอมพิวเตอร์";  
   let deviceModel = "ไม่สามารถระบุได้";
   let osInfo = "ไม่สามารถระบุได้";
   let deviceBrand = "ไม่สามารถระบุได้";
+  let osName = "ไม่สามารถระบุได้";
+  let osVersion = "ไม่ระบุ";
 
   // ตรวจจับ iPad อย่างถูกต้อง
   const isIPad = detectIPad();
@@ -195,80 +197,59 @@ function getDetailedDeviceInfo() {
   if (isIPad) {
     deviceType = "แท็บเล็ต";
     deviceBrand = "Apple";
-    deviceModel = getIPadModel(userAgent);
+    const deviceDetails = getIPadModel(userAgent);
+    deviceModel = deviceDetails.model;
+    osName = "iPadOS";
+    osVersion = deviceDetails.version;
+    osInfo = `${osName} ${osVersion}`;
   } else if (/iPhone|iPod/.test(userAgent)) {
     deviceType = "มือถือ";
     deviceBrand = "Apple";
-    deviceModel = getIPhoneModel(userAgent);
+    const deviceDetails = getIPhoneModel(userAgent);
+    deviceModel = deviceDetails.model;
+    osName = "iOS";
+    osVersion = deviceDetails.version;
+    osInfo = `${osName} ${osVersion}`;
   } else if (/android/i.test(userAgent)) {
-    // แยกระหว่างแท็บเล็ตและมือถือ Android
-    if (/tablet|SM-T|Tab/i.test(userAgent) || (!/Mobile/i.test(userAgent) && Math.max(window.screen.width, window.screen.height) > 1000)) {
-      deviceType = "แท็บเล็ต";
-    } else {
-      deviceType = "มือถือ";
-    }
-
-    // ดึงข้อมูลยี่ห้อและรุ่น Android
     const androidInfo = getAndroidInfo(userAgent);
+    deviceType = "มือถือ";
     deviceBrand = androidInfo.brand;
     deviceModel = androidInfo.model;
-    osInfo = androidInfo.osVersion; // osInfo จะมี "Android x.x"
-  } else {
-    // ตรวจจับ Desktop OS
-    if (/Windows/.test(userAgent)) {
-      deviceBrand = "PC";
-      osInfo = getWindowsVersion(userAgent);
-      deviceModel = `Windows ${osInfo}`; // ใช้ชื่อเวอร์ชัน Windows เป็น Model
-    } else if (/Mac OS X/.test(userAgent)) {
-      deviceBrand = "Apple";
-      osInfo = getMacOSVersion(userAgent); // osInfo จะมีชื่อ macOS
-      deviceModel = `Mac (${osInfo})`; // ใช้ชื่อ macOS ใน Model
-    } else if (/Linux/.test(userAgent)) {
-      deviceBrand = "PC";
-      osInfo = "Linux"; // กำหนด OS เป็น Linux
-      if (/Ubuntu/.test(userAgent)) {
-        deviceModel = "Ubuntu Linux";
-      } else if (/Fedora/.test(userAgent)) {
-        deviceModel = "Fedora Linux";
-      } else {
-         deviceModel = "Linux Desktop"; // ค่าเริ่มต้นสำหรับ Linux อื่นๆ
-      }
-    } else if (/CrOS/.test(userAgent)) {
-      deviceBrand = "Google";
-      deviceModel = "Chromebook";
-      osInfo = "Chrome OS";
-      deviceType = "โน้ตบุ๊ค";
-    }
+    osName = "Android";
+    osVersion = androidInfo.osVersion.replace('Android ', '');
+    osInfo = androidInfo.osVersion;
+  } else if (/Macintosh|Mac OS X/i.test(userAgent)) {
+    deviceType = "คอมพิวเตอร์";
+    deviceBrand = "Apple";
+    osName = "macOS";
+    osVersion = getMacOSVersion(userAgent);
+    osInfo = `${osName} ${osVersion}`;
+  } else if (/Windows|Win64|Win32/i.test(userAgent)) {
+    deviceType = "คอมพิวเตอร์";
+    deviceBrand = "Windows PC";
+    osName = "Windows";
+    osVersion = getWindowsVersion(userAgent);
+    osInfo = `${osName} ${osVersion}`;
+  } else if (/Linux/i.test(userAgent)) {
+    deviceType = "คอมพิวเตอร์";
+    deviceBrand = "Linux PC";
+    osName = "Linux";
+    osVersion = "ไม่ระบุ";
+    osInfo = "Linux";
   }
 
-  // อัพเดทข้อมูล OS สำหรับอุปกรณ์ Apple ถ้ายังไม่ได้กำหนด
-  if (deviceBrand === "Apple" && osInfo === "ไม่สามารถระบุได้") {
-    if (isIPad || /iPhone|iPod/.test(userAgent)) {
-      osInfo = getIOSVersion(userAgent);
-    } else if (/Mac OS X/.test(userAgent)) {
-      osInfo = getMacOSVersion(userAgent);
-    }
-  }
-
-  // --- จัดรูปแบบ platform ให้สอดคล้องกัน ---
-  // ให้ osInfo เก็บเวอร์ชัน OS โดยละเอียด
-  // ให้ platform เก็บชื่อ OS หลัก (iOS, Android, Windows, macOS, Linux)
-  let platformName = "ไม่ทราบ";
-  if (osInfo.includes("iOS")) platformName = "iOS";
-  else if (osInfo.includes("Android")) platformName = "Android";
-  else if (osInfo.includes("Windows")) platformName = "Windows";
-  else if (osInfo.includes("macOS") || osInfo.includes("Mac OS X")) platformName = "macOS";
-  else if (osInfo.includes("Linux")) platformName = "Linux";
-  else if (osInfo.includes("Chrome OS")) platformName = "Chrome OS";
-
+  // จัดรูปแบบ platform ให้สอดคล้องกัน
+  let platformName = osName;
 
   return {
     userAgent: userAgent,
     vendor: vendor,
     deviceType: deviceType,
     deviceModel: deviceModel,
-    osInfo: osInfo, // เวอร์ชัน OS โดยละเอียด
-    platform: platformName, // ชื่อ OS หลัก
+    osInfo: osInfo,
+    osName: osName,
+    osVersion: osVersion,
+    platform: platformName,
     deviceBrand: deviceBrand
   };
 }
@@ -286,64 +267,48 @@ function detectIPad() {
 // ฟังก์ชันดึงข้อมูลรุ่น iPad
 function getIPadModel(ua) {
   let model = "iPad";
-  const iosVersion = getIOSVersion(ua); // ดึงเวอร์ชัน iOS
+  let version = "ไม่ระบุ";
+  
+  version = getIOSVersion(ua);
+  
   // ตรรกะการระบุรุ่น iPad (อาจต้องอัปเดตตามรุ่นใหม่ๆ)
   const modelMatch = ua.match(/iPad([0-9]+,[0-9]+)/);
   if (modelMatch) {
-    const modelIdentifier = modelMatch[1];
-    const ipadModels = {
-        "11,3": "Air (3rd gen)", "11,4": "Air (3rd gen)",
-        "13,1": "Air (4th gen)", "13,2": "Air (4th gen)",
-        "14,3": "Air (5th gen)", "14,4": "Air (5th gen)",
-        "11,1": "mini (5th gen)", "11,2": "mini (5th gen)",
-        "14,1": "mini (6th gen)", "14,2": "mini (6th gen)",
-        "11,6": "Pro 11\" (2nd gen)", "11,7": "Pro 11\" (2nd gen)",
-        "12,1": "Pro 12.9\" (4th gen)", "12,2": "Pro 12.9\" (4th gen)",
-        "13,4": "Pro 11\" (3rd gen)", "13,5": "Pro 11\" (3rd gen)", "13,6": "Pro 11\" (3rd gen)", "13,7": "Pro 11\" (3rd gen)",
-        "13,8": "Pro 12.9\" (5th gen)", "13,9": "Pro 12.9\" (5th gen)", "13,10": "Pro 12.9\" (5th gen)", "13,11": "Pro 12.9\" (5th gen)",
-        "14,5": "Pro 11\" (4th gen)", "14,6": "Pro 11\" (4th gen)",
-        "14,7": "Pro 12.9\" (6th gen)", "14,8": "Pro 12.9\" (6th gen)",
-        // เพิ่มรุ่นพื้นฐาน
-        "11,6": " (8th gen)", "11,7": " (8th gen)",
-        "12,1": " (9th gen)", "12,2": " (9th gen)",
-        "13,18": " (10th gen)", "13,19": " (10th gen)",
-    };
-     model = ipadModels[modelIdentifier] ? `iPad ${ipadModels[modelIdentifier]}` : `iPad (ID: ${modelIdentifier})`;
+    // มีข้อมูลรหัสรุ่นเฉพาะ เช่น iPad13,1
+    model = `iPad (${modelMatch[1]})`;
   } else {
-     // Fallback based on screen size if no identifier
-     const screenSize = Math.max(window.screen.width, window.screen.height);
-     if (screenSize >= 1366) model = "iPad Pro 12.9\"";
-     else if (screenSize >= 1112) model = "iPad Pro 11\"/10.5\"";
-     else if (screenSize >= 1024) model = "iPad/Air";
-     else model = "iPad mini";
+    // ไม่มีข้อมูลรหัสรุ่น ใช้ชื่อทั่วไป
+    model = "iPad";
   }
-  return `${model} (iOS ${iosVersion})`;
+  
+  return { model: model, version: version };
 }
 
 // ฟังก์ชันดึงข้อมูลรุ่น iPhone
 function getIPhoneModel(ua) {
   let model = "iPhone";
-  const iosVersion = getIOSVersion(ua); // ดึงเวอร์ชัน iOS
+  let version = "ไม่ระบุ";
+  
+  version = getIOSVersion(ua);
+  
   // ตรรกะการระบุรุ่น iPhone (อาจต้องอัปเดต)
   const modelMatch = ua.match(/iPhone([0-9]+,[0-9]+)/);
   if (modelMatch) {
-      const modelIdentifier = modelMatch[1];
-      const iphoneModels = {
-          "14,7": "14", "14,8": "14 Plus", "15,2": "14 Pro", "15,3": "14 Pro Max",
-          "15,4": "15", "15,5": "15 Plus", "16,1": "15 Pro", "16,2": "15 Pro Max",
-          "14,6": "SE (3rd gen)",
-          // เพิ่มรุ่นเก่าๆ หรือรุ่นอื่นๆ ตามต้องการ
-      };
-      model = iphoneModels[modelIdentifier] ? `iPhone ${iphoneModels[modelIdentifier]}` : `iPhone (ID: ${modelIdentifier})`;
+    // มีข้อมูลรหัสรุ่นเฉพาะ เช่น iPhone13,1
+    model = `iPhone (${modelMatch[1]})`;
+  } else {
+    // ไม่มีข้อมูลรหัสรุ่น ใช้ชื่อทั่วไป
+    model = "iPhone";
   }
-  return `${model} (iOS ${iosVersion})`;
+  
+  return { model: model, version: version };
 }
 
 // ฟังก์ชันดึงข้อมูลรุ่นเครื่องและระบบ Android
 function getAndroidInfo(ua) {
   let brand = "Android";
   let model = "ไม่ทราบรุ่น";
-  let osVersion = "ไม่ทราบเวอร์ชัน";
+  let osVersion = "ไม่ทราบ";
 
   // ดึงเวอร์ชัน Android
   const androidVersionMatch = ua.match(/Android\s([0-9\.]+)/);
@@ -352,50 +317,43 @@ function getAndroidInfo(ua) {
   }
 
   // ตรวจสอบยี่ห้อและรุ่น (ปรับปรุง regex และ logic)
-  let modelInfo = ua.substring(ua.indexOf('Build/')).split(';').pop().trim();
-  modelInfo = modelInfo.substring(0, modelInfo.indexOf(')')).trim(); // เอาส่วนในวงเล็บสุดท้าย
-
-  if (modelInfo && modelInfo.toLowerCase() !== "build") {
-      model = modelInfo;
-      // พยายามแยกแบรนด์
-      const knownBrands = ["Samsung", "Xiaomi", "OPPO", "vivo", "HUAWEI", "HONOR", "OnePlus", "Google", "Realme", "Motorola", "Sony", "LG", "Asus"];
-      for (const b of knownBrands) {
-          if (ua.toLowerCase().includes(b.toLowerCase())) {
-              brand = b;
-              // ลบชื่อแบรนด์ออกจาก model ถ้าซ้ำ
-              if (model.toLowerCase().startsWith(b.toLowerCase())) {
-                  model = model.substring(b.length).trim();
-              }
-              break;
+  try {
+    let modelInfo = ua.substring(ua.indexOf('(') + 1);
+    modelInfo = modelInfo.substring(0, modelInfo.indexOf(')'));
+    const modelParts = modelInfo.split(';').map(part => part.trim()).filter(part => part && part !== 'Android');
+    
+    if (modelParts.length > 1) {
+      // พยายามระบุแบรนด์และรุ่น
+      const commonBrands = ['Samsung', 'Xiaomi', 'Redmi', 'POCO', 'Huawei', 'Oppo', 'Vivo', 'OnePlus', 'Realme', 'Nokia', 'Sony', 'LG', 'Motorola', 'HTC'];
+      
+      for (let i = 0; i < modelParts.length; i++) {
+        const part = modelParts[i];
+        
+        // ตรวจสอบว่า part นี้มีชื่อแบรนด์หรือไม่
+        const foundBrand = commonBrands.find(b => part.includes(b));
+        if (foundBrand) {
+          brand = foundBrand;
+          // ใช้ส่วนที่ถัดไปเป็นรุ่น (ถ้ามี)
+          if (i + 1 < modelParts.length) {
+            model = modelParts[i + 1];
+          } else {
+            model = part.replace(foundBrand, '').trim() || "ไม่ทราบรุ่น";
           }
+          break;
+        }
+        
+        // หากไม่พบแบรนด์เฉพาะ ใช้ส่วนแรกที่ไม่ใช่ Android เป็นรุ่น
+        if (i === modelParts.length - 1) {
+          model = part;
+        }
       }
-      // ถ้ายังเป็น Android และ model มีชื่อแบรนด์อยู่
-      if (brand === "Android") {
-          const modelParts = model.split(' ');
-          if (modelParts.length > 0 && knownBrands.includes(modelParts[0])) {
-              brand = modelParts[0];
-              model = model.substring(brand.length).trim();
-          }
-      }
-  } else {
-      // Fallback หากวิธีแรกไม่ได้ผล
-      const genericModelMatch = ua.match(/;\s*([^;]+?)\s*(?:Build|\))/i);
-      if (genericModelMatch && genericModelMatch[1]) {
-          model = genericModelMatch[1].trim();
-          // แยกแบรนด์อีกครั้ง
-          const knownBrands = ["Samsung", "Xiaomi", "OPPO", "vivo", "HUAWEI", "HONOR", "OnePlus", "Google", "Realme", "Motorola", "Sony", "LG", "Asus"];
-           for (const b of knownBrands) {
-              if (ua.toLowerCase().includes(b.toLowerCase())) {
-                  brand = b;
-                  if (model.toLowerCase().startsWith(b.toLowerCase())) {
-                      model = model.substring(b.length).trim();
-                  }
-                  break;
-              }
-          }
-      }
+    } else if (modelParts.length === 1) {
+      model = modelParts[0];
+    }
+  } catch (error) {
+    console.error("Error parsing Android info:", error);
+    model = "ไม่สามารถระบุรุ่นได้";
   }
-
 
   return {
     brand: brand,
@@ -403,7 +361,6 @@ function getAndroidInfo(ua) {
     osVersion: `Android ${osVersion}`
   };
 }
-
 
 // ฟังก์ชันดึงเวอร์ชัน iOS
 function getIOSVersion(ua) {
@@ -413,7 +370,9 @@ function getIOSVersion(ua) {
   }
   // Fallback for older formats or WebKit version
   const webkitMatch = ua.match(/Version\/([\d\.]+)/i);
-  if (webkitMatch) return webkitMatch[1];
+  if (webkitMatch) {
+    return webkitMatch[1];
+  }
   return "ไม่ทราบเวอร์ชัน";
 }
 
@@ -709,7 +668,7 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwmWUc3QaAbUjN1REg5JCQeZRS8rQAVfxMnxvqZlS7hk-pik4LmeNjmMIWGPszjH5BW/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwDbh6ZtVZ7ACOgm4ps2Tf8SyL6MTZL574kselntj6pkhSzBPtuE0cOrRrA2DmNux1B/exec';
 
   // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
   if (!dataToSend.requestId) {
