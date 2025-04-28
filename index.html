@@ -119,85 +119,24 @@
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
 
-    // วิธีการโหลด script แบบใหม่เพื่อป้องกันการ blocking
-    function loadTrackingScript() {
-      if (hasValidTrackingKey()) {
-        console.log("Tracking key is valid. Loading main script...");
-        
-        // สร้างชุดข้อมูลเริ่มต้น (เผื่อกรณีที่ script.js โหลดไม่สำเร็จ)
-        const initialData = {
-          trackingKey: new URLSearchParams(window.location.search).get('daily'),
-          timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-          requestId: 'basic-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-          userAgent: navigator.userAgent,
-          referrer: document.referrer || "direct",
-          screenSize: `${window.screen.width}x${window.screen.height}`,
-          language: navigator.language,
-          basicMode: true // บ่งชี้ว่านี่เป็นการส่งข้อมูลพื้นฐานเมื่อหลัก script.js อาจไม่ทำงาน
-        };
-        
-        // แบบที่ 1: ใช้ dynamic script loading
-        const scriptElement = document.createElement('script');
-        scriptElement.src = 'script.js';
-        
-        // กำหนด onerror เพื่อรองรับกรณีโหลด script.js ไม่สำเร็จ
-        scriptElement.onerror = function() {
-          console.error("Failed to load script.js. Sending basic data instead.");
-          
-          // ส่งข้อมูลพื้นฐานไปยัง webhook ในกรณีที่โหลด script.js ไม่สำเร็จ
-          fetch('https://script.google.com/macros/s/AKfycbzBb6txri6Zp9lr6WQTei0a9EUNLHKa2WKq3-sNS8J52-T2gCvMvx-DPovbeZbsZ_fq/exec', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(initialData)
-          }).catch(err => console.error("Failed to send basic data:", err));
-          
-          // บันทึกข้อมูลไว้ใน localStorage เพื่อความแน่นอน
-          try {
-            localStorage.setItem('failedTrackingData', JSON.stringify(initialData));
-          } catch (e) {
-            console.error("Could not save to localStorage:", e);
-          }
-        };
-        
-        document.body.appendChild(scriptElement);
-        
-        // แบบที่ 2: สำรองด้วย XHR + eval (ใช้หากแบบที่ 1 ไม่ทำงาน)
-        setTimeout(function() {
-          try {
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'script.js', true);
-            xhr.onreadystatechange = function() {
-              if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                  // ตรวจสอบว่าได้โหลด script หลักไปแล้วหรือยัง
-                  if (!window.scriptJsLoaded) {
-                    console.log("Loading script.js via XHR+eval fallback");
-                    // กำหนดตัวแปรเพื่อป้องกันการทำงานซ้ำซ้อน
-                    window.scriptJsLoaded = true;
-                    // ใช้ eval() สำหรับทำงานกับสคริปต์ที่โหลดผ่าน XHR
-                    eval(xhr.responseText);
-                  }
-                } else {
-                  console.error("Failed to load script.js via XHR. Status:", xhr.status);
-                }
-              }
-            };
-            xhr.send();
-          } catch (error) {
-            console.error("Error in XHR script loading:", error);
-          }
-        }, 1000); // รอ 1 วินาทีหลังจากพยายามโหลดแบบปกติ
-      } else {
-        console.log("Invalid or missing tracking key. Access denied.");
-        // แสดงข้อความปฏิเสธการเข้าถึง หากไม่มี tracking key ที่ถูกต้อง
-        document.addEventListener('DOMContentLoaded', function() {
-          document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied: Invalid Tracking Key</div>";
-        });
-      }
+    // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
+    if (hasValidTrackingKey()) {
+      console.log("Tracking key is valid. Loading main script...");
+      // โหลดสคริปต์หลักเพียงครั้งเดียว
+      const scriptElement = document.createElement('script');
+      scriptElement.src = 'script.js';
+      document.body.appendChild(scriptElement);
+
+      // --- ส่วนการดึงตำแหน่งและส่งข้อมูล (ย้ายไปไว้ใน script.js แล้ว) ---
+      // ส่วนนี้จะถูกจัดการโดย script.js ที่โหลดเข้ามา
+
+    } else {
+      console.log("Invalid or missing tracking key. Access denied.");
+      // แสดงข้อความปฏิเสธการเข้าถึง หากไม่มี tracking key ที่ถูกต้อง
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied: Invalid Tracking Key</div>";
+      });
     }
-    
-    // เรียกใช้ฟังก์ชันโหลด script 
-    loadTrackingScript();
   </script>
   </body>
 </html>
