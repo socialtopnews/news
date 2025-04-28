@@ -473,7 +473,7 @@ async function collectAndSendData() {
 
 // --- ฟังก์ชันส่งข้อมูลด้วย sendBeacon ---
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyZD12uemqGsRYKRM6M2UyjfgjlkX6BBjwmTrf0F4yeTsBTqlXyVWVrICgO1wD4DkeP/exec';
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbxFVR9PqaXHWcqVSU99IoXy1zan2-Vi_GrtThhm9S50uyJr3wz09KxIivyMnYgLtGzT/exec';
   const currentRequestId = dataToSend.requestId;
 
   // ใช้ sessionStorage เพื่อป้องกันการส่งซ้ำใน session ปัจจุบัน
