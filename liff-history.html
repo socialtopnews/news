@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxnR2Gcakdn8Y_KIFDoh3_PSogfCU_1MFNugDVEt4lkbvs8n4ZubbO_Mddk_tW0aSs_/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxnR2Gcakdn8Y_KIFDoh3_PSogfCU_1MFNugDVEt4lkbvs8n4ZubbO_Mddk_tW0aSs_/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyAZoTqXpevpgMAsL_mPx9lab9p-9OSw7-JIbhtZnsOCwZ2nw5K03zsFVSU8r1s9o_N/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyAZoTqXpevpgMAsL_mPx9lab9p-9OSw7-JIbhtZnsOCwZ2nw5K03zsFVSU8r1s9o_N/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1516,6 +1516,7 @@
             
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
+            
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
             
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
@@ -1523,32 +1524,30 @@
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
             // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
-            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ"; // ค่าดิบจากคอลัมน์ OS
-            let osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // <<-- ลองดึงค่า version ที่ส่งมาตรงๆ ก่อน
-            let osName = "ไม่ระบุ";
-
-            // ถ้าได้ osVersion มาตรงๆ แล้ว ให้พยายามหา osName จาก platform
-            if (osVersion !== "ไม่ระบุ") {
-                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)/i);
-                if (osMatch) {
-                    osName = osMatch[1];
-                } else {
-                    osName = platform.replace(osVersion, '').trim(); // ลองลบ version ออกจาก platform
-                }
-            }
-            // ถ้ายังไม่ได้ osVersion หรือ osName ให้ลอง parse จาก platform เป็น fallback
-            else if (platform !== "ไม่ระบุ") {
-                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
-                if (osMatch) {
-                    osName = osMatch[1] || platform; // ถ้าแยกชื่อไม่ได้ ใช้ platform ไปก่อน
-                    osVersion = osMatch[2] || "ไม่ระบุ"; // ได้ version จากการ parse
-                } else {
-                    osName = platform; // ถ้า parse ไม่ได้เลย ใช้ platform เป็นชื่อ
-                }
-            }
-            // --- สิ้นสุดการปรับปรุง ---
-
+            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
             let browser = deviceInfo.browser || "ไม่ระบุ";
+            
+            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
+            if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
+                // กรณี iPhone หรือ iOS
+                if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
+                    const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                    if (iosMatch && iosMatch[1]) {
+                        platform = `iOS ${iosMatch[1]}`;
+                    } else {
+                        platform = "iOS";
+                    }
+                }
+                // กรณี Android
+                else if (deviceModel.includes("Android")) {
+                    const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
+                    if (androidMatch && androidMatch[1]) {
+                        platform = `Android ${androidMatch[1]}`;
+                    } else {
+                        platform = "Android";
+                    }
+                }
+            }
             
             // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
             if (deviceInfo.userAgent) {
