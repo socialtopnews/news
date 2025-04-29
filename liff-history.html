@@ -1423,40 +1423,44 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
-
+        
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
-
+        
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
             let gpsAccuracy = "";
-
+        
             // การจัดการ location (เหมือนเดิม)
             if (item.location) {
                 console.log("ค่า location สำหรับ Modal:", item.location);
                 if (typeof item.location === "object" && item.location !== null) {
                     if (item.location.lat !== undefined && item.location.long !== undefined) {
                         locationText = `${item.location.lat}, ${item.location.long}`;
+                        // สร้างลิงก์ Google Maps โดยตรง
                         mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-                        if (item.location.gmapLink && (item.location.gmapLink.includes('google.com/maps') || item.location.gmapLink.includes('goo.gl/maps'))) {
+                        // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
+                        if (item.location.gmapLink && (item.location.gmapLink.includes('maps.google.com') || item.location.gmapLink.includes('goo.gl/maps'))) {
                             mapLink = item.location.gmapLink;
                         }
-                        gpsAccuracy = item.location.accuracy ? `±${item.location.accuracy} เมตร` : "ไม่มีข้อมูล";
+                        gpsAccuracy = item.location.accuracy ? `±${Math.round(item.location.accuracy)} เมตร` : "ไม่มีข้อมูล"; // ปรับปรุงการแสดงผล accuracy
                     }
                 } else if (typeof item.location === "string") {
                     locationText = item.location;
+                    // พยายามแยกค่า lat, long จาก string เพื่อสร้าง link
                     if (locationText.includes(",")) {
                         const coords = locationText.split(",").map(coord => coord.trim());
-                        if (coords.length === 2) {
+                        if (coords.length === 2 && !isNaN(parseFloat(coords[0])) && !isNaN(parseFloat(coords[1]))) {
                             mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
                         }
                     }
                 }
             }
-
+        
+        
             // แปลงวันที่เวลาให้เป็นภาษาไทย (เหมือนเดิม)
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-
+        
             // ========== ข้อมูล IP และตำแหน่ง (เหมือนเดิม) ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
             let ipInfo = "ไม่มีข้อมูล";
@@ -1469,30 +1473,35 @@
                 ipInfo = item.ip;
             } else if (typeof item.ip === 'object' && item.ip !== null) {
                 ipInfo = item.ip.ip || "ไม่มีข้อมูล";
+                // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
                 if (item.ip.country) country = item.ip.country;
                 else if (item.ip.countryCode) country = item.ip.countryCode;
                 else if (item.ip.countryName) country = item.ip.countryName;
+                // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
                 if (item.ip.region) region = item.ip.region;
                 else if (item.ip.regionName) region = item.ip.regionName;
+                // ดึงข้อมูลเมือง
                 if (item.ip.city) city = item.ip.city;
+                // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
                 if (item.ip.isp) isp = item.ip.isp;
                 else if (item.ip.org) isp = item.ip.org;
                 else if (item.ip.organization) isp = item.ip.organization;
                 else if (item.ip.asOrg) isp = item.ip.asOrg;
+                // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
+                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : "ไม่ทราบ"; // ตรวจสอบ AS prefix
             }
-
-            // ========== ข้อมูลอุปกรณ์ - แก้ไข: ใช้ข้อมูลที่ได้รับโดยตรง ==========
+        
+            // ========== ข้อมูลอุปกรณ์ - ใช้ข้อมูลที่ได้รับโดยตรง ==========
             const deviceInfo = item.deviceInfo || {};
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
-
+        
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             const osName = deviceInfo.platform || "ไม่ระบุ"; // ใช้ platform สำหรับ OS Name
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // *** แก้ไข: ใช้ osVersion ที่ได้รับมาโดยตรง ***
+            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ osVersion ที่ได้รับมาโดยตรง
             const browser = deviceInfo.browser || "ไม่ระบุ";
-
+        
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
@@ -1514,7 +1523,7 @@
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
-
+        
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
@@ -1534,30 +1543,30 @@
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
-                        <div class="detail-value">${asn}</div>
+                        <div class="detail-label">ASN</div> <div class="detail-value">${asn}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${gpsAccuracy ? `
-                    <div class="detail-item">
+                    ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? ` <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
                         <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
-                    </div>` : ''}
+                        <div class="detail-value"><a href="${mapLink}" target="_blank" rel="noopener noreferrer">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div> </div>` : ''}
                 </div>
-
+        
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceType}</div>
+                    </div>
+                     <div class="detail-item">
+                        <div class="detail-label">รุ่นอุปกรณ์</div> <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
@@ -1572,10 +1581,9 @@
                     </div>
                 </div>
             `;
-
+        
             modal.style.display = 'block';
         }
-
         
         // ปิด Modal
         function closeModal() {
