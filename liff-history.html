@@ -1573,44 +1573,71 @@
                 }
             }
             
-            // แก้ไข: ปรับปรุงวิธีการดึง osName และ osVersion 
+            // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
             let osName = "ไม่ระบุ";
             let osVersion = "ไม่ระบุ";
             
-            // 1. ตรวจสอบหากมีค่า osVersion โดยตรงจาก API
-            if (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && deviceInfo.osVersion !== "ไม่ทราบ") {
-                osVersion = deviceInfo.osVersion;
-                console.log("ใช้ค่า osVersion จาก deviceInfo โดยตรง:", osVersion);
-            }
-            
-            // 2. ตรวจสอบหากมีค่า osName โดยตรงจาก API
-            if (deviceInfo.osName && deviceInfo.osName !== "ไม่ระบุ" && deviceInfo.osName !== "ไม่ทราบ") {
+            // ลำดับความสำคัญในการดึงข้อมูล OS Version
+            // 1. ดึงจาก deviceInfo.osVersion โดยตรง (ถ้ามี)
+            // 2. แยกจาก platform หรือ deviceInfo.os
+            // 3. ใช้จาก deviceInfo.osInfo
+
+            // ดึงข้อมูล osName โดยตรงถ้ามี
+            if (deviceInfo.osName) {
                 osName = deviceInfo.osName;
-                console.log("ใช้ค่า osName จาก deviceInfo โดยตรง:", osName);
-            } else if (platform !== "ไม่ระบุ") {
-                // หากไม่มี osName แต่มี platform ก็ใช้วิธีแยกจาก platform
-                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
-                if (osMatch) {
-                    osName = osMatch[1] || "ไม่ระบุ";
-                    // ถ้ายังไม่มี osVersion ก็ใช้จาก pattern match
-                    if (osVersion === "ไม่ระบุ" && osMatch[2]) {
-                        osVersion = osMatch[2];
-                    }
-                } else {
-                    osName = platform;
-                }
+            }
+
+            // ดึงข้อมูล osVersion โดยตรงถ้ามี
+            if (deviceInfo.osVersion) {
+                osVersion = deviceInfo.osVersion;
+                console.log("พบข้อมูล osVersion โดยตรง:", osVersion);
             }
             
-            // 3. ถ้ายังไม่มี osVersion ลองดูจากแหล่งอื่นอีกครั้ง
-            if (osVersion === "ไม่ระบุ") {
-                // ลองดูจาก osInfo ถ้ามี
-                if (deviceInfo.osInfo) {
-                    const versionMatch = deviceInfo.osInfo.match(/[\d\.]+/);
+            if (platform !== "ไม่ระบุ") {
+                // ถ้ายังไม่มี osName แต่มี platform ให้ดึงชื่อ OS จาก platform
+                if (osName === "ไม่ระบุ") {
+                    // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
+                    const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
+                    if (osMatch) {
+                        osName = osMatch[1] || "ไม่ระบุ";
+                    } else {
+                        osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
+                    }
+                }
+                
+                // ถ้ายังไม่มี osVersion แต่มีใน platform ให้ดึงเวอร์ชันจาก platform
+                if (osVersion === "ไม่ระบุ") {
+                    // ค้นหาเฉพาะตัวเลขเวอร์ชัน
+                    const versionMatch = platform.match(/[\d\.]+/);
                     if (versionMatch) {
                         osVersion = versionMatch[0];
-                        console.log("ใช้ค่า version จาก osInfo:", osVersion);
+                        console.log("แยกข้อมูล osVersion จาก platform:", osVersion);
                     }
                 }
+            }
+
+            // หากยังไม่มีข้อมูล osVersion และมี deviceInfo.osInfo ให้ลองดึงจาก osInfo
+            if (osVersion === "ไม่ระบุ" && deviceInfo.osInfo) {
+                const versionMatch = deviceInfo.osInfo.match(/[\d\.]+/);
+                if (versionMatch) {
+                    osVersion = versionMatch[0];
+                    console.log("แยกข้อมูล osVersion จาก osInfo:", osVersion);
+                }
+            }
+            
+            // ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
+            if (osName.toLowerCase().includes("ios")) {
+                osName = "iOS";
+            } else if (osName.toLowerCase().includes("ipados")) {
+                osName = "iPadOS";  
+            } else if (osName.toLowerCase().includes("android")) {
+                osName = "Android";
+            } else if (osName.toLowerCase().includes("windows")) {
+                osName = "Windows";
+            } else if (osName.toLowerCase().includes("macos")) {
+                osName = "macOS";
+            } else if (osName.toLowerCase().includes("linux")) {
+                osName = "Linux";
             }
             
             // สร้าง HTML สำหรับ Modal
