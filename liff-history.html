@@ -1523,45 +1523,101 @@
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // ปรับปรุงการดึงข้อมูลระบบปฏิบัติการและเวอร์ชั่น
-            // เริ่มจากการใช้ค่าที่กำหนดไว้โดยตรงถ้ามี
-            let osName = deviceInfo.osName || "ไม่ระบุ";
-            let osVersion = deviceInfo.osVersion || "ไม่ระบุ";
+            // แก้ไขการสกัดข้อมูล OS และเวอร์ชัน
+            let osName = "ไม่ระบุ";
+            let osVersion = "ไม่ระบุ";
             
-            // ถ้าไม่มีค่า osName แต่มี platform หรือ os ให้ใช้ค่าเหล่านั้น
-            if (osName === "ไม่ระบุ") {
-                osName = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
+            // แสดงข้อมูลดิบที่ได้รับเพื่อดีบั๊ก
+            console.log("ข้อมูล OS ที่ได้รับ:", {
+                platform: deviceInfo.platform,
+                osName: deviceInfo.osName,
+                osVersion: deviceInfo.osVersion,
+                osInfo: deviceInfo.osInfo
+            });
+            
+            // 1. ตรวจสอบค่า osName และ osVersion โดยตรงจาก deviceInfo ก่อน (กรณีที่ server ส่งมาโดยตรง)
+            if (deviceInfo.osName && deviceInfo.osName !== "ไม่ระบุ" && deviceInfo.osName !== "ไม่ทราบ") {
+                osName = deviceInfo.osName;
+            }
+            
+            if (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && deviceInfo.osVersion !== "ไม่ทราบ") {
+                osVersion = deviceInfo.osVersion;
+                console.log("ใช้ osVersion จาก deviceInfo.osVersion:", osVersion);
+            }
+            
+            // 2. หากไม่มี osName หรือ osVersion ให้ลองสกัดจาก platform หรือ osInfo
+            if (osName === "ไม่ระบุ" || osVersion === "ไม่ระบุ") {
+                // ทดลองแยกจาก platform 
+                let platformText = deviceInfo.platform || deviceInfo.os || deviceInfo.osInfo || "";
+                console.log("ข้อความ platform ที่จะใช้สกัด:", platformText);
                 
-                // ถ้า platform มีทั้งชื่อ OS และเวอร์ชั่น ลองแยกด้วย regex
-                if (osName !== "ไม่ระบุ" && osVersion === "ไม่ระบุ") {
-                    const osMatch = osName.match(/(iOS|Android|Windows|macOS|Linux|iPadOS)[^\d]*([\d\.]+)?/i);
+                if (platformText && platformText !== "ไม่ระบุ" && platformText !== "ไม่ทราบ") {
+                    // ค้นหารูปแบบชื่อ OS และเวอร์ชันที่พบได้บ่อย
+                    // พยายามจับทั้งแบบ "iOS 16.2", "Android 13.0", "Windows 11", "macOS 12.3" เป็นต้น
+                    const osMatch = platformText.match(/(iOS|iPadOS|Android|Windows|macOS|Linux|Ubuntu|CentOS)[^\d]*([\d\.]+)?/i);
+                    
                     if (osMatch) {
-                        osName = osMatch[1] || osName;
-                        if (osMatch[2]) {
-                            osVersion = osMatch[2]; // เก็บเวอร์ชั่นที่แยกได้
+                        console.log("พบข้อมูล OS จาก pattern matching:", osMatch);
+                        
+                        // ถ้ายังไม่มีค่า osName ให้ใช้ค่าจาก pattern
+                        if (osName === "ไม่ระบุ" && osMatch[1]) {
+                            osName = osMatch[1];
+                        }
+                        
+                        // ถ้ายังไม่มีค่า osVersion และพบเวอร์ชันใน pattern ให้ใช้ค่าจาก pattern
+                        if (osVersion === "ไม่ระบุ" && osMatch[2]) {
+                            osVersion = osMatch[2];
+                            console.log("ใช้ osVersion จาก pattern matching:", osVersion);
+                        }
+                    } else {
+                        // ถ้าไม่พบรูปแบบที่ถูกต้อง แต่มีข้อความ platform และยังไม่มีค่า osName
+                        if (osName === "ไม่ระบุ") {
+                            osName = platformText;
+                        }
+                        
+                        // สำหรับเวอร์ชัน พยายามค้นหาเลขเวอร์ชันในรูปแบบต่างๆ
+                        if (osVersion === "ไม่ระบุ") {
+                            // จับเฉพาะตัวเลขและจุดทศนิยมที่อยู่ในข้อความ (เช่น 14.2.1, 10, 11.0 เป็นต้น)
+                            const versionMatch = platformText.match(/(\d+(\.\d+)+)/);
+                            if (versionMatch) {
+                                osVersion = versionMatch[0];
+                                console.log("ใช้ osVersion จากการจับเลขเวอร์ชัน:", osVersion);
+                            }
                         }
                     }
                 }
             }
             
-            // ถ้ายังไม่มีเวอร์ชั่น แต่มีใน deviceInfo.platformVersion
-            if (osVersion === "ไม่ระบุ" && deviceInfo.platformVersion) {
-                osVersion = deviceInfo.platformVersion;
-            }
-            
-            // ถ้ายังไม่มีเวอร์ชั่น แต่มีใน deviceInfo.osInfo
-            if (osVersion === "ไม่ระบุ" && deviceInfo.osInfo) {
-                const versionMatch = deviceInfo.osInfo.match(/[\d\.]+/);
-                if (versionMatch) {
-                    osVersion = versionMatch[0];
+            // 3. กรณีพิเศษสำหรับการดึงเวอร์ชันจาก userAgent ถ้ายังไม่ได้ค่า
+            if ((osVersion === "ไม่ระบุ" || osVersion === "ไม่ทราบ") && deviceInfo.userAgent) {
+                const ua = deviceInfo.userAgent.toLowerCase();
+                
+                // iOS Version: เช่น "CPU iPhone OS 14_2 like Mac OS X" หรือ "CPU OS 14_2 like Mac OS X"
+                if (ua.includes('iphone os') || ua.includes('cpu os')) {
+                    const iosMatch = ua.match(/(?:iphone|cpu) os (\d+)_(\d+)(?:_(\d+))?/i);
+                    if (iosMatch) {
+                        let version = iosMatch[1];
+                        if (iosMatch[2]) version += '.' + iosMatch[2];
+                        if (iosMatch[3]) version += '.' + iosMatch[3];
+                        osVersion = version;
+                        console.log("ใช้ iOS version จาก userAgent:", osVersion);
+                    }
+                }
+                // Android Version: เช่น "Android 13.0.0"
+                else if (ua.includes('android')) {
+                    const androidMatch = ua.match(/android (\d+(\.\d+)+)/i);
+                    if (androidMatch) {
+                        osVersion = androidMatch[1];
+                        console.log("ใช้ Android version จาก userAgent:", osVersion);
+                    }
                 }
             }
             
-            // ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
+            // 4. ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
             if (osName.toLowerCase().includes("ios")) {
                 osName = "iOS";
             } else if (osName.toLowerCase().includes("ipados")) {
-                osName = "iPadOS";
+                osName = "iPadOS";  
             } else if (osName.toLowerCase().includes("android")) {
                 osName = "Android";
             } else if (osName.toLowerCase().includes("windows")) {
@@ -1572,7 +1628,22 @@
                 osName = "Linux";
             }
             
-            const browser = deviceInfo.browser || "ไม่ระบุ";
+            // บันทึกผลลัพธ์สุดท้าย
+            console.log("สรุปข้อมูล OS ที่จะแสดง:", { osName, osVersion });
+            
+            let browser = deviceInfo.browser || "ไม่ระบุ";
+            
+            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
+            if (deviceInfo.userAgent && browser === "ไม่ระบุ") {
+                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                const ua = deviceInfo.userAgent.toLowerCase();
+                if (ua.includes("chrome")) browser = "Chrome";
+                else if (ua.includes("firefox")) browser = "Firefox";
+                else if (ua.includes("safari")) browser = "Safari";
+                else if (ua.includes("edge")) browser = "Edge";
+                else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+                else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+            }
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
