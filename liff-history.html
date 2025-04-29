@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby6SibIEuH-4z3SnPL2loVfIqVUHKTIWQJ7DtYVGmLesnIdxJI9_8OHrQ-qOmy4uDhb/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby6SibIEuH-4z3SnPL2loVfIqVUHKTIWQJ7DtYVGmLesnIdxJI9_8OHrQ-qOmy4uDhb/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1423,85 +1423,214 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
-        
+            
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
-        
+            
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
             let gpsAccuracy = "";
-        
-            // การจัดการ location (เหมือนเดิม)
+            
             if (item.location) {
                 console.log("ค่า location สำหรับ Modal:", item.location);
+                
+                // ตรวจสอบรูปแบบข้อมูล location
                 if (typeof item.location === "object" && item.location !== null) {
+                    // กรณีเป็น object
                     if (item.location.lat !== undefined && item.location.long !== undefined) {
                         locationText = `${item.location.lat}, ${item.location.long}`;
+                        
                         // สร้างลิงก์ Google Maps โดยตรง
                         mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
+                        
                         // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
-                        if (item.location.gmapLink && (item.location.gmapLink.includes('maps.google.com') || item.location.gmapLink.includes('goo.gl/maps'))) {
+                        if (item.location.gmapLink && 
+                            (item.location.gmapLink.includes('google.com/maps') || 
+                             item.location.gmapLink.includes('goo.gl/maps'))) {
                             mapLink = item.location.gmapLink;
                         }
-                        gpsAccuracy = item.location.accuracy ? `±${Math.round(item.location.accuracy)} เมตร` : "ไม่มีข้อมูล"; // ปรับปรุงการแสดงผล accuracy
+                        
+                        gpsAccuracy = item.location.accuracy ? `±${item.location.accuracy} เมตร` : "ไม่มีข้อมูล";
                     }
                 } else if (typeof item.location === "string") {
+                    // กรณีเป็น string
                     locationText = item.location;
-                    // พยายามแยกค่า lat, long จาก string เพื่อสร้าง link
+                    
+                    // พยายามแยกค่า lat, long จาก string
                     if (locationText.includes(",")) {
                         const coords = locationText.split(",").map(coord => coord.trim());
-                        if (coords.length === 2 && !isNaN(parseFloat(coords[0])) && !isNaN(parseFloat(coords[1]))) {
+                        if (coords.length === 2) {
+                            // สร้างลิงก์ Google Maps โดยตรง
                             mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
                         }
                     }
                 }
             }
-        
-        
-            // แปลงวันที่เวลาให้เป็นภาษาไทย (เหมือนเดิม)
+            
+            // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-        
-            // ========== ข้อมูล IP และตำแหน่ง (เหมือนเดิม) ==========
+            
+            // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
+            
+            // แก้ไขการเข้าถึงข้อมูล IP
             let ipInfo = "ไม่มีข้อมูล";
             let country = "ไม่ทราบ";
             let region = "ไม่ทราบ";
-            let city = "ไม่ทราบ";
+            let city = "ไม่ทราบ"; 
             let isp = "ไม่ทราบ";
             let asn = "ไม่ทราบ";
+            
+            // ตรวจสอบและแกะข้อมูล IP ทุกรูปแบบ
             if (typeof item.ip === 'string') {
+                // กรณีที่ข้อมูล IP เป็นสตริงตรงๆ (เช่น "192.168.1.1")
                 ipInfo = item.ip;
             } else if (typeof item.ip === 'object' && item.ip !== null) {
+                // กรณีที่ข้อมูล IP เป็น object
+                
+                // ดึงค่า IP address
                 ipInfo = item.ip.ip || "ไม่มีข้อมูล";
+                
                 // ดึงข้อมูลประเทศ - ลองหลายฟิลด์
                 if (item.ip.country) country = item.ip.country;
                 else if (item.ip.countryCode) country = item.ip.countryCode;
                 else if (item.ip.countryName) country = item.ip.countryName;
+                
                 // ดึงข้อมูลภูมิภาค - ลองหลายฟิลด์
                 if (item.ip.region) region = item.ip.region;
                 else if (item.ip.regionName) region = item.ip.regionName;
+                
                 // ดึงข้อมูลเมือง
                 if (item.ip.city) city = item.ip.city;
+                
                 // ดึงข้อมูล ISP (ลำดับความสำคัญตามลำดับ)
                 if (item.ip.isp) isp = item.ip.isp;
                 else if (item.ip.org) isp = item.ip.org;
                 else if (item.ip.organization) isp = item.ip.organization;
                 else if (item.ip.asOrg) isp = item.ip.asOrg;
+                
                 // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : "ไม่ทราบ"; // ตรวจสอบ AS prefix
+                else if (item.ip.asn) asn = item.ip.asn ? `AS${item.ip.asn}` : asn;
             }
-        
-            // ========== ข้อมูลอุปกรณ์ - ใช้ข้อมูลที่ได้รับโดยตรง ==========
+            
+            // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติมวิธีการดึงข้อมูลเวอร์ชัน ==========
             const deviceInfo = item.deviceInfo || {};
+            
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
-        
+            
+            // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
-            const osName = deviceInfo.platform || "ไม่ระบุ"; // ใช้ platform สำหรับ OS Name
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ osVersion ที่ได้รับมาโดยตรง
-            const browser = deviceInfo.browser || "ไม่ระบุ";
-        
+            
+            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
+            let browser = deviceInfo.browser || "ไม่ระบุ";
+            
+            // แก้ไขปัญหา osVersion โดยตรวจสอบแบบละเอียดกว่าเดิม
+            let osName = "ไม่ระบุ";
+            let osVersion = "ไม่ระบุ";
+            
+            // 1. ตรวจสอบจาก version ที่อาจส่งมาตรงๆ
+            if (deviceInfo.version && deviceInfo.version !== "ไม่ระบุ") {
+                osVersion = deviceInfo.version;
+                console.log("พบข้อมูลเวอร์ชันในฟิลด์ version:", osVersion);
+            }
+            // 2. ตรวจสอบจาก osVersion ที่อาจส่งมาตรงๆ
+            else if (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ") {
+                osVersion = deviceInfo.osVersion;
+                console.log("พบข้อมูลเวอร์ชันในฟิลด์ osVersion:", osVersion);
+            }
+            
+            // 3. ลองสกัดชื่อและเวอร์ชันจาก platform หรือ os
+            if (platform !== "ไม่ระบุ") {
+                // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
+                const osMatch = platform.match(/(iOS|iPadOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
+                if (osMatch) {
+                    osName = osMatch[1] || osName;
+                    // ใช้เวอร์ชันจากการแมตช์เฉพาะเมื่อยังไม่มีค่าที่ได้จากฟิลด์โดยตรง
+                    if (osVersion === "ไม่ระบุ" && osMatch[2]) {
+                        osVersion = osMatch[2];
+                        console.log("สกัดเวอร์ชันจาก platform:", osVersion);
+                    }
+                } else {
+                    osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
+                }
+            }
+            
+            // 4. หากยังไม่มี osName ลองดูจากฟิลด์อื่น
+            if (osName === "ไม่ระบุ" && deviceInfo.osName) {
+                osName = deviceInfo.osName;
+            }
+            
+            // 5. สกัดเวอร์ชันจากฟิลด์ที่อาจเป็นไปได้อื่นๆ
+            if (osVersion === "ไม่ระบุ") {
+                // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
+                if (deviceModel !== "ไม่ระบุ") {
+                    // กรณี iPhone หรือ iOS
+                    if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
+                        const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                        if (iosMatch && iosMatch[1]) {
+                            osVersion = iosMatch[1];
+                            console.log("สกัดเวอร์ชันจาก deviceModel (iOS):", osVersion);
+                        }
+                    }
+                    // กรณี Android
+                    else if (deviceModel.includes("Android")) {
+                        const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
+                        if (androidMatch && androidMatch[1]) {
+                            osVersion = androidMatch[1];
+                            console.log("สกัดเวอร์ชันจาก deviceModel (Android):", osVersion);
+                        }
+                    }
+                }
+            }
+            
+            // 6. ตรวจสอบจาก userAgent ถ้ายังไม่มีค่า
+            if (osVersion === "ไม่ระบุ" && deviceInfo.userAgent) {
+                const ua = deviceInfo.userAgent.toLowerCase();
+                
+                // ลองค้นหาเวอร์ชันจาก user agent
+                const versionPatterns = {
+                    ios: /ios\s+([\d\._]+)/i,
+                    iphone: /iphone\s+os\s+([\d\._]+)/i, 
+                    ipad: /ipad\s*;\s*cpu\s+os\s+([\d\._]+)/i,
+                    android: /android\s+([\d\.]+)/i,
+                    windows: /windows\s+nt\s+([\d\.]+)/i,
+                    mac: /mac\s+os\s+x\s+([\d\._]+)/i
+                };
+                
+                for (const [osType, pattern] of Object.entries(versionPatterns)) {
+                    const match = ua.match(pattern);
+                    if (match && match[1]) {
+                        osVersion = match[1].replace(/_/g, '.');
+                        console.log(`สกัดเวอร์ชันจาก userAgent (${osType}):`, osVersion);
+                        break;
+                    }
+                }
+            }
+            
+            // ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
+            if (osName.toLowerCase().includes("ios")) {
+                osName = "iOS";
+            } else if (osName.toLowerCase().includes("ipados")) {
+                osName = "iPadOS";  
+            } else if (osName.toLowerCase().includes("android")) {
+                osName = "Android";
+            } else if (osName.toLowerCase().includes("windows")) {
+                osName = "Windows";
+            } else if (osName.toLowerCase().includes("macos")) {
+                osName = "macOS";
+            } else if (osName.toLowerCase().includes("linux")) {
+                osName = "Linux";
+            }
+            
+            // 7. ตรวจสอบจากฟิลด์เพิ่มเติมใน item (อาจมีฟิลด์ osVersion ที่ส่งมาจาก Server)
+            if (osVersion === "ไม่ระบุ" && item.osVersion) {
+                osVersion = item.osVersion;
+                console.log("พบเวอร์ชันใน item.osVersion:", osVersion);
+            }
+
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
                 <div class="detail-group">
@@ -1523,7 +1652,7 @@
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                 </div>
-        
+                
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
@@ -1543,45 +1672,46 @@
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ASN</div> <div class="detail-value">${asn}</div>
+                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-value">${asn}</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
-                    ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? ` <div class="detail-item">
+                    ${gpsAccuracy ? `
+                    <div class="detail-item">
                         <div class="detail-label">ความแม่นยำ</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink ? `
                     <div class="detail-item">
                         <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank" rel="noopener noreferrer">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div> </div>` : ''}
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                    </div>` : ''}
                 </div>
-        
+                
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
                         <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
-                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div> <div class="detail-value">${deviceModel}</div>
-                    </div>
                     <div class="detail-item">
                         <div class="detail-label">ระบบปฏิบัติการ</div>
                         <div class="detail-value">${osName}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> </div>
+                        <div class="detail-label">เวอร์ชัน</div>
+                        <div class="detail-value">${osVersion}</div>
+                    </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
-        
+            
             modal.style.display = 'block';
         }
         
