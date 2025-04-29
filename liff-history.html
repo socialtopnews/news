@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyGnKTa5P-KlMNIT5zPdPAZd9Mcataa9pPMeZkzkmapmpT5oWI3MT_jhjiwGMd6NWSb/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyGnKTa5P-KlMNIT5zPdPAZd9Mcataa9pPMeZkzkmapmpT5oWI3MT_jhjiwGMd6NWSb/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1523,77 +1523,69 @@
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // =========== แก้ไขการดึงข้อมูล OS และเวอร์ชัน ===========
-            // ตรวจสอบข้อมูลเวอร์ชันในหลายรูปแบบ
+            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
             let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
             let browser = deviceInfo.browser || "ไม่ระบุ";
+            
+            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
+            if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
+                // กรณี iPhone หรือ iOS
+                if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
+                    const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
+                    if (iosMatch && iosMatch[1]) {
+                        platform = `iOS ${iosMatch[1]}`;
+                    } else {
+                        platform = "iOS";
+                    }
+                }
+                // กรณี Android
+                else if (deviceModel.includes("Android")) {
+                    const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
+                    if (androidMatch && androidMatch[1]) {
+                        platform = `Android ${androidMatch[1]}`;
+                    } else {
+                        platform = "Android";
+                    }
+                }
+            }
+            
+            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
+            if (deviceInfo.userAgent) {
+                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                if (browser === "ไม่ระบุ") {
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("chrome")) browser = "Chrome";
+                    else if (ua.includes("firefox")) browser = "Firefox";
+                    else if (ua.includes("safari")) browser = "Safari";
+                    else if (ua.includes("edge")) browser = "Edge";
+                    else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
+                    else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
+                }
+                
+                // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
+                if (platform === "ไม่ระบุ") {
+                    const ua = deviceInfo.userAgent.toLowerCase();
+                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
+                    else if (ua.includes("android")) platform = "Android";
+                    else if (ua.includes("windows")) platform = "Windows";
+                    else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
+                    else if (ua.includes("linux")) platform = "Linux";
+                }
+            }
             
             // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
             let osName = "ไม่ระบุ";
             let osVersion = "ไม่ระบุ";
             
-            // เพิ่มการ log เพื่อตรวจสอบข้อมูล
-            console.log("ค่า platform จากข้อมูล:", platform);
-            console.log("ค่า osName โดยตรง (ถ้ามี):", deviceInfo.osName);
-            console.log("ค่า osVersion โดยตรง (ถ้ามี):", deviceInfo.osVersion);
-            
-            // ดึงข้อมูลจากฟิลด์โดยตรงถ้ามี
-            if (deviceInfo.osName && deviceInfo.osName !== "ไม่ระบุ" && deviceInfo.osName !== "ไม่ทราบ") {
-                osName = deviceInfo.osName;
-            }
-            
-            // ดึงข้อมูลเวอร์ชันจากฟิลด์โดยตรงถ้ามี (สำคัญ - แก้ไขตรงนี้)
-            if (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && deviceInfo.osVersion !== "ไม่ทราบ") {
-                osVersion = deviceInfo.osVersion;
-                console.log("ใช้ค่า osVersion จากข้อมูลโดยตรง:", osVersion);
-            }
-            
-            // ถ้าไม่มีข้อมูล osName หรือ osVersion โดยตรง ให้พยายามแยกจาก platform
-            if ((osName === "ไม่ระบุ" || osVersion === "ไม่ระบุ") && platform !== "ไม่ระบุ") {
+            if (platform !== "ไม่ระบุ") {
                 // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
-                const osMatch = platform.match(/(iOS|iPadOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
+                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
                 if (osMatch) {
-                    if (osName === "ไม่ระบุ") osName = osMatch[1] || "ไม่ระบุ";
-                    if (osVersion === "ไม่ระบุ") {
-                        osVersion = osMatch[2] || "ไม่ระบุ";
-                        console.log("แยกค่า osVersion จาก platform:", osVersion);
-                    }
+                    osName = osMatch[1] || "ไม่ระบุ";
+                    osVersion = osMatch[2] || "ไม่ระบุ";
                 } else {
-                    if (osName === "ไม่ระบุ") osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
+                    osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
                 }
-            }
-            
-            // สำรองข้อมูลเวอร์ชัน - พยายามค้นหาตัวเลขเวอร์ชันในชื่อ platform หากยังไม่มีค่า
-            if (osVersion === "ไม่ระบุ" && platform !== "ไม่ระบุ") {
-                const versionMatch = platform.match(/[\d\.]+/);
-                if (versionMatch) {
-                    osVersion = versionMatch[0];
-                    console.log("แยกค่า osVersion จากตัวเลขใน platform:", osVersion);
-                }
-            }
-            
-            // สำรองข้อมูลเวอร์ชัน - ตรวจสอบใน deviceModel ถ้ายังหาไม่ได้
-            if (osVersion === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
-                const modelVersionMatch = deviceModel.match(/[\d\.]+/);
-                if (modelVersionMatch) {
-                    osVersion = modelVersionMatch[0];
-                    console.log("แยกค่า osVersion จาก deviceModel:", osVersion);
-                }
-            }
-            
-            // ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
-            if (osName.toLowerCase().includes("ios")) {
-                osName = "iOS";
-            } else if (osName.toLowerCase().includes("ipados")) {
-                osName = "iPadOS";  
-            } else if (osName.toLowerCase().includes("android")) {
-                osName = "Android";
-            } else if (osName.toLowerCase().includes("windows")) {
-                osName = "Windows";
-            } else if (osName.toLowerCase().includes("macos")) {
-                osName = "macOS";
-            } else if (osName.toLowerCase().includes("linux")) {
-                osName = "Linux";
             }
             
             // สร้าง HTML สำหรับ Modal
@@ -1667,7 +1659,7 @@
                         <div class="detail-value">${osName}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชัน</div>
+                        <div class="detail-label">เวอร์ชั่น</div>
                         <div class="detail-value">${osVersion}</div>
                     </div>
                     <div class="detail-item">
