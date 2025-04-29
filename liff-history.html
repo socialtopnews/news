@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyGnKTa5P-KlMNIT5zPdPAZd9Mcataa9pPMeZkzkmapmpT5oWI3MT_jhjiwGMd6NWSb/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyGnKTa5P-KlMNIT5zPdPAZd9Mcataa9pPMeZkzkmapmpT5oWI3MT_jhjiwGMd6NWSb/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4EatCwd0fb2D9s2gv7uQbWnGbFYYVw0TKhA1jvSRhoVsG3LxO-_DQYzFfLF9ATzPJ/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4EatCwd0fb2D9s2gv7uQbWnGbFYYVw0TKhA1jvSRhoVsG3LxO-_DQYzFfLF9ATzPJ/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1575,14 +1575,15 @@
             
             // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
             let osName = "ไม่ระบุ";
-            let osVersion = "ไม่ระบุ";
+            // เพิ่มการตรวจสอบข้อมูลเวอร์ชันโดยตรงจาก deviceInfo.osVersion ก่อน
+            let osVersion = deviceInfo.osVersion || "ไม่ระบุ";
             
-            if (platform !== "ไม่ระบุ") {
+            if (platform !== "ไม่ระบุ" && osVersion === "ไม่ระบุ") {
                 // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
                 const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
                 if (osMatch) {
                     osName = osMatch[1] || "ไม่ระบุ";
-                    osVersion = osMatch[2] || "ไม่ระบุ";
+                    if (osMatch[2]) osVersion = osMatch[2]; // เก็บ osVersion เฉพาะเมื่อมีค่า
                 } else {
                     osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
                 }
