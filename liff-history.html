@@ -254,7 +254,7 @@
             width: 100%;
             padding: 12px 40px 12px 15px;
             border: 1px solid #E0E0E0;
-            border-radius: var (--border-radius);
+            border-radius: var(--border-radius);
             font-size: 15px;
             transition: var(--transition-normal);
             background-color: #FAFAFA;
@@ -1523,77 +1523,56 @@
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
-            let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
-            let browser = deviceInfo.browser || "ไม่ระบุ";
+            // ปรับปรุงการดึงข้อมูลระบบปฏิบัติการและเวอร์ชั่น
+            // เริ่มจากการใช้ค่าที่กำหนดไว้โดยตรงถ้ามี
+            let osName = deviceInfo.osName || "ไม่ระบุ";
+            let osVersion = deviceInfo.osVersion || "ไม่ระบุ";
             
-            // ข้อมูล OS และเวอร์ชัน - ปรับปรุงให้มีการใช้ข้อมูลเวอร์ชัน
-            let osName = "ไม่ระบุ";
-            let osVersion = "ไม่ระบุ";
-
-            // ตรวจสอบว่ามีข้อมูลเวอร์ชันที่แยกมาแล้วหรือไม่
-            if (deviceInfo.osVersion !== undefined) {
-                osVersion = deviceInfo.osVersion || "ไม่ระบุ";
-                console.log("พบข้อมูล osVersion โดยตรง:", osVersion);
-            }
-            
-            // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
-            if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
-                // กรณี iPhone หรือ iOS
-                if (deviceModel.includes("iPhone") || deviceModel.includes("iOS")) {
-                    const iosMatch = deviceModel.match(/iOS\s+([\d\.]+)/);
-                    if (iosMatch && iosMatch[1]) {
-                        platform = `iOS ${iosMatch[1]}`;
-                    } else {
-                        platform = "iOS";
-                    }
-                }
-                // กรณี Android
-                else if (deviceModel.includes("Android")) {
-                    const androidMatch = deviceModel.match(/Android\s+([\d\.]+)/);
-                    if (androidMatch && androidMatch[1]) {
-                        platform = `Android ${androidMatch[1]}`;
-                    } else {
-                        platform = "Android";
-                    }
-                }
-            }
-            
-            // ถ้าใน deviceInfo มีข้อมูลเพิ่มเติมที่อาจใช้ประโยชน์ได้
-            if (deviceInfo.userAgent) {
-                // ถ้ายัง browser ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
-                if (browser === "ไม่ระบุ") {
-                    const ua = deviceInfo.userAgent.toLowerCase();
-                    if (ua.includes("chrome")) browser = "Chrome";
-                    else if (ua.includes("firefox")) browser = "Firefox";
-                    else if (ua.includes("safari")) browser = "Safari";
-                    else if (ua.includes("edge")) browser = "Edge";
-                    else if (ua.includes("opera") || ua.includes("opr")) browser = "Opera";
-                    else if (ua.includes("msie") || ua.includes("trident")) browser = "Internet Explorer";
-                }
+            // ถ้าไม่มีค่า osName แต่มี platform หรือ os ให้ใช้ค่าเหล่านั้น
+            if (osName === "ไม่ระบุ") {
+                osName = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
                 
-                // ถ้ายัง platform ยังเป็น "ไม่ระบุ" ลองสกัดจาก userAgent
-                if (platform === "ไม่ระบุ") {
-                    const ua = deviceInfo.userAgent.toLowerCase();
-                    if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) platform = "iOS";
-                    else if (ua.includes("android")) platform = "Android";
-                    else if (ua.includes("windows")) platform = "Windows";
-                    else if (ua.includes("macintosh") || ua.includes("mac os")) platform = "macOS";
-                    else if (ua.includes("linux")) platform = "Linux";
+                // ถ้า platform มีทั้งชื่อ OS และเวอร์ชั่น ลองแยกด้วย regex
+                if (osName !== "ไม่ระบุ" && osVersion === "ไม่ระบุ") {
+                    const osMatch = osName.match(/(iOS|Android|Windows|macOS|Linux|iPadOS)[^\d]*([\d\.]+)?/i);
+                    if (osMatch) {
+                        osName = osMatch[1] || osName;
+                        if (osMatch[2]) {
+                            osVersion = osMatch[2]; // เก็บเวอร์ชั่นที่แยกได้
+                        }
+                    }
                 }
             }
             
-            // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
-            if (platform !== "ไม่ระบุ") {
-                // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
-                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
-                if (osMatch) {
-                    osName = osMatch[1] || "ไม่ระบุ";
-                    osVersion = osMatch[2] || "ไม่ระบุ";
-                } else {
-                    osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
+            // ถ้ายังไม่มีเวอร์ชั่น แต่มีใน deviceInfo.platformVersion
+            if (osVersion === "ไม่ระบุ" && deviceInfo.platformVersion) {
+                osVersion = deviceInfo.platformVersion;
+            }
+            
+            // ถ้ายังไม่มีเวอร์ชั่น แต่มีใน deviceInfo.osInfo
+            if (osVersion === "ไม่ระบุ" && deviceInfo.osInfo) {
+                const versionMatch = deviceInfo.osInfo.match(/[\d\.]+/);
+                if (versionMatch) {
+                    osVersion = versionMatch[0];
                 }
             }
+            
+            // ปรับรูปแบบชื่อระบบปฏิบัติการให้เป็นมาตรฐาน
+            if (osName.toLowerCase().includes("ios")) {
+                osName = "iOS";
+            } else if (osName.toLowerCase().includes("ipados")) {
+                osName = "iPadOS";
+            } else if (osName.toLowerCase().includes("android")) {
+                osName = "Android";
+            } else if (osName.toLowerCase().includes("windows")) {
+                osName = "Windows";
+            } else if (osName.toLowerCase().includes("macos")) {
+                osName = "macOS";
+            } else if (osName.toLowerCase().includes("linux")) {
+                osName = "Linux";
+            }
+            
+            const browser = deviceInfo.browser || "ไม่ระบุ";
             
             // สร้าง HTML สำหรับ Modal
             modalBody.innerHTML = `
@@ -1840,7 +1819,7 @@
             versionElement.style.color = '#999';
             versionElement.style.textAlign = 'center';
             versionElement.style.padding = '5px';
-            versionElement.textContent = 'Ver. 1.1.2 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
+            versionElement.textContent = 'Ver. 1.1.3 (Last updated: ' + new Date().toISOString().split('T')[0] + ')';
             
             const footer = document.querySelector('.footer');
             footer.appendChild(versionElement);
