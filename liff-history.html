@@ -237,7 +237,7 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var(--error-color);
+            border-left: 4px solid var (--error-color);
         }
 
         .message-box.error p {
@@ -800,8 +800,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4EatCwd0fb2D9s2gv7uQbWnGbFYYVw0TKhA1jvSRhoVsG3LxO-_DQYzFfLF9ATzPJ/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4EatCwd0fb2D9s2gv7uQbWnGbFYYVw0TKhA1jvSRhoVsG3LxO-_DQYzFfLF9ATzPJ/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyVrMVzsBzktLiTvjpn2oxgnvvmwDWl2s_J8MJMfmC02SMainfx1VrZ9pU_Xf6a_qTx/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyVrMVzsBzktLiTvjpn2oxgnvvmwDWl2s_J8MJMfmC02SMainfx1VrZ9pU_Xf6a_qTx/exec';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1523,9 +1523,13 @@
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
             const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
             
-            // แยกสกัดข้อมูลระบบปฏิบัติการจากรุ่นอุปกรณ์ถ้าจำเป็น
+            // แยกสกัดข้อมูลระบบปฏิบัติการและเวอร์ชัน
             let platform = deviceInfo.platform || deviceInfo.os || "ไม่ระบุ";
             let browser = deviceInfo.browser || "ไม่ระบุ";
+            
+            // แก้ไขส่วนนี้ - ใช้ค่า osVersion จาก deviceInfo โดยตรงถ้ามี
+            let osName = "ไม่ระบุ";
+            let osVersion = deviceInfo.osVersion || "ไม่ระบุ";
             
             // ถ้า platform ยังไม่มีข้อมูลใช้ได้ ให้ลองสกัดจาก deviceModel
             if (platform === "ไม่ระบุ" && deviceModel !== "ไม่ระบุ") {
@@ -1546,6 +1550,21 @@
                     } else {
                         platform = "Android";
                     }
+                }
+            }
+            
+            // ถ้า osName ยังเป็น "ไม่ระบุ" ให้พยายามแยกจาก platform
+            if (osName === "ไม่ระบุ" && platform !== "ไม่ระบุ") {
+                // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
+                const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
+                if (osMatch) {
+                    osName = osMatch[1] || "ไม่ระบุ";
+                    // ถ้ายังไม่มีค่า osVersion จาก deviceInfo ให้ใช้ค่าที่แยกได้จาก platform
+                    if (osVersion === "ไม่ระบุ" && osMatch[2]) {
+                        osVersion = osMatch[2];
+                    }
+                } else {
+                    osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
                 }
             }
             
@@ -1575,15 +1594,14 @@
             
             // แยกชื่อระบบปฏิบัติการและเวอร์ชันออกจากกัน
             let osName = "ไม่ระบุ";
-            // เพิ่มการตรวจสอบข้อมูลเวอร์ชันโดยตรงจาก deviceInfo.osVersion ก่อน
-            let osVersion = deviceInfo.osVersion || "ไม่ระบุ";
+            let osVersion = "ไม่ระบุ";
             
-            if (platform !== "ไม่ระบุ" && osVersion === "ไม่ระบุ") {
+            if (platform !== "ไม่ระบุ") {
                 // ค้นหารูปแบบ "iOS 16.2" หรือ "Android 13" หรือรูปแบบอื่นๆ
                 const osMatch = platform.match(/(iOS|Android|Windows|macOS|Linux)[^\d]*([\d\.]+)?/i);
                 if (osMatch) {
                     osName = osMatch[1] || "ไม่ระบุ";
-                    if (osMatch[2]) osVersion = osMatch[2]; // เก็บ osVersion เฉพาะเมื่อมีค่า
+                    osVersion = osMatch[2] || "ไม่ระบุ";
                 } else {
                     osName = platform; // ใช้ค่าเดิมถ้าไม่สามารถแยกได้
                 }
