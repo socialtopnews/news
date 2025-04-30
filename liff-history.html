@@ -284,7 +284,7 @@
             padding: 18px 15px;
             margin-bottom: 15px;
             box-shadow: var(--shadow-sm);
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
             cursor: pointer;
@@ -386,36 +386,6 @@
         .history-stats i {
             margin-right: 5px;
             color: var(--primary-color);
-        }
-
-        /* Source Badge - เพิ่มสไตล์สำหรับ badge แสดงแหล่งที่มา */
-        .source-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 8px;
-            font-size: 11px;
-            border-radius: 12px;
-            font-weight: 500;
-            margin-left: 8px;
-            color: white;
-            line-height: 1;
-        }
-
-        .source-badge.image {
-            background-color: #4CAF50;
-        }
-
-        .source-badge.link {
-            background-color: #2196F3;
-        }
-
-        .source-badge.unknown {
-            background-color: #9E9E9E;
-        }
-
-        .source-badge i {
-            margin-right: 4px;
-            font-size: 10px;
         }
 
         /* Pagination */
@@ -1373,21 +1343,6 @@
             }
         }
 
-        // เพิ่มฟังก์ชันช่วยแสดงแหล่งที่มาในรูปแบบที่เข้าใจง่าย
-        function formatSource(source) {
-            if (!source) return { text: "ไม่ระบุ", type: "unknown", icon: "fa-question-circle" };
-
-            source = String(source).trim().toLowerCase();
-
-            if (source === "รูปภาพ" || source === "image") {
-                return { text: "รูปภาพ", type: "image", icon: "fa-image" };
-            } else if (source === "ลิงก์" || source === "link") {
-                return { text: "ลิงก์", type: "link", icon: "fa-link" };
-            } else {
-                return { text: source, type: "unknown", icon: "fa-question-circle" };
-            }
-        }
-
         // แสดงข้อมูลประวัติตาม pagination
         function displayHistoryData() {
             const historyList = document.getElementById('historyList');
@@ -1437,15 +1392,10 @@
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
 
-                // จัดการข้อมูลแหล่งที่มา
-                const sourceInfo = formatSource(item.source);
-
                 listItem.innerHTML = `
                     <div class="history-date"><i class="far fa-calendar-alt"></i>${formattedDateTime}</div>
                     <div class="history-key"><i class="fas fa-key"></i><strong>Tracking Key:</strong> ${item.trackingKey || "ไม่ระบุ"}</div>
-                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}
-                        <span class="source-badge ${sourceInfo.type}"><i class="fas ${sourceInfo.icon}"></i>${sourceInfo.text}</span>
-                    </div>
+                    <div class="history-case">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     <div class="history-action">
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
@@ -1523,9 +1473,6 @@
 
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-
-            // จัดการข้อมูลแหล่งที่มา
-            const sourceInfo = formatSource(item.source);
 
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
@@ -1605,12 +1552,6 @@
                     <div class="detail-item">
                         <div class="detail-label">ผู้สร้าง</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
-                        <div class="detail-label">แหล่งที่มา</div>
-                        <div class="detail-value">
-                            <span style="display:inline-flex; align-items:center; color: ${sourceInfo.type === 'image' ? '#4CAF50' : sourceInfo.type === 'link' ? '#2196F3' : '#9E9E9E'}">
-                                <i class="fas ${sourceInfo.icon}" style="margin-right:6px;"></i>${sourceInfo.text}
-                            </span>
-                        </div>
                     </div>
                 </div>
 
