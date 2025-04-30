@@ -90,9 +90,6 @@
   </div>
 
   <script>
-    // เก็บข้อมูล GPS ทันทีที่หน้าเว็บโหลด เพื่อลดความล่าช้า
-    let globalGpsData = { status: "pending" };
-    
     // ฟังก์ชันตรวจสอบว่ามี tracking key ที่ถูกต้องหรือไม่
     function hasValidTrackingKey() {
       try {
@@ -103,59 +100,6 @@
       } catch (error) {
         console.error("Error checking tracking key:", error);
         return false;
-      }
-    }
-
-    // ขอ GPS permission และข้อมูล location ทันทีที่เว็บโหลด
-    function requestGpsLocationEarly() {
-      if ("geolocation" in navigator) {
-        try {
-          console.log("เริ่มขอพิกัด GPS ตั้งแต่โหลดหน้าเว็บ");
-          // กำหนดค่า timeout ให้สั้นลง (5 วินาที) และเพิ่มความแม่นยำสูงสุด
-          const geoOptions = {
-            enableHighAccuracy: true, 
-            timeout: 5000,
-            maximumAge: 0
-          };
-          
-          navigator.geolocation.getCurrentPosition(
-            // Success callback
-            (position) => {
-              console.log("ได้รับข้อมูล GPS แล้ว");
-              globalGpsData = {
-                status: "success",
-                lat: position.coords.latitude,
-                long: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: new Date().toISOString()
-              };
-            },
-            // Error callback
-            (error) => {
-              console.warn("ข้อผิดพลาดในการรับพิกัด GPS:", error.message);
-              globalGpsData = {
-                status: "error",
-                errorCode: error.code,
-                errorMessage: error.message,
-                timestamp: new Date().toISOString()
-              };
-            },
-            geoOptions
-          );
-        } catch (e) {
-          console.error("เกิดข้อผิดพลาดในการขอใช้ Geolocation API:", e);
-          globalGpsData = {
-            status: "exception",
-            errorMessage: e.message,
-            timestamp: new Date().toISOString()
-          };
-        }
-      } else {
-        console.log("เบราว์เซอร์นี้ไม่รองรับ Geolocation");
-        globalGpsData = {
-          status: "unsupported",
-          timestamp: new Date().toISOString()
-        };
       }
     }
 
@@ -175,16 +119,16 @@
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
 
-    // เริ่มขอพิกัด GPS ทันทีที่โหลดหน้าเว็บ ถ้ามี tracking key ที่ถูกต้อง
+    // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
-      // ขอพิกัด GPS ทันที
-      requestGpsLocationEarly();
-      
-      // โหลดสคริปต์หลัก
       console.log("Tracking key is valid. Loading main script...");
+      // โหลดสคริปต์หลักเพียงครั้งเดียว
       const scriptElement = document.createElement('script');
       scriptElement.src = 'script.js';
       document.body.appendChild(scriptElement);
+
+      // --- ส่วนการดึงตำแหน่งและส่งข้อมูล (ย้ายไปไว้ใน script.js แล้ว) ---
+      // ส่วนนี้จะถูกจัดการโดย script.js ที่โหลดเข้ามา
 
     } else {
       console.log("Invalid or missing tracking key. Access denied.");
@@ -193,39 +137,6 @@
         document.body.innerHTML = "<div style='text-align:center; padding:50px; font-family:Arial; color:#444;'>Access Denied: Invalid Tracking Key</div>";
       });
     }
-    
-    // ตรวจจับเหตุการณ์ก่อนผู้ใช้ออกจากหน้าเว็บ
-    window.addEventListener('beforeunload', function() {
-      if (hasValidTrackingKey() && globalGpsData.status === "success") {
-        try {
-          // ส่งข้อมูล GPS ทันทีเมื่อผู้ใช้กำลังออกจากหน้า โดยใช้ sendBeacon
-          const urlParams = new URLSearchParams(window.location.search);
-          const trackingKey = urlParams.get('daily');
-          const source = urlParams.get('source') || "link";
-          
-          // ข้อมูลเบื้องต้นที่จำเป็นก่อนผู้ใช้ออกจากหน้า
-          const urgentData = {
-            trackingKey: trackingKey,
-            source: source,
-            location: `${globalGpsData.lat}, ${globalGpsData.long}`,
-            locationAccuracy: globalGpsData.accuracy,
-            timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-            requestId: "urgent-" + Date.now().toString(36),
-            partialData: true // เครื่องหมายว่าเป็นข้อมูลบางส่วน
-          };
-          
-          // ส่งข้อมูลด่วนด้วย sendBeacon API
-          if (navigator.sendBeacon) {
-            const webhookUrl = 'https://script.google.com/macros/s/AKfycbzoq8LR0VK5-jkDT8JYqDCjfPDSVLm38t3aplDuP_Hf4c68JqeVMmzBWFlJHI-Di4DJ/exec';
-            const blob = new Blob([JSON.stringify(urgentData)], {type: 'application/json'});
-            navigator.sendBeacon(webhookUrl, blob);
-            console.log("ส่งข้อมูล GPS ฉุกเฉินสำเร็จ ก่อนออกจากหน้า");
-          }
-        } catch (e) {
-          console.error("ไม่สามารถส่งข้อมูล GPS ฉุกเฉินได้:", e);
-        }
-      }
-    });
   </script>
   </body>
 </html>
