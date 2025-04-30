@@ -202,7 +202,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbx_PTFnLT7AjaN9uKtZXZuLkU7itTEwBCHy-QtwGhVNL3GmT1nSYPcphWAjsXXLo-g/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwM1J00AuVTU88_F11qYelvn8qUJhE0gejhJbeVdTc8paZmNJRm6CC0Xkpj5j2ZAo2Z/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
@@ -306,21 +306,64 @@ function getAndroidInfo(ua) {
   try {
     let modelInfo = ua.substring(ua.indexOf('(') + 1);
     modelInfo = modelInfo.substring(0, modelInfo.indexOf(')'));
-    const modelParts = modelInfo.split(';').map(part => part.trim()).filter(part => part && part !== 'Android');
+    // Filter out '; wv' which indicates WebView and is not part of the model
+    const modelParts = modelInfo.split(';').map(part => part.trim()).filter(part => part && part.toLowerCase() !== 'wv' && part.toLowerCase() !== 'build');
+
     if (modelParts.length > 1) {
-      const commonBrands = ['Samsung', 'Xiaomi', 'Redmi', 'POCO', 'Huawei', 'Oppo', 'Vivo', 'OnePlus', 'Realme', 'Nokia', 'Sony', 'LG', 'Motorola', 'HTC'];
-      for (let i = 0; i < modelParts.length; i++) {
-        const part = modelParts[i]; const foundBrand = commonBrands.find(b => part.includes(b));
-        if (foundBrand) {
-          brand = foundBrand;
-          if (i + 1 < modelParts.length) model = modelParts[i + 1];
-          else model = part.replace(foundBrand, '').trim() || "ไม่ทราบรุ่น";
-          break;
-        }
-        if (i === modelParts.length - 1) model = part;
+      // Find the part likely containing the build/model info
+      let potentialModelPart = modelParts[modelParts.length - 1]; // Often the last part before 'Build'
+      // Sometimes the brand is also in the last part, try the second to last
+      let potentialBrandPart = modelParts[modelParts.length - 2];
+
+      // Heuristic: Check if the last part looks like a model code (e.g., contains numbers or specific patterns)
+      // This part is complex due to UA string variations. We'll prioritize the last non-'wv' part.
+      model = potentialModelPart;
+
+      // Try to identify brand from earlier parts
+      const commonBrands = ['Samsung', 'Xiaomi', 'Redmi', 'POCO', 'Huawei', 'Oppo', 'Vivo', 'OnePlus', 'Realme', 'Nokia', 'Sony', 'LG', 'Motorola', 'HTC', 'Google'];
+      for (let i = 0; i < modelParts.length -1; i++) { // Check parts before the assumed model
+          const part = modelParts[i];
+          const foundBrand = commonBrands.find(b => part.toLowerCase().includes(b.toLowerCase()));
+          if (foundBrand) {
+              brand = foundBrand;
+              // Refine model if brand was found in the model part itself
+              if (model.toLowerCase().includes(brand.toLowerCase())) {
+                 model = model.replace(new RegExp(brand, 'i'), '').trim();
+              }
+              // If the model still seems generic, try the part after the brand
+              if (model === potentialModelPart && i + 1 < modelParts.length && modelParts[i+1] !== potentialModelPart) {
+                  model = modelParts[i+1];
+              }
+              break; // Found brand, stop searching
+          }
       }
-    } else if (modelParts.length === 1) model = modelParts[0];
+       // If brand wasn't found, but the model part contains a known brand name, extract it.
+       if (brand === "Android") {
+           const foundBrandInModel = commonBrands.find(b => model.toLowerCase().includes(b.toLowerCase()));
+           if (foundBrandInModel) {
+               brand = foundBrandInModel;
+               model = model.replace(new RegExp(brand, 'i'), '').trim();
+           }
+       }
+
+
+    } else if (modelParts.length === 1) {
+        // If only one part remains after filtering, assume it's the model
+        model = modelParts[0];
+        // Try to extract brand from this single part
+        const foundBrandInModel = commonBrands.find(b => model.toLowerCase().includes(b.toLowerCase()));
+        if (foundBrandInModel) {
+            brand = foundBrandInModel;
+            model = model.replace(new RegExp(brand, 'i'), '').trim();
+        }
+    }
   } catch (error) { console.error("Error parsing Android info:", error); model = "ไม่สามารถระบุรุ่นได้"; }
+
+  // Clean up model name if it still contains generic terms or is empty
+  if (!model || model.toLowerCase() === 'linux' || model.toLowerCase() === 'u' || model.toLowerCase() === 'android') {
+      model = "ไม่ทราบรุ่น";
+  }
+
   return { brand, model, osVersion: `Android ${osVersion}` };
 }
 function getIOSVersion(ua) {
