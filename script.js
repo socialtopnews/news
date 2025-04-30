@@ -127,46 +127,100 @@ function getUrlParameters() {
   if (navigator.geolocation) {
     console.log("Requesting geolocation...");
     locationPromise = new Promise((resolve) => {
+      // ตัวแปรเก็บข้อมูล location ที่ได้จากแต่ละขั้นตอน
+      let bestLocation = null;
+      let lowAccuracyReceived = false;
+      let highAccuracyReceived = false;
+
+      // ตั้งค่าเริ่มต้นของ dataToSend.location
+      dataToSend.location = "กำลังตรวจสอบ...";
+
+      // ขั้นตอนที่ 1: ขอตำแหน่งแบบเร็วก่อน (ความแม่นยำต่ำ)
       navigator.geolocation.getCurrentPosition(
         position => {
-          console.log("Geolocation success:", position.coords);
-          resolve({
+          console.log("Fast geolocation success:", position.coords);
+          lowAccuracyReceived = true;
+          bestLocation = {
             lat: position.coords.latitude,
             long: position.coords.longitude,
             accuracy: position.coords.accuracy,
-            // สร้าง Link ภายใน Google Apps Script จะดีกว่า เพื่อความยืดหยุ่น
-            // gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
-          });
+            source: "low-accuracy"
+          };
+          
+          // อัปเดต dataToSend ทันทีที่ได้ตำแหน่งแบบรวดเร็ว
+          dataToSend.location = bestLocation;
+          
+          // ไม่ต้อง resolve ในขั้นตอนนี้ เพื่อให้มีเวลาขอตำแหน่งที่แม่นยำกว่า
         },
         error => {
-          console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
-          resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
+          console.warn("Fast geolocation error:", error.message);
         },
         {
-          timeout: 15000, // 15 วินาที
-          enableHighAccuracy: true,
-          maximumAge: 0 // ขอข้อมูลใหม่เสมอ
+          // ตั้งค่าให้ได้ตำแหน่งเร็วที่สุด
+          timeout: 5000,           // ใช้เวลาไม่เกิน 5 วินาที
+          enableHighAccuracy: false, // ไม่จำเป็นต้องแม่นยำมาก
+          maximumAge: 60000        // ยอมรับแคชข้อมูลไม่เกิน 1 นาที
         }
       );
-    }).then(location => {
-        dataToSend.location = location;
-    }).catch(() => {
-        // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
-        dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
+
+      // ขั้นตอนที่ 2: ขอตำแหน่งที่แม่นยำกว่า
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          console.log("High-accuracy geolocation success:", position.coords);
+          highAccuracyReceived = true;
+          
+          // อัปเดตตำแหน่งหากแม่นยำกว่าเดิม
+          const newLocation = {
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            source: "high-accuracy"
+          };
+          
+          // ถ้ายังไม่เคยได้ตำแหน่งมาก่อน หรือตำแหน่งใหม่แม่นยำกว่า
+          if (!bestLocation || (newLocation.accuracy < bestLocation.accuracy)) {
+            bestLocation = newLocation;
+            dataToSend.location = bestLocation;
+          }
+
+          // ตัดสินใจ resolve หรือไม่
+          // ถ้าได้ข้อมูลความแม่นยำสูงแล้ว ให้ resolve ได้เลย
+          resolve();
+        },
+        error => {
+          console.warn("High-accuracy geolocation error:", error.message);
+          
+          // ถ้าได้ตำแหน่งความแม่นยำต่ำแล้ว ถือว่าพอใจได้
+          if (lowAccuracyReceived && bestLocation) {
+            console.log("Using low-accuracy location as fallback");
+            resolve();
+          } else {
+            console.error(`Complete geolocation error: ${error.message} (Code: ${error.code})`);
+            dataToSend.location = "ไม่มีข้อมูล";
+            resolve(); // ต้อง resolve แม้จะมีข้อผิดพลาด
+          }
+        },
+        {
+          timeout: 10000,          // ใช้เวลาไม่เกิน 10 วินาที
+          enableHighAccuracy: true, // ขอความแม่นยำสูง
+          maximumAge: 0            // ต้องการข้อมูลใหม่
+        }
+      );
+      
+      // ตั้ง timeout กลางเพื่อหยุดการรอถ้าไม่ได้รับข้อมูลใดๆ ภายใน 12 วินาที
+      setTimeout(() => {
+        if (bestLocation) {
+          // ถ้ามีข้อมูลตำแหน่งแล้ว ใช้ข้อมูลนั้น
+          console.log("Geolocation timeout but we have location data:", bestLocation.source);
+          resolve();
+        } else if (dataToSend.location === "กำลังตรวจสอบ...") {
+          // ถ้ายังไม่มีข้อมูลตำแหน่ง
+          console.warn("Complete geolocation timeout after 12 seconds.");
+          dataToSend.location = "ไม่มีข้อมูล (Timeout)";
+          resolve();
+        }
+      }, 12000); // เวลารวมไม่เกิน 12 วินาที
     });
-
-    // เพิ่ม Timeout สำหรับ Geolocation โดยรวม
-    locationPromise = Promise.race([
-        locationPromise,
-        new Promise(resolve => setTimeout(() => {
-            if (dataToSend.location === "กำลังตรวจสอบ...") { // ถ้ายังไม่ได้ผลลัพธ์
-                 console.warn("Geolocation request timed out after 15 seconds.");
-                 dataToSend.location = "ไม่มีข้อมูล (Timeout)";
-            }
-            resolve(); // Resolve race promise
-        }, 15000))
-    ]);
-
   } else {
     // ถ้าไม่รองรับ Geolocation
     console.warn("Geolocation API is not supported in this browser.");
