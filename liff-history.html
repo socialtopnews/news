@@ -788,8 +788,8 @@
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
         // *** ใช้ URL เดียวกันกับ GoogleScript.html ที่แก้ไขแล้ว ***
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbykuIKyIe9aeFHQEb8n8mmAwnV6aZLUox51SvZQVg51yBJwPC-XQgGqJLvudycSeNrk/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbykuIKyIe9aeFHQEb8n8mmAwnV6aZLUox51SvZQVg51yBJwPC-XQgGqJLvudycSeNrk/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzX7Ha32lDsqUMBy5al-tqWMazIFM1Gz06V47En5rceyfRjbTtyYv2t2Fx1s1G-vU2_/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzX7Ha32lDsqUMBy5al-tqWMazIFM1Gz06V47En5rceyfRjbTtyYv2t2Fx1s1G-vU2_/exec';
 
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1155,10 +1155,19 @@
                         }
                         // *** ตรวจสอบค่า deviceInfo.osVersion ***
                         if (data.history[0].deviceInfo && data.history[0].deviceInfo.osVersion !== undefined) {
-                            console.log("ค่า deviceInfo.osVersion:", data.history[0].deviceInfo.osVersion);
+                            console.log("ค่า deviceInfo.osVersion (ตัวอย่างแรก):", data.history[0].deviceInfo.osVersion); // <-- Log version
                         } else {
                             console.log("ไม่พบค่า deviceInfo.osVersion ในข้อมูลตัวแรก");
                         }
+                        // *** Log เพิ่มเติมสำหรับทุกรายการ (ถ้าต้องการ) ***
+                        data.history.forEach((item, index) => {
+                            if (item.deviceInfo) {
+                                console.log(`รายการ ${index}: osVersion = ${item.deviceInfo.osVersion}`);
+                            } else {
+                                console.log(`รายการ ${index}: ไม่มี deviceInfo`);
+                            }
+                        });
+
                     } else {
                         console.log("ไม่พบข้อมูลประวัติหรือข้อมูลเป็นค่าว่าง");
                     }
@@ -1524,6 +1533,8 @@
             const deviceInfo = item.deviceInfo || {};
 
             console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
+            // *** Log ค่า osVersion ที่ได้รับใน item ***
+            console.log("Modal - ค่า deviceInfo.osVersion ที่ได้รับ:", deviceInfo.osVersion);
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
@@ -1531,10 +1542,11 @@
 
             // *** ใช้ osName และ osVersion ที่ส่งมาจาก Apps Script โดยตรง ***
             const osName = deviceInfo.osName || "ไม่ระบุ";
-            // *** ตรวจสอบค่า osVersion ให้ดีขึ้น ***
-            const osVersion = (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && deviceInfo.osVersion !== "ไม่ทราบเวอร์ชัน")
-                                ? deviceInfo.osVersion
-                                : "ไม่ระบุ"; // ใช้ "ไม่ระบุ" เป็นค่าเริ่มต้น
+            // ตรวจสอบให้แน่ใจว่า osVersion ไม่ใช่ค่าว่างหรือ "ไม่ระบุ" ก่อนแสดงผล
+            const osVersion = (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && String(deviceInfo.osVersion).trim() !== "")
+                              ? String(deviceInfo.osVersion).trim()
+                              : "ไม่ระบุ"; // ใช้ "ไม่ระบุ" ถ้าไม่มีค่า
+
             const browser = deviceInfo.browser || "ไม่ระบุ";
 
 
@@ -1618,8 +1630,7 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> <!-- *** แสดงค่า osVersion ที่ตรวจสอบแล้ว *** -->
-                    </div>
+                        <div class="detail-value">${osVersion}</div> </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${browser}</div>
