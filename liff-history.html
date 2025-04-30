@@ -235,7 +235,7 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var(--error-color);
+            border-left: 4px solid var (--error-color);
         }
 
         .message-box.error p {
@@ -788,8 +788,8 @@
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
         // *** ใช้ URL เดียวกันกับ GoogleScript.html ที่แก้ไขแล้ว ***
-        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyPX-NJRAAT2iWjgKomMwlr5_OgZ7tA1i4YXEzVkw9WwPr9MuLFZGHA0ymMqxqTcRwv/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyPX-NJRAAT2iWjgKomMwlr5_OgZ7tA1i4YXEzVkw9WwPr9MuLFZGHA0ymMqxqTcRwv/exec';
+        const HISTORY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwM1J00AuVTU88_F11qYelvn8qUJhE0gejhJbeVdTc8paZmNJRm6CC0Xkpj5j2ZAo2Z/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwM1J00AuVTU88_F11qYelvn8qUJhE0gejhJbeVdTc8paZmNJRm6CC0Xkpj5j2ZAo2Z/exec';
 
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
@@ -1387,7 +1387,7 @@
 
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
-                // const deviceModel = deviceInfo.deviceModel || "ไม่ทราบ"; // อาจจะไม่แสดงใน list item
+                const source = item.source || "ไม่ระบุ"; // Get source
 
                 // ฟอร์แมตวันที่เวลาให้เป็นภาษาไทย
                 const formattedDateTime = formatThaiDateTime(item.timestamp);
@@ -1400,6 +1400,7 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
+                            <div><i class="fas fa-link"></i> ${source}</div> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
                         </div>
                     </div>
                 `;
@@ -1473,6 +1474,7 @@
 
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
+            const source = item.source || "ไม่ระบุ"; // Get source for modal
 
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
@@ -1552,6 +1554,10 @@
                     <div class="detail-item">
                         <div class="detail-label">ผู้สร้าง</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
+                    </div>
+                    <div class="detail-item"> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
+                        <div class="detail-label">แหล่งที่มา</div>
+                        <div class="detail-value">${source}</div>
                     </div>
                 </div>
 
