@@ -1425,6 +1425,11 @@
 
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
+            // *** ADDED: Log the received item and deviceInfo for debugging ***
+            console.log("showDetailsModal: Received item data:", JSON.stringify(item, null, 2));
+            console.log("showDetailsModal: Inspecting deviceInfo:", JSON.stringify(item.deviceInfo, null, 2));
+            // *** END ADDED CODE ***
+
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
 
@@ -1523,7 +1528,8 @@
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
 
-            console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
+            // *** REMOVED redundant log here, moved to the top ***
+            // console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
