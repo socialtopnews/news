@@ -1425,11 +1425,6 @@
 
         // แสดง Modal รายละเอียด
         function showDetailsModal(item) {
-            // *** ADDED: Log the received item and deviceInfo for debugging ***
-            console.log("showDetailsModal: Received item data:", JSON.stringify(item, null, 2));
-            console.log("showDetailsModal: Inspecting deviceInfo:", JSON.stringify(item.deviceInfo, null, 2));
-            // *** END ADDED CODE ***
-
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
 
@@ -1528,8 +1523,7 @@
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
 
-            // *** REMOVED redundant log here, moved to the top ***
-            // console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
+            console.log("โครงสร้างข้อมูลอุปกรณ์:", JSON.stringify(deviceInfo, null, 2));
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
@@ -1537,7 +1531,10 @@
 
             // *** ใช้ osName และ osVersion ที่ส่งมาจาก Apps Script โดยตรง ***
             const osName = deviceInfo.osName || "ไม่ระบุ";
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ค่าที่ส่งมาโดยตรง
+            // *** ตรวจสอบค่า osVersion ให้ดีขึ้น ***
+            const osVersion = (deviceInfo.osVersion && deviceInfo.osVersion !== "ไม่ระบุ" && deviceInfo.osVersion !== "ไม่ทราบเวอร์ชัน")
+                                ? deviceInfo.osVersion
+                                : "ไม่ระบุ"; // ใช้ "ไม่ระบุ" เป็นค่าเริ่มต้น
             const browser = deviceInfo.browser || "ไม่ระบุ";
 
 
@@ -1621,7 +1618,8 @@
                     </div>
                     <div class="detail-item">
                         <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> </div>
+                        <div class="detail-value">${osVersion}</div> <!-- *** แสดงค่า osVersion ที่ตรวจสอบแล้ว *** -->
+                    </div>
                     <div class="detail-item">
                         <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${browser}</div>
