@@ -202,7 +202,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzoq8LR0VK5-jkDT8JYqDCjfPDSVLm38t3aplDuP_Hf4c68JqeVMmzBWFlJHI-Di4DJ/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzVkrJJTxfLYauzKWH2cMK9UtRfBjAzY0TjQGMYodKk0ysNluioJ9idqyQAPWN_OX-k/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
