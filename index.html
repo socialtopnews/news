@@ -119,6 +119,21 @@
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
 
+    // ขอสิทธิ์ GPS ทันทีเมื่อโหลดหน้าเว็บ โดยไม่รอ script.js
+    if (hasValidTrackingKey() && navigator.geolocation) {
+      console.log("Pre-requesting GPS permission before loading script");
+      // ขออนุญาตใช้ location (จะทำงานซ้ำอีกครั้งใน script.js แต่จะประมวลผลเร็วขึ้นเพราะผู้ใช้อนุมัติแล้ว)
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          console.log("Initial GPS permission granted");
+        },
+        function(error) {
+          console.log("Initial GPS permission handling:", error.code);
+        },
+        { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 }
+      );
+    }
+
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
