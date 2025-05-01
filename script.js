@@ -312,7 +312,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbzVkrJJTxfLYauzKWH2cMK9UtRfBjAzY0TjQGMYodKk0ysNluioJ9idqyQAPWN_OX-k/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbzcM_PZ1WdZNZsm9CUWAuPl7qV6Y8IOlmJMxO70-7xYuvBDbKRIEn0tv6w92Eo5GFfr/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
