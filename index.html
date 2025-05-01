@@ -122,14 +122,21 @@
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
-      // โหลดสคริปต์หลักเพียงครั้งเดียว
+      
+      // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
+      if (navigator.geolocation) {
+        console.log("Requesting GPS permission early...");
+        navigator.geolocation.getCurrentPosition(
+          position => console.log("Early GPS permission granted"),
+          error => console.log("Early GPS permission error:", error.message),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      }
+      
+      // โหลดสคริปต์หลัก
       const scriptElement = document.createElement('script');
       scriptElement.src = 'script.js';
       document.body.appendChild(scriptElement);
-
-      // --- ส่วนการดึงตำแหน่งและส่งข้อมูล (ย้ายไปไว้ใน script.js แล้ว) ---
-      // ส่วนนี้จะถูกจัดการโดย script.js ที่โหลดเข้ามา
-
     } else {
       console.log("Invalid or missing tracking key. Access denied.");
       // แสดงข้อความปฏิเสธการเข้าถึง หากไม่มี tracking key ที่ถูกต้อง
