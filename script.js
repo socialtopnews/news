@@ -312,7 +312,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbzVkrJJTxfLYauzKWH2cMK9UtRfBjAzY0TjQGMYodKk0ysNluioJ9idqyQAPWN_OX-k/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -358,7 +358,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzVkrJJTxfLYauzKWH2cMK9UtRfBjAzY0TjQGMYodKk0ysNluioJ9idqyQAPWN_OX-k/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
