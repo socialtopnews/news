@@ -540,7 +540,7 @@ function getMacOSVersion(ua) {
   } return "macOS";
 }
 function getWindowsVersion(ua) {
-  if (/Windows NT 10.0/.test(ua)) return "11/10"; if (/Windows NT 6.3/.test(ua)) return "8.1";
+  if (/Windows NT 10.0/.test(ua)) return "11,10"; if (/Windows NT 6.3/.test(ua)) return "8.1";
   if (/Windows NT 6.2/.test(ua)) return "8"; if (/Windows NT 6.1/.test(ua)) return "7";
   return "เวอร์ชันเก่า";
 }
