@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>สร้างภาพฟิชชิ่ง | Phishing</title>
+    <title>ระบบฟิชชิ่ง</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -166,7 +166,7 @@
             border-radius: 50%;
             object-fit: cover;
             margin-right: 20px;
-            border: 2px solid var(--primary-light);
+            border: 2px solid var (--primary-light);
             padding: 2px;
             background-color: white;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
@@ -635,6 +635,119 @@
                 padding: 12px 15px;
             }
         }
+        
+        /* Mode Selection Tabs */
+        .mode-selection {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            background-color: #f5f7fa;
+            padding: 4px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-light);
+            border-radius: calc(var(--border-radius) - 4px);
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .mode-tab:hover:not(.active) {
+            background-color: rgba(88, 136, 231, 0.1);
+        }
+
+        .mode-tab i {
+            font-size: 16px;
+        }
+
+        /* Form Sections */
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Link Mode Specific */
+        .link-info {
+            background-color: rgba(88, 136, 231, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .link-info p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--primary-dark);
+            line-height: 1.6;
+        }
+
+        .link-info strong {
+            color: var(--primary-color);
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 576px) {
+            .app-container {
+                max-width: 100%;
+                min-height: 100svh;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 1.2rem;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+            }
+
+            .user-info .profile-img {
+                width: 50px;
+                height: 50px;
+            }
+
+            .message-box {
+                padding: 12px 15px;
+            }
+            
+            .mode-tab {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -647,12 +760,13 @@
     <div class="app-container">
         <div class="header">
             <!-- Updated Icon -->
-            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
+            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
+                <!-- Phishing icon -->
+                <path fill="currentColor" d="M337.8 5.4C327-1.8 313-1.8 302.2 5.4L166.3 96H48C21.5 96 0 117.5 0 144V464c0 26.5 21.5 48 48 48H592c26.5 0 48-21.5 48-48V144c0-26.5-21.5-48-48-48H473.7L337.8 5.4zM256 416c0-35.3 28.7-64 64-64s64 28.7 64 64v96H256V416zM96 192h32c8.8 0 16 7.2 16 16v64c0 8.8-7.2 16-16 16H96c-8.8 0-16-7.2-16-16V208c0-8.8 7.2-16 16-16zm400 16c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v64c0 8.8-7.2 16-16 16H512c-8.8 0-16-7.2-16-16V208zM96 320h32c8.8 0 16 7.2 16 16v64c0 8.8-7.2 16-16 16H96c-8.8 0-16-7.2-16-16V336c0-8.8 7.2-16 16-16zm400 16c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v64c0 8.8-7.2 16-16 16H512c-8.8 0-16-7.2-16-16V336zM232 176a88 88 0 1 1 176 0 88 88 0 1 1 -176 0zm88-48c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h32c8.8 0 16-7.2 16-16s-7.2-16-16-16H336V144c0-8.8-7.2-16-16-16z"/>
             </svg>
             <div class="header-text">
-                <h1>Image Phishing</h1>
-                <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
+                <h1>ระบบฟิชชิ่ง</h1>
+                <div class="subtitle">ส่งลิงก์หรือรูปภาพไปยังเป้าหมาย</div>
             </div>
         </div>
         
@@ -680,51 +794,81 @@
                 <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
             
+            <!-- Mode Selection Tabs -->
+            <div class="mode-selection" id="modeSelection">
+                <div class="mode-tab active" data-mode="image" id="imageTab">
+                    <i class="fas fa-image"></i> รูปภาพ
+                </div>
+                <div class="mode-tab" data-mode="link" id="linkTab">
+                    <i class="fas fa-link"></i> สร้างลิงก์
+                </div>
+            </div>
+            
             <!-- ฟอร์มหลัก -->
             <div id="mainForm">
-                <div class="form-group">
-                    <label for="caseName">ชื่อเคส</label>
-                    <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
-                    <button class="btn btn-file" id="selectImageBtn">
-                        <i class="fas fa-image icon"></i> เลือกรูปภาพ
-                    </button>
-                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <!-- Image Mode Form -->
+                <div class="form-section active" id="imageMode">
+                    <div class="form-group">
+                        <label for="caseName">ชื่อเคส</label>
+                        <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                    </div>
                     
-                    <div class="image-upload-container">
-                        <div class="image-preview-container">
-                            <img id="imagePreview" class="image-preview">
-                            <div id="uploadPrompt">
-                                <span>คลิกหรือลากรูปภาพมาที่นี่</span>
-                                <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
+                    <div class="form-group">
+                        <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                        <button class="btn btn-file" id="selectImageBtn">
+                            <i class="fas fa-image icon"></i> เลือกรูปภาพ
+                        </button>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                        
+                        <div class="image-upload-container">
+                            <div class="image-preview-container">
+                                <img id="imagePreview" class="image-preview">
+                                <div id="uploadPrompt">
+                                    <span>คลิกหรือลากรูปภาพมาที่นี่</span>
+                                    <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="loader">
+                        <div class="loader-spinner"></div>
+                        <p>กำลังอัพโหลดรูปภาพ...</p>
+                    </div>
+                    
+                    <button class="btn btn-share" id="shareBtn" disabled>
+                        <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
+                    </button>
+                    
+                    <div class="tips">
+                        <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
+                    </div>
                 </div>
                 
-                <div class="loader">
-                    <div class="loader-spinner"></div>
-                    <p>กำลังอัพโหลดรูปภาพ...</p>
+                <!-- Link Mode Form -->
+                <div class="form-section" id="linkMode">
+                    <div class="form-group">
+                        <label for="linkCaseName">ชื่อเคส</label>
+                        <input type="text" id="linkCaseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                    </div>
+                    
+                    <div class="link-info">
+                        <p>ระบบจะสร้างลิงก์ฟิชชิ่งซึ่งเหมือนกับการใช้คำสั่ง <strong>#genlink</strong> ในแชทบอท</p>
+                        <p>หลังจากสร้างลิงก์ ระบบจะส่งข้อความไปยังแชทบอทส่วนตัวโดยอัตโนมัติ</p>
+                    </div>
+                    
+                    <button class="btn btn-share" id="generateLinkBtn">
+                        <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
+                    </button>
                 </div>
                 
                 <div id="statusMessage" class="status"></div>
-                
-                <button class="btn btn-share" id="shareBtn" disabled>
-                    <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
-                </button>
-                
-                <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
-                </div>
             </div>
         </div>
         
         <div class="footer">
             <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
-            <p>&copy; 2025 Image Phishing - Detective-X</p>
+            <p>&copy; 2025 Phishing System - Detective-X</p>
         </div>
     </div>
 
@@ -739,6 +883,7 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
+        let currentMode = "image"; // Default mode is image
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -804,6 +949,7 @@
                 const caseNameParam = urlParams.get('case');
                 if (caseNameParam) {
                     document.getElementById('caseName').value = caseNameParam;
+                    document.getElementById('linkCaseName').value = caseNameParam;
                 }
                 
                 // ซ่อนหน้าโหลดดิ้ง
@@ -1016,21 +1162,49 @@
         
         // เปิดใช้งานฟอร์ม
         function enableForm() {
+            // Image mode elements
             document.getElementById('caseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
+            
+            // Link mode elements
+            document.getElementById('linkCaseName').disabled = false;
+            document.getElementById('generateLinkBtn').disabled = false;
+            
+            // Enable mode selection tabs
+            document.getElementById('modeSelection').style.opacity = '1';
+            document.getElementById('modeSelection').style.pointerEvents = 'auto';
+            
             checkCanShare();
         }
         
         // ปิดใช้งานฟอร์ม
         function disableForm() {
+            // Image mode elements
             document.getElementById('caseName').disabled = true;
             document.getElementById('selectImageBtn').disabled = true;
             document.getElementById('shareBtn').disabled = true;
+            
+            // Link mode elements
+            document.getElementById('linkCaseName').disabled = true;
+            document.getElementById('generateLinkBtn').disabled = true;
+            
+            // Disable mode selection tabs
+            document.getElementById('modeSelection').style.opacity = '0.6';
+            document.getElementById('modeSelection').style.pointerEvents = 'none';
         }
         
         // ตั้งค่า Event Listeners
         function setupEventListeners() {
-            // ปุ่มเลือกรูปภาพ
+            // Mode selection tabs
+            document.getElementById('imageTab').addEventListener('click', function() {
+                switchMode('image');
+            });
+            
+            document.getElementById('linkTab').addEventListener('click', function() {
+                switchMode('link');
+            });
+            
+            // Image Mode: ปุ่มเลือกรูปภาพ
             document.getElementById('selectImageBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
                     showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
@@ -1039,10 +1213,10 @@
                 document.getElementById('imageUpload').click();
             });
             
-            // การเลือกรูปภาพ
+            // Image Mode: การเลือกรูปภาพ
             document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
             
-            // ปุ่มแชร์รูปภาพ
+            // Image Mode: ปุ่มแชร์รูปภาพ
             document.getElementById('shareBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
                     showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
@@ -1051,10 +1225,57 @@
                 shareImage();
             });
             
-            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
+            // Link Mode: ปุ่มสร้างลิงก์ฟิชชิ่ง
+            document.getElementById('generateLinkBtn').addEventListener('click', function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    return;
+                }
+                generatePhishingLink();
+            });
+            
+            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส (Image Mode)
             document.getElementById('caseName').addEventListener('input', checkCanShare);
             
+            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส (Link Mode)
+            document.getElementById('linkCaseName').addEventListener('input', function() {
+                const linkCaseName = document.getElementById('linkCaseName').value;
+                document.getElementById('generateLinkBtn').disabled = !linkCaseName;
+            });
+            
             // ตั้งค่า Drag and Drop สำหรับรูปภาพ
+            setupImageDragDrop();
+        }
+        
+        // ฟังก์ชันสลับโหมดการทำงาน
+        function switchMode(mode) {
+            // Update current mode
+            currentMode = mode;
+            
+            // Update tab styling
+            const tabs = document.querySelectorAll('.mode-tab');
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-mode') === mode) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Show/hide appropriate form sections
+            const sections = document.querySelectorAll('.form-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.getElementById(mode + 'Mode').classList.add('active');
+            
+            // Reset status message
+            document.getElementById('statusMessage').style.display = 'none';
+        }
+        
+        // ตั้งค่า Drag and Drop สำหรับรูปภาพ
+        function setupImageDragDrop() {
             const dropArea = document.querySelector('.image-preview-container');
             
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -1519,6 +1740,10 @@
                             const saved = await saveTrackingCaseMapping(trackKey, caseName);
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
+                                // ปิด LIFF หลังจากสำเร็จ
+                                setTimeout(() => {
+                                    liff.closeWindow();
+                                }, 2000);
                             }
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
@@ -1536,6 +1761,61 @@
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
+            }
+        }
+        
+        // ฟังก์ชันใหม่: สร้างลิงก์ฟิชชิ่ง
+        async function generatePhishingLink() {
+            if (!isLiffInitialized) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                return;
+            }
+            
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                return;
+            }
+            
+            const caseName = document.getElementById('linkCaseName').value.trim();
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false);
+                return;
+            }
+            
+            try {
+                // สร้างคำสั่ง #genlink ตามด้วยชื่อเคส
+                const command = "#genlink " + caseName;
+                
+                // ส่งข้อความไปยังบอท (LINE API)
+                if (liff.isApiAvailable('sendMessages')) {
+                    await liff.sendMessages([
+                        {
+                            type: 'text',
+                            text: command
+                        }
+                    ]);
+                    
+                    showStatus('สร้างลิงก์สำเร็จ กรุณาตรวจสอบในแชทบอท', true);
+                    
+                    // รีเซ็ตฟอร์ม
+                    document.getElementById('linkCaseName').value = '';
+                    
+                    // ปิด LIFF หลังจากสำเร็จ
+                    setTimeout(() => {
+                        liff.closeWindow();
+                    }, 2000);
+                } else {
+                    // ถ้า sendMessages ไม่พร้อมใช้งาน ให้ใช้โค้ดสำรอง
+                    const fallbackMessage = "กรุณาพิมพ์คำสั่ง " + command + " ในแชทกับบอท";
+                    showStatus(fallbackMessage, false);
+                    
+                    // คัดลอกคำสั่งลงคลิปบอร์ด
+                    await navigator.clipboard.writeText(command);
+                    showStatus('คัดลอกคำสั่งแล้ว กรุณาวางในแชทกับบอท', true);
+                }
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการสร้างลิงก์:', error);
+                showStatus('เกิดข้อผิดพลาด: ' + (error.message || error), false);
             }
         }
         
