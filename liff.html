@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>สร้างภาพฟิชชิ่ง | Phishing</title>
+    <title>ระบบฟิชชิ่ง | Phishing</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -91,7 +91,7 @@
         .header .header-icon {
             width: 36px;
             height: 36px;
-            fill: white;
+            color: white;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
             animation: pulse 2s infinite;
         }
@@ -651,6 +651,19 @@
         .mode-btn:not(.active):hover {
             background: #f0f6ff;
         }
+        /* สไตล์สำหรับไอคอน Font Awesome */
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            color: white;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -662,12 +675,8 @@
 
     <div class="app-container">
         <div class="header">
-            <!-- เปลี่ยนไอคอนเป็นเบ็ดตกปลาใหม่ (SVG ดูเหมือนเบ็ดตกปลามากขึ้น) -->
-            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                <!-- เบ็ดตกปลาแบบใหม่ (Font Awesome 6: fa-fish-hook) -->
-                <path d="M352 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V320c0 61.9-50.1 112-112 112s-112-50.1-112-112V192h40c13.3 0 24-10.7 24-24s-10.7-24-24-24H48c-13.3 0-24 10.7-24 24v128c0 97.2 78.8 176 176 176s176-78.8 176-176V32zm-144 352a64 64 0 0 0 64-64V32a32 32 0 1 0-64 0v288a64 64 0 0 0 64 64z"/>
-                <circle cx="320" cy="32" r="24" fill="white"/>
-            </svg>
+            <!-- แทนที่ SVG เดิมด้วยไอคอน Font Awesome รูปเบ็ดตกปลา -->
+            <i class="fas fa-fish-fins header-icon" aria-hidden="true"></i>
             <div class="header-text">
                 <h1>ระบบฟิชชิ่ง</h1>
                 <div class="subtitle">เลือกโหมดฟิชชิ่งที่ต้องการ</div>
