@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ระบบฟิชชิ่ง | Phishing</title>
+    <title>สร้างภาพฟิชชิ่ง | Phishing</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -221,7 +221,7 @@
             margin: 1.5rem 0;
             border-radius: 4px;
             position: relative;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
         }
 
         .message-box:before {
@@ -591,7 +591,7 @@
             width: 60px;
             height: 60px;
             border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var (--primary-color);
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
@@ -600,54 +600,6 @@
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
-        }
-
-        /* Mode Selection Tabs */
-        .mode-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
-        }
-
-        .mode-tab {
-            flex: 1;
-            padding: 12px 0;
-            text-align: center;
-            background-color: #f5f5f5;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition-normal);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .mode-tab.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .mode-tab:not(.active):hover {
-            background-color: #e0e0e0;
-        }
-
-        .mode-tab .icon {
-            margin-right: 8px;
-        }
-
-        .mode-content {
-            display: none;
-        }
-
-        .mode-content.active {
-            display: block;
-            animation: fadeMode 0.3s forwards;
-        }
-
-        @keyframes fadeMode {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Responsive Adjustments */
@@ -695,12 +647,12 @@
     <div class="app-container">
         <div class="header">
             <!-- Updated Icon -->
-            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512">
-                <path fill="currentColor" d="M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C74 372 74 321 105.5 289.5L217.7 177.2c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z"/>
+            <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
             </svg>
             <div class="header-text">
-                <h1>ระบบฟิชชิ่ง</h1>
-                <div class="subtitle">สร้างรูปภาพหรือลิงก์เพื่อส่งไปยังเป้าหมาย</div>
+                <h1>Image Phishing</h1>
+                <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
             </div>
         </div>
         
@@ -728,80 +680,46 @@
                 <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
             
-            <!-- เลือกโหมดฟิชชิ่ง -->
-            <div class="mode-tabs" id="modeTabs">
-                <div class="mode-tab active" data-mode="image">
-                    <i class="fas fa-image icon"></i> รูปภาพ
-                </div>
-                <div class="mode-tab" data-mode="link">
-                    <i class="fas fa-link icon"></i> ลิงก์
-                </div>
-            </div>
-            
             <!-- ฟอร์มหลัก -->
             <div id="mainForm">
-                <!-- โหมดรูปภาพ -->
-                <div id="imageMode" class="mode-content active">
-                    <div class="form-group">
-                        <label for="caseNameImage">ชื่อเคส</label>
-                        <input type="text" id="caseNameImage" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
-                    </div>
+                <div class="form-group">
+                    <label for="caseName">ชื่อเคส</label>
+                    <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
+                    <button class="btn btn-file" id="selectImageBtn">
+                        <i class="fas fa-image icon"></i> เลือกรูปภาพ
+                    </button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
                     
-                    <div class="form-group">
-                        <label for="imageUpload">รูปภาพที่ส่งไปยังเป้าหมาย</label>
-                        <button class="btn btn-file" id="selectImageBtn">
-                            <i class="fas fa-image icon"></i> เลือกรูปภาพ
-                        </button>
-                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                        
-                        <div class="image-upload-container">
-                            <div class="image-preview-container">
-                                <img id="imagePreview" class="image-preview">
-                                <div id="uploadPrompt">
-                                    <span>คลิกหรือลากรูปภาพมาที่นี่</span>
-                                    <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
-                                </div>
+                    <div class="image-upload-container">
+                        <div class="image-preview-container">
+                            <img id="imagePreview" class="image-preview">
+                            <div id="uploadPrompt">
+                                <span>คลิกหรือลากรูปภาพมาที่นี่</span>
+                                <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="loader" id="imageLoader">
-                        <div class="loader-spinner"></div>
-                        <p>กำลังอัพโหลดรูปภาพ...</p>
-                    </div>
-                    
-                    <button class="btn btn-share" id="shareImageBtn" disabled>
-                        <i class="fas fa-paper-plane"></i> แชร์รูปภาพไปยังเป้าหมาย
-                    </button>
-                    
-                    <div class="tips">
-                        <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
-                    </div>
                 </div>
                 
-                <!-- โหมดลิงก์ -->
-                <div id="linkMode" class="mode-content">
-                    <div class="form-group">
-                        <label for="caseNameLink">ชื่อเคส</label>
-                        <input type="text" id="caseNameLink" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
-                    </div>
-                    
-                    <div class="loader" id="linkLoader">
-                        <div class="loader-spinner"></div>
-                        <p>กำลังสร้างลิงก์...</p>
-                    </div>
-                    
-                    <button class="btn btn-share" id="createLinkBtn">
-                        <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
-                    </button>
-                    
-                    <div class="tips">
-                        <p><strong>คำแนะนำ:</strong> ระบบจะส่งข้อความ "#genlink [ชื่อเคส]" ไปยังบอทโดยอัตโนมัติ แล้วบอทจะส่งลิงก์ฟิชชิ่งกลับมาให้</p>
-                    </div>
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>กำลังอัพโหลดรูปภาพ...</p>
+                </div>
+                
+                <div id="statusMessage" class="status"></div>
+                
+                <button class="btn btn-share" id="shareBtn" disabled>
+                    <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
+                </button>
+                
+                <div class="tips">
+                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
             </div>
-            
-            <div id="statusMessage" class="status"></div>
         </div>
         
         <div class="footer">
@@ -821,7 +739,6 @@
         let isLiffInitialized = false;
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
-        let currentMode = "image"; // ค่าเริ่มต้นเป็นโหมดรูปภาพ
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -837,34 +754,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeLiff();
             setupEventListeners();
-            setupModeSelection();
         });
-        
-        // ตั้งค่าการเลือกโหมด
-        function setupModeSelection() {
-            const tabs = document.querySelectorAll('.mode-tab');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // ลบคลาส active จากทุก tab และ content
-                    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.mode-content').forEach(c => c.classList.remove('active'));
-                    
-                    // เพิ่มคลาส active ให้กับ tab ที่คลิก
-                    this.classList.add('active');
-                    
-                    // ตั้งค่าโหมดปัจจุบัน
-                    currentMode = this.dataset.mode;
-                    
-                    // แสดง content ที่ตรงกับโหมดที่เลือก
-                    document.getElementById(currentMode + 'Mode').classList.add('active');
-                    
-                    // ตรวจสอบและอัพเดตสถานะปุ่ม
-                    if (currentMode === 'image') {
-                        checkCanShareImage();
-                    }
-                });
-            });
-        }
         
         // ฟังก์ชันเริ่มต้นการทำงาน LIFF
         async function initializeLiff() {
@@ -913,9 +803,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const caseNameParam = urlParams.get('case');
                 if (caseNameParam) {
-                    document.getElementById('caseNameImage').value = caseNameParam;
-                    document.getElementById('caseNameLink').value = caseNameParam;
-                    checkCanShareImage(); // ตรวจสอบสถานะปุ่มแชร์
+                    document.getElementById('caseName').value = caseNameParam;
                 }
                 
                 // ซ่อนหน้าโหลดดิ้ง
@@ -1128,26 +1016,16 @@
         
         // เปิดใช้งานฟอร์ม
         function enableForm() {
-            // ฟอร์มโหมดรูปภาพ
-            document.getElementById('caseNameImage').disabled = false;
+            document.getElementById('caseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
-            checkCanShareImage();
-            
-            // ฟอร์มโหมดลิงก์
-            document.getElementById('caseNameLink').disabled = false;
-            document.getElementById('createLinkBtn').disabled = false;
+            checkCanShare();
         }
         
         // ปิดใช้งานฟอร์ม
         function disableForm() {
-            // ฟอร์มโหมดรูปภาพ
-            document.getElementById('caseNameImage').disabled = true;
+            document.getElementById('caseName').disabled = true;
             document.getElementById('selectImageBtn').disabled = true;
-            document.getElementById('shareImageBtn').disabled = true;
-            
-            // ฟอร์มโหมดลิงก์
-            document.getElementById('caseNameLink').disabled = true;
-            document.getElementById('createLinkBtn').disabled = true;
+            document.getElementById('shareBtn').disabled = true;
         }
         
         // ตั้งค่า Event Listeners
@@ -1165,7 +1043,7 @@
             document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
             
             // ปุ่มแชร์รูปภาพ
-            document.getElementById('shareImageBtn').addEventListener('click', function() {
+            document.getElementById('shareBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
                     showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
                     return;
@@ -1173,20 +1051,8 @@
                 shareImage();
             });
             
-            // ปุ่มสร้างลิงก์
-            document.getElementById('createLinkBtn').addEventListener('click', function() {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                createLink();
-            });
-            
             // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
-            document.getElementById('caseNameImage').addEventListener('input', checkCanShareImage);
-            document.getElementById('caseNameLink').addEventListener('input', function() {
-                // อาจเพิ่มตรวจสอบเพิ่มเติมสำหรับโหมดลิงก์หากต้องการ
-            });
+            document.getElementById('caseName').addEventListener('input', checkCanShare);
             
             // ตั้งค่า Drag and Drop สำหรับรูปภาพ
             const dropArea = document.querySelector('.image-preview-container');
@@ -1278,63 +1144,7 @@
             reader.readAsDataURL(file);
             
             // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
-            checkCanShareImage();
-        }
-        
-        // ฟังก์ชันสร้างลิงก์
-        async function createLink() {
-            if (!isLiffInitialized) {
-                showStatus('กรุณารอให้ระบบเริ่มต้น', false);
-                return;
-            }
-            
-            if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                return;
-            }
-            
-            const caseName = document.getElementById('caseNameLink').value.trim();
-            if (!caseName) {
-                showStatus('กรุณาระบุชื่อเคส', false);
-                return;
-            }
-            
-            try {
-                // แสดง loader
-                document.getElementById('linkLoader').style.display = 'block';
-                document.getElementById('createLinkBtn').disabled = true;
-                
-                // สร้างข้อความที่จะส่งให้ LINE bot
-                const message = "#genlink " + caseName;
-                
-                // ส่งข้อความไปยัง LINE Platform
-                if (liff.isApiAvailable('sendMessages')) {
-                    await liff.sendMessages([{
-                        type: 'text',
-                        text: message
-                    }]);
-                    
-                    // แสดงสถานะสำเร็จ
-                    showStatus('ส่งคำสั่งสร้างลิงก์สำเร็จ โปรดตรวจสอบข้อความจาก LINE Bot', true);
-                    
-                    // รีเซ็ตฟอร์ม
-                    document.getElementById('caseNameLink').value = '';
-                    
-                    // รอสักครู่แล้วปิด LIFF
-                    setTimeout(() => {
-                        liff.closeWindow();
-                    }, 3000);
-                } else {
-                    throw new Error('API sendMessages ไม่พร้อมใช้งาน');
-                }
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการสร้างลิงก์:', error);
-                showStatus('เกิดข้อผิดพลาดในการสร้างลิงก์: ' + error.message, false);
-            } finally {
-                // ซ่อน loader
-                document.getElementById('linkLoader').style.display = 'none';
-                document.getElementById('createLinkBtn').disabled = false;
-            }
+            checkCanShare();
         }
         
         // อัพโหลดรูปภาพไปยัง ImgBB
@@ -1345,7 +1155,7 @@
             }
             
             // แสดง loader
-            document.getElementById('imageLoader').style.display = 'block';
+            document.querySelector('.loader').style.display = 'block';
             
             try {
                 // ใช้ ImgBB API สำหรับอัพโหลดรูปภาพ
@@ -1361,7 +1171,7 @@
                 const data = await response.json();
                 
                 // ซ่อน loader
-                document.getElementById('imageLoader').style.display = 'none';
+                document.querySelector('.loader').style.display = 'none';
                 
                 if (data.success) {
                     return data.data.url;
@@ -1371,7 +1181,7 @@
             } catch (error) {
                 console.error('Error uploading image:', error);
                 showStatus('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + error.message, false);
-                document.getElementById('imageLoader').style.display = 'none';
+                document.querySelector('.loader').style.display = 'none';
                 return null;
             }
         }
@@ -1629,9 +1439,9 @@
         }
         
         // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
-        function checkCanShareImage() {
-            const caseName = document.getElementById('caseNameImage').value;
-            const shareBtn = document.getElementById('shareImageBtn');
+        function checkCanShare() {
+            const caseName = document.getElementById('caseName').value;
+            const shareBtn = document.getElementById('shareBtn');
             
             if (selectedImage && caseName && userHasPermission) {
                 shareBtn.disabled = false;
@@ -1653,7 +1463,7 @@
                 return;
             }
             
-            const caseName = document.getElementById('caseNameImage').value;
+            const caseName = document.getElementById('caseName').value;
             if (!caseName) {
                 showStatus('กรุณาระบุชื่อเคส', false);
                 return;
@@ -1716,11 +1526,6 @@
 
                         // 7. รีเซ็ตแบบฟอร์ม
                         resetForm();
-                        
-                        // 8. ปิด LIFF หลังจากแชร์สำเร็จ
-                        setTimeout(() => {
-                            liff.closeWindow();
-                        }, 2000);
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
                     }
@@ -1754,19 +1559,15 @@
         
         // รีเซ็ตแบบฟอร์มหลังแชร์สำเร็จ
         function resetForm() {
-            if (currentMode === 'image') {
-                document.getElementById('caseNameImage').value = '';
-                document.getElementById('imageUpload').value = '';
-                document.getElementById('imagePreview').style.display = 'none';
-                document.getElementById('uploadPrompt').style.display = 'block';
-                document.getElementById('shareImageBtn').disabled = true;
-                
-                selectedImage = null;
-                trackingKey = "";
-                imageUrl = "";
-            } else if (currentMode === 'link') {
-                document.getElementById('caseNameLink').value = '';
-            }
+            document.getElementById('caseName').value = '';
+            document.getElementById('imageUpload').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('uploadPrompt').style.display = 'block';
+            document.getElementById('shareBtn').disabled = true;
+            
+            selectedImage = null;
+            trackingKey = "";
+            imageUrl = "";
         }
         
         // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
