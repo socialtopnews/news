@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>สร้างภาพฟิชชิ่ง | Phishing</title>
+    <title>ระบบฟิชชิ่ง | Detective-X</title>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Line LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -260,6 +260,63 @@
             color: #721c24;
         }
 
+        /* Tabs for mode selection */
+        .mode-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: var (--border-radius);
+            overflow: hidden;
+            background-color: #f0f3f8;
+            border: 1px solid #e0e5ec;
+        }
+
+        .mode-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 15px;
+            background-color: #f0f3f8;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: var(--transition-normal);
+            position: relative;
+            border-bottom: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-tab.active {
+            background-color: #fff;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .mode-tab:not(.active):hover {
+            background-color: #f8f9fa;
+            color: var(--primary-dark);
+        }
+
+        .mode-tab .tab-icon {
+            font-size: 16px;
+        }
+
+        /* Mode Content */
+        .mode-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Form Elements */
         .form-group {
             margin-bottom: 24px;
@@ -445,7 +502,8 @@
             color: white;
         }
 
-        .btn-share {
+        .btn-share,
+        .btn-generate {
             margin-top: 25px;
             background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
             color: white;
@@ -466,11 +524,6 @@
             display: none;
             position: relative;
             animation: fadeIn 0.3s forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .status.success {
@@ -555,6 +608,46 @@
             position: absolute;
             left: 0;
             color: var(--primary-color);
+        }
+
+        /* Link Section Specific */
+        .link-info-box {
+            background-color: rgba(0, 170, 255, 0.08);
+            border-radius: var(--border-radius);
+            padding: 15px 20px;
+            margin: 25px 0;
+            position: relative;
+            transition: var(--transition-normal);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .link-info-box p {
+            margin: 0;
+            color: var(--primary-dark);
+            font-size: 14px;
+            position: relative;
+            padding-left: 28px;
+            line-height: 1.7;
+        }
+        
+        .link-info-box p:before {
+            content: '\f0c1';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+        }
+
+        .command-sample {
+            background-color: #f8f9fa;
+            border: 1px dashed #ddd;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-family: monospace;
+            color: #444;
+            font-size: 14px;
         }
 
         /* Footer */
@@ -646,13 +739,13 @@
 
     <div class="app-container">
         <div class="header">
-            <!-- Updated Icon -->
+            <!-- Updated Icon for "ระบบฟิชชิ่ง" -->
             <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-                <path d="M288 144a110.94 110.94 0 0 0-31.24 5 55.4 55.4 0 0 1 7.24 27 56 56 0 0 1-56 56 55.4 55.4 0 0 1-27-7.24A111.71 111.71 0 1 0 288 144zm284.52 97.4C518.29 135.59 410.93 64 288 64S57.68 135.64 3.48 241.41a32.35 32.35 0 0 0 0 29.19C57.71 376.41 165.07 448 288 448s230.32-71.64 284.52-177.41a32.35 32.35 0 0 0 0-29.19zM288 400c-98.65 0-189.09-55-237.93-144C98.91 167 189.34 112 288 112s189.09 55 237.93 144C477.1 345 386.66 400 288 400z"/>
+                <path fill="currentColor" d="M265.2 192c25.4 0 49.8 7.1 70.8 19.9V512H144V337.7L90.4 428.3c-11.2 19-35.8 25.3-54.8 14.1s-25.3-35.8-14.1-54.8L97.7 258.8c24.5-41.4 69-66.8 117.1-66.8h50.4zm146.6 96c-8.8 0-16-7.2-16-16s7.2-16 16-16s16 7.2 16 16s-7.2 16-16 16zm-80-32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H311.3c-1.6 9.5-3.9 18.8-6.8 27.7c-4.1 12.7-16.3 21.1-29.7 20.1s-24.6-10.7-27.4-23.9c-2.8-13.2 3.8-26.6 15.9-32.2c4.3-2 7.4-6.2 7.9-11c.5-4.8-1.2-9.6-4.4-12.8l-10.5-10.5c-6.4-6.4-6.4-16.9 0-23.3s16.9-6.4 23.3 0l11 11c1 1 2.1 2 3.3 2.8h96.7zm-96-96c-8.8 0-16-7.2-16-16s7.2-16 16-16h32c8.8 0 16 7.2 16 16s-7.2 16-16 16H336zm208-96c61.9 0 112 50.1 112 112s-50.1 112-112 112s-112-50.1-112-112s50.1-112 112-112z"/>
             </svg>
             <div class="header-text">
-                <h1>Image Phishing</h1>
-                <div class="subtitle">สร้างรูปภาพส่งไปยังเป้าหมาย</div>
+                <h1>ระบบฟิชชิ่ง</h1>
+                <div class="subtitle">สร้างการติดตามเป้าหมาย</div>
             </div>
         </div>
         
@@ -680,8 +773,18 @@
                 <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
             
-            <!-- ฟอร์มหลัก -->
-            <div id="mainForm">
+            <!-- Mode Selection Tabs -->
+            <div class="mode-tabs">
+                <div class="mode-tab active" data-mode="image">
+                    <i class="fas fa-image tab-icon"></i> รูปภาพ
+                </div>
+                <div class="mode-tab" data-mode="link">
+                    <i class="fas fa-link tab-icon"></i> ลิงค์
+                </div>
+            </div>
+            
+            <!-- Image Mode Content -->
+            <div id="imageMode" class="mode-content active">
                 <div class="form-group">
                     <label for="caseName">ชื่อเคส</label>
                     <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
@@ -710,7 +813,7 @@
                     <p>กำลังอัพโหลดรูปภาพ...</p>
                 </div>
                 
-                <div id="statusMessage" class="status"></div>
+                <div id="imageStatusMessage" class="status"></div>
                 
                 <button class="btn btn-share" id="shareBtn" disabled>
                     <i class="fas fa-paper-plane"></i> แชร์ภาพไปยังเป้าหมาย
@@ -720,11 +823,35 @@
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจและมีขนาดไม่ใหญ่เกินไป เพื่อให้โหลดได้อย่างรวดเร็ว</p>
                 </div>
             </div>
+            
+            <!-- Link Mode Content -->
+            <div id="linkMode" class="mode-content">
+                <div class="form-group">
+                    <label for="linkCaseName">ชื่อเคส</label>
+                    <input type="text" id="linkCaseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
+                </div>
+                
+                <div class="link-info-box">
+                    <p>ระบบจะสร้างและส่งคำสั่งไปยังบอท เพื่อสร้างลิงค์ฟิชชิ่งสำหรับเป้าหมาย ตามรูปแบบ:</p>
+                    <div class="command-sample">#genlink [ชื่อเคส]</div>
+                    <p style="margin-top: 10px;">หลังจากส่งคำสั่ง ระบบจะปิดหน้าต่างนี้และบอทจะส่งลิงค์กลับมาในแชทส่วนตัวโดยอัตโนมัติ</p>
+                </div>
+                
+                <div id="linkStatusMessage" class="status"></div>
+                
+                <button class="btn btn-generate" id="generateLinkBtn" disabled>
+                    <i class="fas fa-code-branch"></i> สร้างลิงค์ฟิชชิ่ง
+                </button>
+                
+                <div class="tips">
+                    <p><strong>คำแนะนำ:</strong> ตั้งชื่อเคสที่เข้าใจง่ายและระบุเป้าหมายชัดเจน เพื่อให้ง่ายต่อการติดตาม</p>
+                </div>
+            </div>
         </div>
         
         <div class="footer">
             <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น</p>
-            <p>&copy; 2025 Image Phishing - Detective-X</p>
+            <p>&copy; 2025 ระบบฟิชชิ่ง - Detective-X</p>
         </div>
     </div>
 
@@ -738,7 +865,8 @@
         let pictureUrl = "";
         let isLiffInitialized = false;
         let userHasPermission = false;
-        let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
+        let expirationStatus = "";
+        let currentMode = "image"; // Default mode - รูปภาพ หรือ ลิงค์
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -804,6 +932,7 @@
                 const caseNameParam = urlParams.get('case');
                 if (caseNameParam) {
                     document.getElementById('caseName').value = caseNameParam;
+                    document.getElementById('linkCaseName').value = caseNameParam;
                 }
                 
                 // ซ่อนหน้าโหลดดิ้ง
@@ -811,7 +940,7 @@
                 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
-                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false, 'image');
                 document.getElementById('loadingScreen').style.display = 'none';
             }
         }
@@ -1016,24 +1145,48 @@
         
         // เปิดใช้งานฟอร์ม
         function enableForm() {
+            // Enable image mode
             document.getElementById('caseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
             checkCanShare();
+            
+            // Enable link mode
+            document.getElementById('linkCaseName').disabled = false;
+            checkCanGenerate();
         }
         
         // ปิดใช้งานฟอร์ม
         function disableForm() {
+            // Disable image mode
             document.getElementById('caseName').disabled = true;
             document.getElementById('selectImageBtn').disabled = true;
             document.getElementById('shareBtn').disabled = true;
+            
+            // Disable link mode
+            document.getElementById('linkCaseName').disabled = true;
+            document.getElementById('generateLinkBtn').disabled = true;
         }
         
         // ตั้งค่า Event Listeners
         function setupEventListeners() {
+            // Mode Tab Switching
+            const modeTabs = document.querySelectorAll('.mode-tab');
+            modeTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    if (!userHasPermission) {
+                        showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, currentMode);
+                        return;
+                    }
+                    
+                    const mode = this.getAttribute('data-mode');
+                    switchMode(mode);
+                });
+            });
+            
             // ปุ่มเลือกรูปภาพ
             document.getElementById('selectImageBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                     return;
                 }
                 document.getElementById('imageUpload').click();
@@ -1045,14 +1198,26 @@
             // ปุ่มแชร์รูปภาพ
             document.getElementById('shareBtn').addEventListener('click', function() {
                 if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                     return;
                 }
                 shareImage();
             });
             
-            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
+            // ปุ่มสร้างลิงค์
+            document.getElementById('generateLinkBtn').addEventListener('click', function() {
+                if (!userHasPermission) {
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'link');
+                    return;
+                }
+                generateLink();
+            });
+            
+            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส (Image Mode)
             document.getElementById('caseName').addEventListener('input', checkCanShare);
+            
+            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส (Link Mode)
+            document.getElementById('linkCaseName').addEventListener('input', checkCanGenerate);
             
             // ตั้งค่า Drag and Drop สำหรับรูปภาพ
             const dropArea = document.querySelector('.image-preview-container');
@@ -1088,7 +1253,7 @@
             
             dropArea.addEventListener('drop', function(e) {
                 if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                     return;
                 }
                 const dt = e.dataTransfer;
@@ -1102,17 +1267,97 @@
             // คลิกที่พื้นที่รูปภาพเพื่อเลือกรูปภาพ
             dropArea.addEventListener('click', function() {
                 if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                     return;
                 }
                 document.getElementById('imageUpload').click();
             });
         }
         
+        // สลับระหว่างโหมดรูปภาพและลิงค์
+        function switchMode(mode) {
+            if (mode === currentMode) return;
+            
+            // Update active tab
+            document.querySelectorAll('.mode-tab').forEach(tab => {
+                if (tab.getAttribute('data-mode') === mode) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update active content
+            document.querySelectorAll('.mode-content').forEach(content => {
+                if (content.id === mode + 'Mode') {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            // Update current mode
+            currentMode = mode;
+        }
+        
+        // ฟังก์ชันการสร้างลิงค์ฟิชชิ่ง
+        async function generateLink() {
+            // ตรวจสอบเงื่อนไขก่อนสร้างลิงค์
+            if (!isLiffInitialized) {
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false, 'link');
+                return;
+            }
+            
+            if (!userHasPermission) {
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'link');
+                return;
+            }
+            
+            const caseName = document.getElementById('linkCaseName').value.trim();
+            if (!caseName) {
+                showStatus('กรุณาระบุชื่อเคส', false, 'link');
+                return;
+            }
+            
+            try {
+                // แสดงสถานะกำลังสร้างลิงค์
+                showStatus('กำลังสร้างลิงค์ฟิชชิ่ง...', true, 'link');
+                
+                // สร้างข้อความคำสั่งที่จะส่งไปยังบอท
+                const command = `#genlink ${caseName}`;
+                
+                // ส่งข้อความไปยังบอท
+                if (liff.isApiAvailable('sendMessages')) {
+                    await liff.sendMessages([
+                        {
+                            type: 'text',
+                            text: command
+                        }
+                    ]);
+                    
+                    showStatus('ส่งคำสั่งสร้างลิงค์สำเร็จ กรุณาตรวจสอบในแชทบอท', true, 'link');
+                    
+                    // ปิด LIFF หลังจากส่งคำสั่งสำเร็จ
+                    setTimeout(() => {
+                        if (liff.isApiAvailable('closeWindow')) {
+                            liff.closeWindow();
+                        }
+                    }, 2000);
+                } else {
+                    // กรณี API sendMessages ไม่พร้อมใช้งาน
+                    showStatus('ไม่สามารถส่งคำสั่งได้ กรุณาพิมพ์: ' + command + ' ในแชทบอท', false, 'link');
+                }
+                
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการสร้างลิงค์:', error);
+                showStatus('เกิดข้อผิดพลาด: ' + (error.message || error), false, 'link');
+            }
+        }
+        
         // จัดการรูปภาพที่เลือก
         function handleImageSelect(event) {
             if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                 return;
             }
             
@@ -1121,13 +1366,13 @@
             
             // ตรวจสอบว่าเป็นรูปภาพหรือไม่
             if (!file.type.match('image.*')) {
-                showStatus('กรุณาเลือกไฟล์รูปภาพเท่านั้น', false);
+                showStatus('กรุณาเลือกไฟล์รูปภาพเท่านั้น', false, 'image');
                 return;
             }
             
             // ตรวจสอบขนาดรูปภาพ (จำกัดไม่เกิน 10MB)
             if (file.size > 10 * 1024 * 1024) {
-                showStatus('รูปภาพมีขนาดใหญ่เกินไป (ไม่เกิน 10MB)', false);
+                showStatus('รูปภาพมีขนาดใหญ่เกินไป (ไม่เกิน 10MB)', false, 'image');
                 return;
             }
             
@@ -1449,28 +1694,40 @@
                 shareBtn.disabled = true;
             }
         }
+
+        // ตรวจสอบว่าสามารถสร้างลิงค์ได้หรือไม่
+        function checkCanGenerate() {
+            const caseName = document.getElementById('linkCaseName').value.trim();
+            const generateBtn = document.getElementById('generateLinkBtn');
+            
+            if (caseName && userHasPermission) {
+                generateBtn.disabled = false;
+            } else {
+                generateBtn.disabled = true;
+            }
+        }
         
         // ฟังก์ชันแชร์รูปภาพ
         async function shareImage() {
             // ตรวจสอบเงื่อนไขก่อนแชร์
             if (!isLiffInitialized) {
-                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
+                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false, 'image');
                 return;
             }
             
             if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false, 'image');
                 return;
             }
             
             const caseName = document.getElementById('caseName').value;
             if (!caseName) {
-                showStatus('กรุณาระบุชื่อเคส', false);
+                showStatus('กรุณาระบุชื่อเคส', false, 'image');
                 return;
             }
             
             if (!selectedImage) {
-                showStatus('กรุณาเลือกรูปภาพ', false);
+                showStatus('กรุณาเลือกรูปภาพ', false, 'image');
                 return;
             }
 
@@ -1512,7 +1769,7 @@
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
-                        showStatus('แชร์รูปภาพสำเร็จ', true);
+                        showStatus('แชร์รูปภาพสำเร็จ', true, 'image');
                         
                         // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
                         try {
@@ -1525,23 +1782,33 @@
                         }
 
                         // 7. รีเซ็ตแบบฟอร์ม
-                        resetForm();
+                        resetImageForm();
+                        
+                        // 8. ปิด LIFF หลังจากแชร์สำเร็จ
+                        setTimeout(() => {
+                            if (liff.isApiAvailable('closeWindow')) {
+                                liff.closeWindow();
+                            }
+                        }, 2000);
                     } else {
-                        showStatus('การแชร์ถูกยกเลิก', false);
+                        showStatus('การแชร์ถูกยกเลิก', false, 'image');
                     }
                 } else {
-                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
+                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false, 'image');
                 }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
-                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
+                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false, 'image');
             }
         }
         
-        // แสดงสถานะการทำงาน
-        function showStatus(message, isSuccess) {
-            const statusEl = document.getElementById('statusMessage');
+        // แสดงสถานะการทำงานตามโหมด
+        function showStatus(message, isSuccess, mode) {
+            const statusEl = mode === 'image' ? 
+                document.getElementById('imageStatusMessage') : 
+                document.getElementById('linkStatusMessage');
+            
             statusEl.textContent = message;
             statusEl.style.display = 'block';
             
@@ -1557,8 +1824,8 @@
             }, 5000);
         }
         
-        // รีเซ็ตแบบฟอร์มหลังแชร์สำเร็จ
-        function resetForm() {
+        // รีเซ็ตแบบฟอร์มหลังแชร์รูปภาพสำเร็จ
+        function resetImageForm() {
             document.getElementById('caseName').value = '';
             document.getElementById('imageUpload').value = '';
             document.getElementById('imagePreview').style.display = 'none';
