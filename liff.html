@@ -1058,7 +1058,9 @@
         function enableForm() {
             document.getElementById('caseName').disabled = false;
             document.getElementById('selectImageBtn').disabled = false;
+            document.getElementById('genLinkBtn').disabled = false; // เพิ่มการเปิดใช้ปุ่มสร้างลิงก์
             checkCanShare();
+            checkCanGenLink(); // เพิ่มการตรวจสอบปุ่มสร้างลิงก์
         }
         
         // ปิดใช้งานฟอร์ม
@@ -1066,6 +1068,7 @@
             document.getElementById('caseName').disabled = true;
             document.getElementById('selectImageBtn').disabled = true;
             document.getElementById('shareBtn').disabled = true;
+            document.getElementById('genLinkBtn').disabled = true; // เพิ่มการปิดปุ่มสร้างลิงก์
         }
         
         // ตั้งค่า Event Listeners
@@ -1490,6 +1493,17 @@
             }
         }
         
+        // เพิ่มฟังก์ชันใหม่: ตรวจสอบว่าสามารถสร้างลิงก์ได้หรือไม่
+        function checkCanGenLink() {
+            const genLinkBtn = document.getElementById('genLinkBtn');
+            
+            if (userHasPermission) {
+                genLinkBtn.disabled = false;
+            } else {
+                genLinkBtn.disabled = true;
+            }
+        }
+        
         // ฟังก์ชันแชร์รูปภาพ
         async function shareImage() {
             // ตรวจสอบเงื่อนไขก่อนแชร์
@@ -1635,6 +1649,7 @@
                 modeLinkBtn.style.color = "#3876BF";
                 mainFormImage.style.display = '';
                 mainFormLink.style.display = 'none';
+                checkCanShare();
             });
             modeLinkBtn.addEventListener('click', function() {
                 phishingMode = "link";
@@ -1646,14 +1661,16 @@
                 modeImageBtn.style.color = "#3876BF";
                 mainFormImage.style.display = 'none';
                 mainFormLink.style.display = '';
+                checkCanGenLink();
             });
         }
 
         // --- เพิ่มฟังก์ชันสำหรับโหมดลิงก์ ---
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('genLinkBtn').addEventListener('click', async function() {
+                // ตรวจสอบสิทธิ์ก่อนดำเนินการสร้างลิงก์
                 if (!userHasPermission) {
-                    showStatusLink('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
+                    showStatusLink("คุณไม่มีสิทธิ์ใช้งานหรือสิทธิ์หมดอายุ", false);
                     return;
                 }
                 const caseName = document.getElementById('caseNameLink').value.trim();
