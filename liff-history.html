@@ -688,95 +688,6 @@
                 max-height: 90vh;
             }
         }
-
-        /* เพิ่ม Style สำหรับ Toggle Filter */
-        .filter-toggle {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 15px 0;
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            padding: 10px 15px;
-            border: 1px solid #E0E0E0;
-        }
-        
-        .filter-label {
-            font-size: 14px;
-            color: var(--text-light);
-            display: flex;
-            align-items: center;
-        }
-        
-        .filter-label i {
-            margin-right: 5px;
-        }
-        
-        /* Toggle Switch */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 52px;
-            height: 26px;
-        }
-        
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 26px;
-        }
-        
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .slider {
-            background-color: var(--primary-color);
-        }
-        
-        input:focus + .slider {
-            box-shadow: 0 0 1px var(--primary-color);
-        }
-        
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        
-        .filter-status {
-            margin-left: 10px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        /* Badge สำหรับแสดงจำนวนที่กรอง */
-        .filter-count {
-            background-color: var(--primary-light);
-            color: white;
-            border-radius: 10px;
-            padding: 2px 8px;
-            font-size: 12px;
-            margin-left: 5px;
-        }
     </style>
 </head>
 <body>
@@ -820,21 +731,6 @@
             <div id="searchBox" class="search-box" style="display: none;">
                 <input type="text" id="searchInput" placeholder="ค้นหาจากชื่อเคส หรือ Tracking Key">
                 <i class="fas fa-search search-icon"></i>
-            </div>
-            
-            <!-- เพิ่ม Toggle Filter ตรงนี้ -->
-            <div id="filterToggle" class="filter-toggle" style="display: none;">
-                <div class="filter-label">
-                    <i class="fas fa-filter"></i> แสดงเฉพาะประวัติที่ฉันสร้าง
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <label class="switch">
-                        <input type="checkbox" id="ownerFilterToggle">
-                        <span class="slider"></span>
-                    </label>
-                    <span id="filterStatus" class="filter-status">แสดงทั้งหมด</span>
-                    <span id="filterCount" class="filter-count" style="display: none;">0</span>
-                </div>
             </div>
 
             <div id="historyList" class="history-list" style="display: none;"></div>
@@ -1159,7 +1055,6 @@
         // เปิดใช้งานฟีเจอร์ประวัติ
         function enableHistoryFeatures() {
             document.getElementById('searchBox').style.display = 'block';
-            document.getElementById('filterToggle').style.display = 'flex';
             document.getElementById('historyList').style.display = 'block';
             document.getElementById('pagination').style.display = 'flex';
         }
@@ -1224,15 +1119,6 @@
                 debugDiv.appendChild(checkColumnsBtn);
                 document.querySelector('.content').appendChild(debugDiv);
             }
-
-            // เพิ่ม event listener สำหรับ toggle filter
-            document.getElementById('ownerFilterToggle').addEventListener('change', function() {
-                showOnlyOwned = this.checked;
-                document.getElementById('filterStatus').textContent = showOnlyOwned ? 'เฉพาะของฉัน' : 'แสดงทั้งหมด';
-                
-                // ปรับสถานะ UI และกรองข้อมูล
-                filterHistoryData();
-            });
         }
 
         // ฟังก์ชันดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
@@ -1303,10 +1189,6 @@
                         currentHistoryData = data.history;
                         filteredData = [...currentHistoryData];
                         totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-                        // นับจำนวนรายการที่ผู้ใช้เป็นเจ้าของ
-                        ownerItemsCount = currentHistoryData.filter(item => item.isOwner === true).length;
-                        updateFilterCount();
 
                         displayHistoryData();
                         document.getElementById('historyList').style.display = 'block';
@@ -1394,8 +1276,7 @@
         // กรองข้อมูลตามการค้นหา
         function filterHistoryData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            // ขั้นที่ 1: กรองตามคำค้นหา
+
             if (searchTerm === '') {
                 filteredData = [...currentHistoryData];
             } else {
@@ -1404,19 +1285,10 @@
                     (item.trackingKey && item.trackingKey.toLowerCase().includes(searchTerm))
                 );
             }
-            
-            // ขั้นที่ 2: กรองตาม isOwner ถ้าเลือกแสดงเฉพาะของตนเอง
-            if (showOnlyOwned) {
-                filteredData = filteredData.filter(item => item.isOwner === true);
-            }
-            
-            // นับจำนวนรายการที่ผู้ใช้เป็นเจ้าของ
-            ownerItemsCount = currentHistoryData.filter(item => item.isOwner === true).length;
-            updateFilterCount();
-            
+
             totalPages = Math.ceil(filteredData.length / itemsPerPage);
             currentPage = 1; // รีเซ็ทกลับไปหน้าแรก
-            
+
             displayHistoryData();
         }
 
@@ -1493,9 +1365,6 @@
                 const searchTerm = document.getElementById('searchInput').value;
                 if (searchTerm) {
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-search"></i><p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>';
-                } else if (showOnlyOwned) {
-                    // เพิ่มข้อความเฉพาะเมื่อเลือกแสดงเฉพาะของตนเองแต่ไม่พบข้อมูล
-                    document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-filter"></i><p>คุณยังไม่มีประวัติการสร้างเคสหรือ Tracking Key</p>';
                 } else {
                     document.getElementById('noDataMessage').innerHTML = '<i class="fas fa-folder-open"></i><p>ยังไม่มีประวัติการใช้งาน</p>';
                 }
@@ -2009,21 +1878,6 @@
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
                  alert("เกิดข้อผิดพลาดในฟังก์ชัน checkSheetColumns: " + error.message);
-            }
-        }
-
-        // เพิ่มตัวแปรสำหรับเก็บสถานะการกรอง
-        let showOnlyOwned = false;
-        let ownerItemsCount = 0; // เก็บจำนวนรายการที่ผู้ใช้เป็นเจ้าของ
-
-        // เพิ่มฟังก์ชันอัปเดตแสดงจำนวนรายการที่กรอง
-        function updateFilterCount() {
-            const filterCountElement = document.getElementById('filterCount');
-            if (ownerItemsCount > 0) {
-                filterCountElement.textContent = ownerItemsCount;
-                filterCountElement.style.display = 'inline-block';
-            } else {
-                filterCountElement.style.display = 'none';
             }
         }
     </script>
