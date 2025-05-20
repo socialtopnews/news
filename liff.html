@@ -68,6 +68,18 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 70%, rgba(255,255,255,0.15) 0%, transparent 45%);
+            z-index: 1;
         }
 
         .header::after {
@@ -80,6 +92,7 @@
             background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
             background-size: 200% 200%;
             animation: gradientFlow 3s ease infinite;
+            z-index: 2;
         }
 
         @keyframes gradientFlow {
@@ -89,28 +102,31 @@
         }
 
         .header .header-icon {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             fill: white;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
             animation: pulse 2s infinite;
+            z-index: 3;
+            transform-origin: center center;
         }
 
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.08); }
             100% { transform: scale(1); }
         }
 
         .header .header-text {
             text-align: left;
+            z-index: 3;
         }
 
         .header h1 {
             margin: 0;
             font-size: 22px;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             letter-spacing: 0.5px;
         }
 
@@ -131,13 +147,14 @@
         .user-info {
             background-color: #ffffff;
             border-radius: var(--border-radius);
-            padding: 1.2rem;
-            margin-bottom: 1.5rem;
+            padding: 1.3rem;
+            margin-bottom: 1.8rem;
             border: none;
             box-shadow: var(--shadow-sm);
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(161, 194, 241, 0.2);
         }
 
         .user-info::before {
@@ -147,12 +164,13 @@
             left: 0;
             width: 4px;
             height: 100%;
-            background-color: var(--primary-color);
+            background: linear-gradient(to bottom, var(--primary-color), var(--primary-light));
+            border-radius: 2px 0 0 2px;
         }
 
         .user-info:hover {
             box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
         }
 
         .user-info .profile {
@@ -166,15 +184,15 @@
             border-radius: 50%;
             object-fit: cover;
             margin-right: 20px;
-            border: 2px solid var(--primary-light);
+            border: 2px solid var (--primary-light);
             padding: 2px;
             background-color: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            transition: var(--transition-normal);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .user-info:hover .profile-img {
-            transform: scale(1.05) rotate(5deg);
+            transform: scale(1.08) rotate(5deg);
         }
 
         .user-info .user-name {
@@ -182,6 +200,7 @@
             color: var(--text-color);
             font-size: 18px;
             margin-bottom: 5px;
+            letter-spacing: 0.2px;
         }
 
         .user-info .user-status {
@@ -189,6 +208,7 @@
             align-items: center;
             font-size: 14px;
             color: var(--text-light);
+            gap: 4px;
         }
 
         .badge {
@@ -198,12 +218,13 @@
             font-size: 12px;
             font-weight: 500;
             margin-left: 8px;
-            transition: var(--transition-normal);
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .badge.approved {
             background-color: rgba(76, 175, 80, 0.15);
-            color: var (--success-color);
+            color: var(--success-color);
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
@@ -215,13 +236,30 @@
 
         /* Message Box */
         .message-box {
-            background-color: rgba(255, 193, 7, 0.1);
+            background-color: rgba(255, 193, 7, 0.08);
             border-left: 4px solid var(--warning-color);
             padding: 15px 20px;
             margin: 1.5rem 0;
-            border-radius: 4px;
+            border-radius: 8px;
             position: relative;
             transition: var(--transition-normal);
+            animation: slideInDown 0.4s ease-out;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-box:hover {
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         }
 
         .message-box:before {
@@ -236,6 +274,7 @@
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .message-box p {
@@ -249,10 +288,11 @@
             background-color: rgba(255, 193, 7, 0.2);
             padding: 2px 5px;
             border-radius: 3px;
+            font-weight: 600;
         }
 
         .message-box.error {
-            background-color: rgba(255, 82, 82, 0.1);
+            background-color: rgba(255, 82, 82, 0.08);
             border-left: 4px solid var(--error-color);
         }
 
@@ -263,6 +303,7 @@
         /* Form Elements */
         .form-group {
             margin-bottom: 24px;
+            position: relative;
         }
 
         label {
@@ -272,7 +313,8 @@
             color: var(--text-color);
             font-size: 16px;
             position: relative;
-            padding-left: 8px;
+            padding-left: 10px;
+            transition: transform 0.2s ease;
         }
 
         label:before {
@@ -281,29 +323,36 @@
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 3px;
-            height: 14px;
+            width: 3.5px;
+            height: 16px;
             background-color: var(--primary-color);
             border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+
+        .form-group:hover label:before {
+            height: 20px;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #E0E0E0;
+            padding: 13px 16px;
+            border: 1.5px solid #E0E0E0;
             border-radius: var(--border-radius);
             font-size: 15px;
-            transition: var(--transition-normal);
+            transition: all 0.25s ease;
             background-color: #FAFAFA;
             color: var(--text-color);
             touch-action: manipulation;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.18);
             background-color: #FFFFFF;
+            transform: translateY(-2px);
         }
 
         input[type="text"]::placeholder {
@@ -321,10 +370,10 @@
             margin-top: 15px;
             text-align: center;
             border: 2px dashed #E0E0E0;
-            padding: 25px;
+            padding: 28px;
             border-radius: var(--border-radius);
             background-color: #FAFAFA;
-            transition: var(--transition-normal);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
             position: relative;
             overflow: hidden;
@@ -333,6 +382,11 @@
         .image-preview-container:hover {
             border-color: var(--primary-color);
             background-color: rgba(88, 136, 231, 0.05);
+            transform: scale(1.01);
+        }
+
+        .image-preview-container:active {
+            transform: scale(0.98);
         }
 
         .image-preview {
@@ -342,7 +396,7 @@
             margin: 10px auto;
             border-radius: 8px;
             box-shadow: var(--shadow-sm);
-            transition: var(--transition-normal);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .image-preview:hover {
@@ -356,6 +410,12 @@
             align-items: center;
             gap: 15px;
             color: var(--text-light);
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         #uploadPrompt:before {
@@ -366,8 +426,16 @@
             color: var(--primary-light);
             display: block;
             margin-bottom: 10px;
+            animation: floatUpDown 3s ease-in-out infinite;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.1);
         }
 
+        @keyframes floatUpDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Button Styles */
         .btn {
             display: inline-block;
             background-color: var(--primary-color);
@@ -377,13 +445,14 @@
             font-size: 16px;
             border-radius: var(--border-radius);
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
             width: 100%;
             font-weight: 500;
             position: relative;
             overflow: hidden;
             z-index: 1;
+            box-shadow: 0 4px 10px rgba(56, 118, 191, 0.2);
         }
 
         .btn:before {
@@ -409,13 +478,13 @@
 
         .btn:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(56, 118, 191, 0.25);
         }
 
         .btn:active {
-            transform: translateY(0);
-            box-shadow: var (--shadow-sm);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(56, 118, 191, 0.15);
         }
 
         .btn:disabled {
@@ -428,48 +497,76 @@
 
         .btn .icon {
             margin-right: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover .icon {
+            transform: translateX(-3px);
         }
 
         .btn-file {
-            background-color: var(--secondary-color);
-            color: var (--primary-dark);
+            background: linear-gradient(to right, #A1C2F1, #5A96E3);
+            color: white;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
         }
 
         .btn-file:hover {
-            background-color: var(--primary-light);
-            color: white;
+            background: linear-gradient(to right, #8cb5eb, #4389dd);
         }
 
         .btn-share {
-            margin-top: 25px;
-            background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
+            margin-top: 28px;
+            background: linear-gradient(45deg, var(--primary-color), #2d6bb8);
             color: white;
             font-weight: 600;
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(56, 118, 191, 0.25);
+            position: relative;
+            overflow: hidden;
+            padding: 16px 24px;
+        }
+
+        .btn-share:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(255,255,255,0));
+            z-index: -1;
+        }
+
+        .btn-share:disabled {
+            background: linear-gradient(45deg, #b5b5b5, #9e9e9e);
         }
 
         /* Status Message */
         .status {
             margin-top: 20px;
-            padding: 15px;
+            padding: 16px;
             border-radius: var(--border-radius);
             text-align: center;
             display: none;
             position: relative;
-            animation: fadeIn 0.3s forwards;
+            animation: statusFadeIn 0.4s forwards;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes statusFadeIn {
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -484,11 +581,17 @@
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             margin-right: 8px;
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
         }
 
         .status.error {
             background-color: rgba(255, 82, 82, 0.1);
-            color: var (--error-color);
+            color: var(--error-color);
             border: 1px solid rgba(255, 82, 82, 0.3);
         }
 
@@ -503,15 +606,16 @@
         .loader {
             display: none;
             text-align: center;
-            margin: 25px 0;
+            margin: 28px 0;
         }
 
         .loader-spinner {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 12px;
+            width: 45px;
+            height: 45px;
+            margin: 0 auto 15px;
             border: 3px solid rgba(88, 136, 231, 0.2);
             border-top: 3px solid var(--primary-color);
+            border-right: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -523,25 +627,30 @@
 
         .loader p {
             color: var(--text-light);
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 500;
         }
 
         /* Tips Box */
         .tips {
             background-color: rgba(88, 136, 231, 0.08);
             border-radius: var(--border-radius);
-            padding: 15px 20px;
-            margin: 25px 0;
+            padding: 18px 20px;
+            margin: 28px 0;
             position: relative;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--primary-light);
         }
 
         .tips:hover {
             background-color: rgba(88, 136, 231, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .tips p {
-            margin: 0;
+            margin: 8px 0;
             color: var(--primary-dark);
             font-size: 14px;
             position: relative;
@@ -560,12 +669,25 @@
         /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
+            padding: 25px 20px;
             background-color: #F8F9FA;
             border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
+            margin-top: 40px;
             font-size: 14px;
             color: var(--text-light);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(56, 118, 191, 0.2), transparent);
+            opacity: 0.7;
         }
 
         .footer p {
@@ -590,18 +712,55 @@
         #loadingScreen .spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var(--primary-color);
+            border: 5px solid rgba(88, 136, 231, 0.15);
+            border-top: 5px solid var(--primary-color);
+            border-right: 5px solid var(--primary-color);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 1.2s cubic-bezier(0.5, 0.1, 0.5, 1) infinite;
             margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(88, 136, 231, 0.15);
         }
 
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
+            font-size: 16px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
+        /* Mode Toggle Buttons */
+        #modeToggle {
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 6px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+        }
+
+        .mode-btn {
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            border: none;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .mode-btn.active {
+            box-shadow: 0 3px 10px rgba(56,118,191,0.2) !important;
+            transform: translateY(-1px);
+        }
+
+        .mode-btn:not(.active) {
+            background: #fff !important;
+            color: var(--primary-color) !important;
+        }
+
+        .mode-btn:not(.active):hover {
+            background: #f0f6ff !important;
+            transform: translateY(-1px);
+        }
+        
         /* Responsive Adjustments */
         @media (max-width: 576px) {
             .app-container {
@@ -623,7 +782,7 @@
             }
 
             .btn {
-                padding: 12px 20px;
+                padding: 13px 20px;
             }
 
             .user-info .profile-img {
@@ -632,24 +791,12 @@
             }
 
             .message-box {
-                padding: 12px 15px;
+                padding: 14px 16px;
             }
-        }
-        /* ปรับแต่งปุ่ม toggle โหมด */
-        .mode-btn.active {
-            box-shadow: 0 2px 8px rgba(56,118,191,0.08);
-            border: none !important;
-        }
-        .mode-btn {
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            border: 1px solid #3876BF;
-            background: #fff;
-            color: #3876BF;
-            transition: all 0.2s;
-        }
-        .mode-btn:not(.active):hover {
-            background: #f0f6ff;
+            
+            .tips {
+                padding: 16px 18px;
+            }
         }
     </style>
 </head>
@@ -680,7 +827,7 @@
                     <div>
                         <div class="user-name" id="userName">User Name</div>
                         <div class="user-status">
-                            <span><i class="fas fa-circle-info"></i> สถานะ:</span> <span id="userStatus">ตรวจสอบสิทธิ์...</span>
+                            <i class="fas fa-circle-info"></i> สถานะ: <span id="userStatus">ตรวจสอบสิทธิ์...</span>
                             <span id="statusBadge" class="badge">รอตรวจสอบ</span>
                         </div>
                         <!-- เพิ่มส่วนแสดงวันหมดอายุ -->
@@ -699,8 +846,12 @@
             <!-- เพิ่ม toggle โหมดฟิชชิ่ง -->
             <div class="form-group" style="margin-bottom: 28px;">
                 <div id="modeToggle" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 0;">
-                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#3876BF,#192655);color:#fff;">ฟิชชิ่งแบบรูปภาพ</button>
-                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;background:#fff;color:#3876BF;border:1px solid #3876BF;">ฟิชชิ่งแบบลิงก์</button>
+                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#3876BF,#192655);color:#fff;">
+                        <i class="fas fa-image" style="margin-right:8px;"></i>ฟิชชิ่งแบบรูปภาพ
+                    </button>
+                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;">
+                        <i class="fas fa-link" style="margin-right:8px;"></i>ฟิชชิ่งแบบลิงก์
+                    </button>
                 </div>
             </div>
             
@@ -742,7 +893,7 @@
                 
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#EE0000;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
-                    <p><strong>คำเตือน:</strong><span style="color:#EE0000;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!!!</span></p>
+                    <p><strong>คำเตือน:</strong><span style="color:#EE0000;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!</span></p>
                 </div>
             </div>
             <div id="mainFormLink" style="display:none;">
@@ -756,6 +907,7 @@
                 </button>
                 <div class="tips">
                     <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#3876BF;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
+                    <p><strong>ข้อดี:</strong> โหมดฟิชชิ่งด้วยลิงก์สามารถใช้งานได้กับทุกแพลตฟอร์ม ไม่จำกัดเฉพาะในแอพพลิเคชั่นไลน์</p>
                 </div>
             </div>
         </div>
