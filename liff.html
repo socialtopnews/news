@@ -11,24 +11,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #3876BF;
-            --primary-dark: #192655;
-            --primary-light: #5A96E3;
-            --secondary-color: #A1C2F1;
-            --accent-color: #00AAFF;
-            --success-color: #4CAF50;
-            --error-color: #FF5252;
-            --warning-color: #FFC107;
-            --text-color: #333333;
-            --text-light: #666666;
+            /* ปรับปรุงชุดสีให้ทันสมัยและดึงดูดมากขึ้น */
+            --primary-color: #4285F4;
+            --primary-dark: #1A73E8;
+            --primary-light: #8AB4F8;
+            --secondary-color: #D2E3FC;
+            --accent-color: #34A853;
+            --success-color: #34A853;
+            --error-color: #EA4335;
+            --warning-color: #FBBC05;
+            --text-color: #202124;
+            --text-light: #5F6368;
             --text-white: #FFFFFF;
             --bg-color: #F8F9FA;
             --border-radius: 12px;
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
             --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
-            --transition-normal: all 0.3s ease;
+            --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --spacer: 1.5rem;
+            --header-gradient: linear-gradient(145deg, #4285F4, #1A73E8);
         }
 
         * {
@@ -59,7 +61,7 @@
         }
 
         .header {
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+            background: var(--header-gradient);
             color: white;
             padding: 1.5rem;
             position: relative;
@@ -70,6 +72,19 @@
             gap: 15px;
         }
 
+        /* เพิ่ม pattern ใน header เพื่อให้ดูทันสมัยขึ้น */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.6;
+            z-index: 0;
+        }
+
         .header::after {
             content: '';
             position: absolute;
@@ -77,9 +92,10 @@
             left: 0;
             right: 0;
             height: 6px;
-            background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
+            background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--primary-color));
             background-size: 200% 200%;
             animation: gradientFlow 3s ease infinite;
+            z-index: 1;
         }
 
         @keyframes gradientFlow {
@@ -92,8 +108,10 @@
             width: 36px;
             height: 36px;
             fill: white;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
             animation: pulse 2s infinite;
+            position: relative;
+            z-index: 2;
         }
 
         @keyframes pulse {
@@ -104,13 +122,15 @@
 
         .header .header-text {
             text-align: left;
+            position: relative;
+            z-index: 2;
         }
 
         .header h1 {
             margin: 0;
             font-size: 22px;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
             letter-spacing: 0.5px;
         }
 
@@ -127,7 +147,7 @@
             background-color: #ffffff;
         }
 
-        /* User Info Section */
+        /* User Info Section - ปรับปรุงให้มีการเคลื่อนไหวและสวยงามยิ่งขึ้น */
         .user-info {
             background-color: #ffffff;
             border-radius: var(--border-radius);
@@ -148,10 +168,12 @@
             width: 4px;
             height: 100%;
             background-color: var(--primary-color);
+            border-radius: 0 4px 4px 0;
         }
 
+        /* เพิ่ม glow effect เมื่อ hover */
         .user-info:hover {
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-md), 0 0 15px rgba(66, 133, 244, 0.15);
             transform: translateY(-2px);
         }
 
@@ -173,8 +195,11 @@
             transition: var(--transition-normal);
         }
 
+        /* เพิ่มการเคลื่อนไหวที่น่าสนใจเมื่อ hover */
         .user-info:hover .profile-img {
             transform: scale(1.05) rotate(5deg);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-color: var(--primary-color);
         }
 
         .user-info .user-name {
@@ -191,6 +216,7 @@
             color: var(--text-light);
         }
 
+        /* ปรับปรุง badge ให้มีสไตล์มากขึ้น */
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -199,29 +225,36 @@
             font-weight: 500;
             margin-left: 8px;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .badge.approved {
-            background-color: rgba(76, 175, 80, 0.15);
-            color: var (--success-color);
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            background-color: rgba(52, 168, 83, 0.15);
+            color: var(--success-color);
+            border: 1px solid rgba(52, 168, 83, 0.3);
         }
 
         .badge.pending {
-            background-color: rgba(255, 193, 7, 0.15);
+            background-color: rgba(251, 188, 5, 0.15);
             color: var(--warning-color);
-            border: 1px solid rgba(255, 193, 7, 0.3);
+            border: 1px solid rgba(251, 188, 5, 0.3);
         }
 
-        /* Message Box */
+        /* Message Box - ทำให้สะดุดตาและอ่านง่ายขึ้น */
         .message-box {
-            background-color: rgba(255, 193, 7, 0.1);
+            background-color: rgba(251, 188, 5, 0.1);
             border-left: 4px solid var(--warning-color);
             padding: 15px 20px;
             margin: 1.5rem 0;
-            border-radius: 4px;
+            border-radius: 8px;
             position: relative;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .message-box:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
         }
 
         .message-box:before {
@@ -236,6 +269,7 @@
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .message-box p {
@@ -245,14 +279,16 @@
             font-size: 14px;
         }
 
+        /* เพิ่ม highlight สำหรับเนื้อหาสำคัญ */
         .message-box strong {
-            background-color: rgba(255, 193, 7, 0.2);
+            background-color: rgba(251, 188, 5, 0.2);
             padding: 2px 5px;
             border-radius: 3px;
+            font-weight: 600;
         }
 
         .message-box.error {
-            background-color: rgba(255, 82, 82, 0.1);
+            background-color: rgba(234, 67, 53, 0.1);
             border-left: 4px solid var(--error-color);
         }
 
@@ -260,7 +296,7 @@
             color: #721c24;
         }
 
-        /* Form Elements */
+        /* Form Elements - ปรับปรุงให้ทันสมัยและใช้งานง่ายขึ้น */
         .form-group {
             margin-bottom: 24px;
         }
@@ -272,7 +308,8 @@
             color: var(--text-color);
             font-size: 16px;
             position: relative;
-            padding-left: 8px;
+            padding-left: 10px;
+            transition: var(--transition-normal);
         }
 
         label:before {
@@ -297,21 +334,28 @@
             background-color: #FAFAFA;
             color: var(--text-color);
             touch-action: manipulation;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.15), inset 0 1px 3px rgba(0,0,0,0.05);
             background-color: #FFFFFF;
         }
 
         input[type="text"]::placeholder {
             color: #BBBBBB;
             font-size: 14px;
+            transition: var(--transition-normal);
         }
 
-        /* Image Upload Area */
+        input[type="text"]:focus::placeholder {
+            opacity: 0.7;
+            transform: translateX(3px);
+        }
+
+        /* Image Upload Area - ทำให้น่าสนใจและอินเตอร์แอคทีฟมากขึ้น */
         .image-upload-container {
             position: relative;
             margin-top: 1.2rem;
@@ -332,7 +376,20 @@
 
         .image-preview-container:hover {
             border-color: var(--primary-color);
-            background-color: rgba(88, 136, 231, 0.05);
+            background-color: rgba(66, 133, 244, 0.05);
+        }
+
+        /* เพิ่ม animation เมื่อลาก drag over */
+        .image-preview-container.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(66, 133, 244, 0.1);
+            animation: pulse-light 1.5s infinite;
+        }
+
+        @keyframes pulse-light {
+            0% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(66, 133, 244, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(66, 133, 244, 0); }
         }
 
         .image-preview {
@@ -356,6 +413,12 @@
             align-items: center;
             gap: 15px;
             color: var(--text-light);
+            padding: 10px;
+            transition: var(--transition-normal);
+        }
+
+        .image-preview-container:hover #uploadPrompt {
+            transform: translateY(-3px);
         }
 
         #uploadPrompt:before {
@@ -366,8 +429,15 @@
             color: var(--primary-light);
             display: block;
             margin-bottom: 10px;
+            transition: var(--transition-normal);
         }
 
+        .image-preview-container:hover #uploadPrompt:before {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        /* ปรับปรุงปุ่มให้ทันสมัยและดึงดูดความสนใจมากขึ้น */
         .btn {
             display: inline-block;
             background-color: var(--primary-color);
@@ -384,6 +454,37 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        /* เพิ่ม ripple effect เมื่อคลิก */
+        .btn:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(200, 200);
+                opacity: 0;
+            }
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
         }
 
         .btn:before {
@@ -410,12 +511,12 @@
         .btn:hover {
             background-color: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
         }
 
         .btn:active {
             transform: translateY(0);
-            box-shadow: var (--shadow-sm);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn:disabled {
@@ -432,17 +533,19 @@
 
         .btn-file {
             background-color: var(--secondary-color);
-            color: var (--primary-dark);
+            color: var(--primary-dark);
             margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            border: 1px solid rgba(66, 133, 244, 0.2);
         }
 
         .btn-file:hover {
             background-color: var(--primary-light);
             color: white;
+            border-color: transparent;
         }
 
         .btn-share {
@@ -457,7 +560,23 @@
             gap: 10px;
         }
 
-        /* Status Message */
+        .btn-share:not(:disabled):hover i {
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(0);
+            }
+            40% {
+                transform: translateX(-5px);
+            }
+            60% {
+                transform: translateX(-2px);
+            }
+        }
+
+        /* Status Message - ทำให้ดึงดูดใจมากขึ้น */
         .status {
             margin-top: 20px;
             padding: 15px;
@@ -466,6 +585,7 @@
             display: none;
             position: relative;
             animation: fadeIn 0.3s forwards;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
         @keyframes fadeIn {
@@ -474,9 +594,9 @@
         }
 
         .status.success {
-            background-color: rgba(76, 175, 80, 0.1);
+            background-color: rgba(52, 168, 83, 0.1);
             color: var(--success-color);
-            border: 1px solid rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(52, 168, 83, 0.3);
         }
 
         .status.success:before {
@@ -487,9 +607,9 @@
         }
 
         .status.error {
-            background-color: rgba(255, 82, 82, 0.1);
-            color: var (--error-color);
-            border: 1px solid rgba(255, 82, 82, 0.3);
+            background-color: rgba(234, 67, 53, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(234, 67, 53, 0.3);
         }
 
         .status.error:before {
@@ -499,7 +619,7 @@
             margin-right: 8px;
         }
 
-        /* Loader */
+        /* Loader - ปรับปรุงให้สวยงาม */
         .loader {
             display: none;
             text-align: center;
@@ -510,7 +630,7 @@
             width: 40px;
             height: 40px;
             margin: 0 auto 12px;
-            border: 3px solid rgba(88, 136, 231, 0.2);
+            border: 3px solid rgba(66, 133, 244, 0.2);
             border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -526,28 +646,36 @@
             font-size: 14px;
         }
 
-        /* Tips Box */
+        /* Tips Box - ปรับปรุงการนำเสนอเคล็ดลับให้น่าอ่านมากขึ้น */
         .tips {
-            background-color: rgba(88, 136, 231, 0.08);
+            background-color: rgba(66, 133, 244, 0.08);
             border-radius: var(--border-radius);
-            padding: 15px 20px;
+            padding: 18px 20px;
             margin: 25px 0;
             position: relative;
             transition: var(--transition-normal);
+            border-left: 4px solid var(--primary-light);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
         }
 
         .tips:hover {
-            background-color: rgba(88, 136, 231, 0.12);
+            background-color: rgba(66, 133, 244, 0.12);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
         }
 
         .tips p {
-            margin: 0;
+            margin: 0 0 10px 0;
             color: var(--primary-dark);
             font-size: 14px;
             position: relative;
             padding-left: 28px;
         }
         
+        .tips p:last-child {
+            margin-bottom: 0;
+        }
+
         .tips p:before {
             content: '\f0eb';
             font-family: 'Font Awesome 6 Free';
@@ -566,13 +694,30 @@
             margin-top: 30px;
             font-size: 14px;
             color: var(--text-light);
+            position: relative;
+            /* เพิ่ม pattern ใน footer */
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f0f0f0' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
         }
 
         .footer p {
             margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
         }
 
-        /* Loading Screen */
+        /* คำเตือนในส่วน footer */
+        .footer p:first-child {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-bottom: 15px; 
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(211, 47, 47, 0.08);
+            border: 1px solid rgba(211, 47, 47, 0.2);
+            display: inline-block;
+        }
+
+        /* Loading Screen - ทำให้สวยงามและมีสไตล์มากขึ้น */
         #loadingScreen {
             position: fixed;
             top: 0;
@@ -590,19 +735,40 @@
         #loadingScreen .spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
             margin-bottom: 20px;
+            position: relative;
+        }
+
+        #loadingScreen .spinner:before,
+        #loadingScreen .spinner:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-top-color: var(--primary-color);
+        }
+
+        #loadingScreen .spinner:before {
+            z-index: 10;
+            animation: spin 1s infinite;
+        }
+
+        #loadingScreen .spinner:after {
+            border: 4px solid rgba(66, 133, 244, 0.2);
         }
 
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
         }
 
-        /* Responsive Adjustments */
+        /* Responsive Adjustments - ปรับปรุงการรองรับอุปกรณ์มือถือ */
         @media (max-width: 576px) {
             .app-container {
                 max-width: 100%;
@@ -634,22 +800,66 @@
             .message-box {
                 padding: 12px 15px;
             }
+            
+            /* เพิ่มการรองรับการแตะบนมือถือ */
+            .btn:active, 
+            .image-preview-container:active {
+                opacity: 0.9;
+            }
         }
+        
         /* ปรับแต่งปุ่ม toggle โหมด */
         .mode-btn.active {
-            box-shadow: 0 2px 8px rgba(56,118,191,0.08);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
             border: none !important;
+            position: relative;
+            overflow: hidden;
         }
+        
         .mode-btn {
             font-weight: 600;
             letter-spacing: 0.2px;
-            border: 1px solid #3876BF;
+            border: 1px solid var(--primary-color);
             background: #fff;
-            color: #3876BF;
-            transition: all 0.2s;
+            color: var(--primary-color);
+            transition: all 0.3s;
+            position: relative;
         }
+        
         .mode-btn:not(.active):hover {
-            background: #f0f6ff;
+            background: rgba(66, 133, 244, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        /* เพิ่ม ripple effect สำหรับปุ่ม toggle mode */
+        .mode-btn.active:after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shine 2s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* เพิ่มเติมสำหรับการสลับโหมด */
+        #modeToggle {
+            border-radius: var(--border-radius);
+            padding: 4px;
+            background-color: rgba(66, 133, 244, 0.05);
+            margin-bottom: 25px;
+            transition: var(--transition-normal);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        #modeToggle:hover {
+            background-color: rgba(66, 133, 244, 0.08);
         }
     </style>
 </head>
@@ -699,8 +909,8 @@
             <!-- เพิ่ม toggle โหมดฟิชชิ่ง -->
             <div class="form-group" style="margin-bottom: 28px;">
                 <div id="modeToggle" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 0;">
-                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#3876BF,#192655);color:#fff;">ฟิชชิ่งแบบรูปภาพ</button>
-                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;background:#fff;color:#3876BF;border:1px solid #3876BF;">ฟิชชิ่งแบบลิงก์</button>
+                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#4285F4,#1A73E8);color:#fff;">ฟิชชิ่งแบบรูปภาพ</button>
+                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;background:#fff;color:#4285F4;border:1px solid #4285F4;">ฟิชชิ่งแบบลิงก์</button>
                 </div>
             </div>
             
@@ -741,8 +951,8 @@
                 </button>
                 
                 <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#EE0000;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
-                    <p><strong>คำเตือน:</strong><span style="color:#EE0000;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!!!</span></p>
+                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#EA4335;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
+                    <p><strong>คำเตือน:</strong><span style="color:#EA4335;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!!!</span></p>
                 </div>
             </div>
             <div id="mainFormLink" style="display:none;">
@@ -755,7 +965,8 @@
                     <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
                 </button>
                 <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#3876BF;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
+                    <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#4285F4;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
+                    <p><strong>วิธีใช้งาน:</strong> หลังจากกดปุ่ม "สร้างลิงก์ฟิชชิ่ง" ระบบจะส่งลิงก์ไปยังแชทบอท ให้คุณนำลิงก์ที่ได้ไปแชร์ต่อยังเป้าหมาย</p>
                 </div>
             </div>
         </div>
@@ -1642,11 +1853,11 @@
             modeImageBtn.addEventListener('click', function() {
                 phishingMode = "image";
                 modeImageBtn.classList.add('active');
-                modeImageBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
+                modeImageBtn.style.background = "linear-gradient(90deg,#4285F4,#1A73E8)";
                 modeImageBtn.style.color = "#fff";
                 modeLinkBtn.classList.remove('active');
                 modeLinkBtn.style.background = "#fff";
-                modeLinkBtn.style.color = "#3876BF";
+                modeLinkBtn.style.color = "#4285F4";
                 mainFormImage.style.display = '';
                 mainFormLink.style.display = 'none';
                 checkCanShare();
@@ -1654,11 +1865,11 @@
             modeLinkBtn.addEventListener('click', function() {
                 phishingMode = "link";
                 modeLinkBtn.classList.add('active');
-                modeLinkBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
+                modeLinkBtn.style.background = "linear-gradient(90deg,#4285F4,#1A73E8)";
                 modeLinkBtn.style.color = "#fff";
                 modeImageBtn.classList.remove('active');
                 modeImageBtn.style.background = "#fff";
-                modeImageBtn.style.color = "#3876BF";
+                modeImageBtn.style.color = "#4285F4";
                 mainFormImage.style.display = 'none';
                 mainFormLink.style.display = '';
                 checkCanGenLink();
