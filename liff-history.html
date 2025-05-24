@@ -136,6 +136,7 @@
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(161, 194, 241, 0.3);
         }
 
         .user-info::before {
@@ -210,6 +211,12 @@
             border-radius: 4px;
             position: relative;
             transition: var(--transition-normal);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message-box:before {
@@ -220,7 +227,7 @@
             top: 15px;
             left: -12px;
             background-color: white;
-            color: var (--warning-color);
+            color: var(--warning-color);
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
@@ -235,7 +242,7 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var (--error-color);
+            border-left: 4px solid var(--error-color);
         }
 
         .message-box.error p {
@@ -284,17 +291,19 @@
             padding: 18px 15px;
             margin-bottom: 15px;
             box-shadow: var(--shadow-sm);
-            transition: var(--transition-normal);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
             overflow: hidden;
             cursor: pointer;
             border-left: 4px solid var(--primary-light);
+            border: 1px solid rgba(161, 194, 241, 0.3);
         }
 
         .history-item:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             border-left: 4px solid var(--primary-color);
+            background-color: #fafeff;
         }
 
         .history-item::before {
@@ -335,7 +344,7 @@
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 12px;
-            color: var (--text-color);
+            color: var(--text-color);
         }
 
         .history-action {
@@ -353,10 +362,11 @@
             border-radius: 6px;
             font-size: 13px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .view-details-btn i {
@@ -365,6 +375,12 @@
 
         .view-details-btn:hover {
             background-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .view-details-btn:active {
+            transform: translateY(0);
         }
 
         .history-stats {
@@ -381,6 +397,7 @@
             background-color: #f8f9fa;
             padding: 4px 8px;
             border-radius: 4px;
+            border: 1px solid #eaeaea;
         }
 
         .history-stats i {
@@ -404,11 +421,14 @@
             border-radius: 4px;
             cursor: pointer;
             transition: var(--transition-normal);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
             background-color: var(--secondary-color);
             border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .pagination-btn.active {
@@ -416,17 +436,24 @@
             color: white;
             border-color: var(--primary-color);
             cursor: default;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .pagination-btn.disabled {
             color: #aaa;
             cursor: not-allowed;
+            background-color: #f8f8f8;
         }
 
         .pagination-info {
             font-size: 13px;
             color: var(--text-light);
             margin: 0 10px;
+            background-color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eee;
         }
 
         /* Details Modal */
@@ -440,6 +467,13 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            animation: modalBackdrop 0.3s ease-out;
+        }
+
+        @keyframes modalBackdrop {
+            from { background-color: rgba(0,0,0,0); backdrop-filter: blur(0); }
+            to { background-color: rgba(0,0,0,0.5); backdrop-filter: blur(3px); }
         }
 
         .modal-content {
@@ -450,15 +484,16 @@
             max-width: 550px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
+            animation: modalOpen 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(-40px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .modal-header {
@@ -482,22 +517,39 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             width: 28px;
             height: 28px;
             border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .close-modal:hover {
-            background-color: rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.25);
+            transform: rotate(90deg);
         }
 
         .modal-body {
             padding: 20px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 20px;
         }
 
         .detail-group {
@@ -506,7 +558,14 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #f0f0f0;
+            animation: fadeIn 0.4s ease-out;
+            animation-fill-mode: both;
         }
+
+        .detail-group:nth-child(1) { animation-delay: 0.05s; }
+        .detail-group:nth-child(2) { animation-delay: 0.1s; }
+        .detail-group:nth-child(3) { animation-delay: 0.15s; }
 
         .detail-group h3 {
             font-size: 16px;
@@ -548,6 +607,15 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            transition: all 0.2s ease;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background-color: rgba(58, 134, 255, 0.1);
+        }
+
+        .detail-value a:hover {
+            background-color: rgba(58, 134, 255, 0.2);
+            transform: translateY(-1px);
         }
 
         .modal-footer {
@@ -564,24 +632,37 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .modal-btn:hover {
             background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-btn:active {
+            transform: translateY(0);
         }
 
         /* No Data Message */
         .no-data {
             text-align: center;
             padding: 40px 20px;
-            color: var (--text-light);
+            color: var(--text-light);
+            animation: fadeIn 0.5s ease-out;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .no-data i {
             font-size: 40px;
-            color: var (--secondary-color);
+            color: var(--secondary-color);
             margin-bottom: 15px;
+            animation: pulse 2s infinite;
         }
 
         .no-data p {
@@ -595,6 +676,7 @@
             align-items: center;
             justify-content: center;
             padding: 40px 20px;
+            animation: fadeIn 0.5s ease-out;
         }
 
         .loading-spinner {
@@ -686,8 +768,61 @@
             .modal-content {
                 margin: 5% auto;
                 max-height: 90vh;
+                width: 95%;
+            }
+            
+            .history-action {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .view-details-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .history-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .history-stats div {
+                margin-right: 5px;
+                font-size: 11px;
+                padding: 3px 6px;
             }
         }
+        
+        /* Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+            height: 18px;
+            margin-bottom: 8px;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .skeleton-item {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 18px 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid #e0e0e0;
+        }
+        
+        .skeleton-date { width: 40%; height: 14px; }
+        .skeleton-key { width: 70%; height: 16px; }
+        .skeleton-case { width: 85%; height: 20px; }
+        .skeleton-stats { display: flex; gap: 10px; margin-top: 15px; }
+        .skeleton-stat { width: 70px; height: 22px; }
     </style>
 </head>
 <body>
@@ -725,7 +860,7 @@
             </div>
 
             <div id="permissionMessage" class="message-box" style="display: none;">
-                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>#regis</strong> ในแชทส่วนตัวกับบอท</p>
+                <p>กรุณารอการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน หากคุณยังไม่ได้ลงทะเบียน สามารถพิมพ์คำสั่ง <strong>&#35;regis</strong> ในแชทส่วนตัวกับบอท</p>
             </div>
 
             <div id="searchBox" class="search-box" style="display: none;">
@@ -1016,7 +1151,7 @@
                 // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAA', // ชื่อผู้ใช้ 1
                 // 'UxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxBB', // ชื่อผู้ใช้ 2
                 // เพิ่มรายชื่อผู้ใช้ที่มีสิทธิ์คนอื่นๆ ตามความเหมาะสม
-            ];
+            };
 
             // ตรวจสอบว่าเป็น admin หรือไม่โดยตรง
             if (userId === 'U69aa2cb90c9f40291278c346c50dc021') {
@@ -1124,13 +1259,13 @@
         // ฟังก์ชันดึงข้อมูลประวัติของผู้ใช้ด้วย JSONP เพื่อแก้ปัญหา CORS
         function fetchUserHistory() {
             try {
-                // แสดง loading
-                document.getElementById('loadingIndicator').style.display = 'flex';
-                document.getElementById('historyList').style.display = 'none';
+                // แสดง skeleton loading แทน loading indicator แบบเดิม
+                document.getElementById('loadingIndicator').style.display = 'none';
                 document.getElementById('noDataMessage').style.display = 'none';
-
+                showSkeletonLoading();
+                
                 console.log("กำลังดึงข้อมูลประวัติสำหรับ userId:", userId);
-
+                
                 // ในกรณีที่คาดว่าจะมีปัญหาการเข้าถึง API ให้แสดงข้อมูลจำลองแทน
                 if (isLimitedBrowser()) {
                     console.log("ตรวจพบว่าเบราว์เซอร์มีข้อจำกัด ใช้ข้อมูลจำลอง");
@@ -1878,6 +2013,29 @@
             } catch (error) {
                 console.error("เกิดข้อผิดพลาดในการตรวจสอบคอลัมน์:", error);
                  alert("เกิดข้อผิดพลาดในฟังก์ชัน checkSheetColumns: " + error.message);
+            }
+        }
+
+        // เพิ่มฟังก์ชันสำหรับแสดงโครงร่างระหว่างโหลด (Skeleton Loading)
+        function showSkeletonLoading() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            historyList.style.display = 'block';
+            
+            // สร้าง skeleton items จำนวน 5 ชิ้น
+            for (let i = 0; i < 5; i++) {
+                const skeleton = document.createElement('div');
+                skeleton.className = 'skeleton-item';
+                skeleton.innerHTML = `
+                    <div class="skeleton skeleton-date"></div>
+                    <div class="skeleton skeleton-key"></div>
+                    <div class="skeleton skeleton-case"></div>
+                    <div class="skeleton-stats">
+                        <div class="skeleton skeleton-stat"></div>
+                        <div class="skeleton skeleton-stat"></div>
+                    </div>
+                `;
+                historyList.appendChild(skeleton);
             }
         }
     </script>
