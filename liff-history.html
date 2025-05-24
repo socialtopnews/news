@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* ปรับปรุงชุดสีให้มีความทันสมัยมากขึ้น */
             --primary-color: #3876BF;
             --primary-dark: #192655;
             --primary-light: #5A96E3;
@@ -22,14 +21,11 @@
             --text-light: #666666;
             --text-white: #FFFFFF;
             --bg-color: #F8F9FA;
-            --card-bg: #FFFFFF;
             --border-radius: 12px;
-            --border-radius-sm: 8px;
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
             --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
             --transition-normal: all 0.3s ease;
-            --transition-fast: all 0.15s ease;
             --spacer: 1.5rem;
         }
 
@@ -54,7 +50,7 @@
             margin: 0 auto;
             padding: 0 0 20px 0;
             min-height: 100vh;
-            background-color: var(--card-bg);
+            background-color: #ffffff;
             box-shadow: var(--shadow-md);
             position: relative;
             overflow: hidden;
@@ -70,8 +66,6 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-            z-index: 10;
         }
 
         .header::after {
@@ -128,14 +122,12 @@
 
         .content {
             padding: var(--spacer);
-            background-color: var(--card-bg);
-            position: relative; /* เพิ่มเพื่อควบคุมการซ้อนทับ */
-            z-index: 1;
+            background-color: #ffffff;
         }
 
-        /* User Info Section - ปรับปรุงดีไซน์ */
+        /* User Info Section */
         .user-info {
-            background-color: var(--card-bg);
+            background-color: #ffffff;
             border-radius: var(--border-radius);
             padding: 1.2rem;
             margin-bottom: 1.5rem;
@@ -144,12 +136,16 @@
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
-            border-left: 4px solid var(--primary-color);
         }
 
-        .user-info:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
+        .user-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary-color);
         }
 
         .user-info .profile {
@@ -167,12 +163,6 @@
             padding: 2px;
             background-color: white;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            transition: var(--transition-normal);
-        }
-
-        .user-info:hover .profile-img {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .user-info .user-name {
@@ -211,21 +201,15 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
-        /* Message Box - ปรับปรุงดีไซน์ */
+        /* Message Box */
         .message-box {
             background-color: rgba(255, 193, 7, 0.1);
             border-left: 4px solid var(--warning-color);
             padding: 15px 20px;
             margin: 1.5rem 0;
-            border-radius: var(--border-radius-sm);
+            border-radius: 4px;
             position: relative;
             transition: var(--transition-normal);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        .message-box:hover {
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-            transform: translateY(-1px);
         }
 
         .message-box:before {
@@ -236,11 +220,10 @@
             top: 15px;
             left: -12px;
             background-color: white;
-            color: var(--warning-color);
+            color: var (--warning-color);
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .message-box p {
@@ -252,19 +235,14 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var(--error-color);
+            border-left: 4px solid var (--error-color);
         }
 
         .message-box.error p {
             color: #721c24;
         }
 
-        .message-box.error:before {
-            content: '\f06a';
-            color: var(--error-color);
-        }
-
-        /* Search Box - ปรับปรุงดีไซน์ */
+        /* Search Box */
         .search-box {
             margin-bottom: 20px;
             position: relative;
@@ -278,7 +256,6 @@
             font-size: 15px;
             transition: var(--transition-normal);
             background-color: #FAFAFA;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .search-box input:focus {
@@ -294,14 +271,9 @@
             top: 50%;
             transform: translateY(-50%);
             color: #999;
-            transition: var(--transition-normal);
         }
 
-        .search-box input:focus + .search-icon {
-            color: var(--primary-color);
-        }
-
-        /* History List - ปรับปรุงดีไซน์รายการประวัติ */
+        /* History List */
         .history-list {
             margin-top: 20px;
         }
@@ -320,10 +292,13 @@
         }
 
         .history-item:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             border-left: 4px solid var(--primary-color);
-            background-color: #fafeff;
+        }
+
+        .history-item::before {
+            display: none; /* ลบเส้นด้านซ้าย */
         }
 
         .history-date {
@@ -360,7 +335,7 @@
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 12px;
-            color: var(--text-color);
+            color: var (--text-color);
         }
 
         .history-action {
@@ -374,15 +349,14 @@
             background-color: var(--primary-light);
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 7px 14px;
             border-radius: 6px;
             font-size: 13px;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .view-details-btn i {
@@ -391,13 +365,6 @@
 
         .view-details-btn:hover {
             background-color: var(--primary-color);
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .view-details-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .history-stats {
@@ -405,24 +372,15 @@
             font-size: 12px;
             color: var(--text-light);
             align-items: center;
-            flex-wrap: wrap;
-            gap: 5px;
         }
 
         .history-stats div {
-            margin-right: 8px;
+            margin-right: 12px;
             display: flex;
             align-items: center;
             background-color: #f8f9fa;
             padding: 4px 8px;
             border-radius: 4px;
-            transition: var(--transition-fast);
-            border: 1px solid #eee;
-        }
-
-        .history-stats div:hover {
-            background-color: #e9f5ff;
-            border-color: #d0e7ff;
         }
 
         .history-stats i {
@@ -430,25 +388,7 @@
             color: var(--primary-color);
         }
 
-        /* Owner indicator */
-        .history-item.owner-item {
-            position: relative;
-        }
-
-        .history-item.owner-item::after {
-            content: 'คุณเป็นผู้สร้าง';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            opacity: 0.8;
-        }
-
-        /* Pagination - ปรับปรุงดีไซน์ */
+        /* Pagination */
         .pagination {
             display: flex;
             justify-content: center;
@@ -464,14 +404,11 @@
             border-radius: 4px;
             cursor: pointer;
             transition: var(--transition-normal);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
             background-color: var(--secondary-color);
             border-color: var(--primary-light);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .pagination-btn.active {
@@ -479,26 +416,20 @@
             color: white;
             border-color: var(--primary-color);
             cursor: default;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .pagination-btn.disabled {
             color: #aaa;
             cursor: not-allowed;
-            background-color: #f5f5f5;
         }
 
         .pagination-info {
             font-size: 13px;
             color: var(--text-light);
             margin: 0 10px;
-            background-color: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 4px;
-            border: 1px solid #eee;
         }
 
-        /* Details Modal - ปรับปรุงดีไซน์ */
+        /* Details Modal */
         .modal {
             display: none;
             position: fixed;
@@ -509,34 +440,38 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(3px);
-            animation: fadeIn 0.2s ease-out;
+            backdrop-filter: blur(2px); /* เพิ่ม blur effect */
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .modal.show {
+            opacity: 1;
         }
 
         .modal-content {
             background-color: #fefefe;
-            margin: 8% auto;
+            margin: 10% auto;
             padding: 0;
             width: 90%;
             max-width: 550px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
+            animation: modalOpen 0.4s ease-out;
             max-height: 85vh;
             display: flex;
             flex-direction: column;
-            border: 1px solid rgba(0,0,0,0.1);
-            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.3s ease-out;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
         }
 
         @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal-header {
@@ -547,6 +482,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
         }
 
         .modal-header h2 {
@@ -567,7 +505,6 @@
             width: 28px;
             height: 28px;
             border-radius: 50%;
-            background-color: rgba(255,255,255,0.1);
         }
 
         .close-modal:hover {
@@ -578,6 +515,7 @@
         .modal-body {
             padding: 20px;
             overflow-y: auto;
+            scroll-behavior: smooth;
         }
 
         .detail-group {
@@ -586,13 +524,6 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #f2f2f2;
-            transition: var(--transition-fast);
-        }
-
-        .detail-group:hover {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-            border-color: #e6e6e6;
         }
 
         .detail-group h3 {
@@ -635,22 +566,17 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            transition: var(--transition-fast);
-            padding: 2px 5px;
-            border-radius: 3px;
-        }
-
-        .detail-value a:hover {
-            background-color: var(--secondary-color);
-            color: var(--primary-dark);
-            text-decoration: underline;
         }
 
         .modal-footer {
             padding: 15px 20px;
             border-top: 1px solid #eee;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            z-index: 5;
         }
 
         .modal-btn {
@@ -660,58 +586,40 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            transition: var(--transition-normal);
-            font-weight: 500;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: var (--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .modal-btn:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        .modal-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        .modal-btn i {
+            font-size: 14px;
         }
 
-        /* No Data Message - ปรับปรุงดีไซน์ */
+        /* No Data Message */
         .no-data {
             text-align: center;
             padding: 40px 20px;
-            color: var(--text-light);
-            background-color: rgba(255,255,255,0.8);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-sm);
-            margin: 20px 0;
-            border: 1px dashed #e0e0e0;
-            transition: var(--transition-normal);
-        }
-
-        .no-data:hover {
-            box-shadow: var(--shadow-md);
-            border-color: #d0d0d0;
+            color: var (--text-light);
         }
 
         .no-data i {
             font-size: 40px;
-            color: var(--secondary-color);
+            color: var (--secondary-color);
             margin-bottom: 15px;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-            100% { transform: translateY(0px); }
         }
 
         .no-data p {
             font-size: 16px;
         }
 
-        /* Loading Spinner - ปรับปรุงดีไซน์ */
+        /* Loading Spinner */
         .loading {
             display: flex;
             flex-direction: column;
@@ -728,7 +636,6 @@
             border-top: 4px solid var(--primary-color);
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         @keyframes spin {
@@ -739,16 +646,9 @@
         .loading p {
             color: var(--text-light);
             font-size: 14px;
-            animation: pulse-text 1.5s infinite;
         }
 
-        @keyframes pulse-text {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
-
-        /* Footer - ปรับปรุงดีไซน์ */
+        /* Footer */
         .footer {
             text-align: center;
             padding: 20px;
@@ -759,7 +659,7 @@
             color: var(--text-light);
         }
 
-        /* Loading Screen - ปรับปรุงดีไซน์ */
+        /* Loading Screen */
         #loadingScreen {
             position: fixed;
             top: 0;
@@ -778,48 +678,52 @@
             width: 60px;
             height: 60px;
             border: 4px solid rgba(88, 136, 231, 0.2);
-            border-radius: 50%;
             border-top: 4px solid var(--primary-color);
-            animation: spin 1s linear infinite;
+            border-radius: 50%;
+            animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
             margin-bottom: 20px;
-            box-shadow: 0 0 20px rgba(88, 136, 231, 0.15);
         }
 
-        #loadingScreen p {
-            color: var(--primary-color);
-            font-weight: 500;
-            animation: pulse-text 1.5s infinite;
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(56, 118, 191, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(56, 118, 191, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(56, 118, 191, 0); }
         }
 
-        /* ปรับปรุงปุ่มลองใหม่ */
-        .retry-button {
+        /* Back to Top Button */
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 99;
+            border: none;
+            outline: none;
             background-color: var(--primary-color);
             color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
             cursor: pointer;
-            transition: var(--transition-normal);
-            margin-top: 15px;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 50%;
+            font-size: 16px;
+            width: 46px;
+            height: 46px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        .retry-button:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .retry-button:active {
+        #backToTopBtn.show {
+            opacity: 1;
             transform: translateY(0);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Responsive Adjustments - ปรับปรุงการแสดงผลบนมือถือ */
+        #backToTopBtn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-5px);
+        }
+
+        /* Responsive Adjustments */
         @media (max-width: 576px) {
             .app-container {
                 max-width: 100%;
@@ -845,42 +749,25 @@
             }
 
             .modal-content {
-                margin: 5% auto;
-                max-height: 90vh;
-                width: 95%;
-            }
-
-            .history-stats {
-                flex-wrap: wrap;
-            }
-
-            .history-stats div {
-                margin-bottom: 5px;
-                font-size: 11px;
-            }
-
-            .view-details-btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .detail-item {
-                flex-direction: column;
-            }
-
-            .detail-label {
+                margin: 0;
+                max-height: 100vh;
+                height: 100%;
                 width: 100%;
-                margin-bottom: 4px;
+                border-radius: 0;
             }
-
-            .detail-value {
-                padding-left: 0;
+            
+            .modal-header {
+                border-radius: 0;
             }
-        }
-
-        /* Dark mode support - เตรียมพร้อมสำหรับโหมดมืด */
-        @media (prefers-color-scheme: dark) {
-            /* ในอนาคตสามารถเพิ่ม CSS สำหรับโหมดมืดได้ที่นี่ */
+            
+            #backToTopBtn {
+                bottom: 15px;
+                right: 15px;
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+                padding: 10px;
+            }
         }
     </style>
 </head>
@@ -964,6 +851,11 @@
             <p>© 2025 Phishing - Detective-X</p>
         </div>
     </div>
+
+    <!-- เพิ่มปุ่ม Back to Top -->
+    <button id="backToTopBtn" title="กลับขึ้นด้านบน">
+        <i class="fas fa-chevron-up"></i>
+    </button>
 
     <script>
         // ตัวแปรหลักสำหรับเก็บข้อมูล
@@ -1284,6 +1176,26 @@
                 if (event.target === document.getElementById('detailsModal')) {
                     closeModal();
                 }
+            });
+
+            // เพิ่ม Back to Top Button
+            const backToTopBtn = document.getElementById('backToTopBtn');
+            
+            // แสดงปุ่มเมื่อเลื่อนลงมาเกิน 300px
+            window.addEventListener('scroll', function() {
+                if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                    backToTopBtn.classList.add('show');
+                } else {
+                    backToTopBtn.classList.remove('show');
+                }
+            });
+            
+            // เลื่อนกลับขึ้นด้านบนเมื่อคลิกปุ่ม
+            backToTopBtn.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             });
 
             // เพิ่มปุ่มทดสอบและเวอร์ชันล่าสุดของโค้ด
@@ -1633,6 +1545,9 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
+            
+            // รีเซ็ต scroll position ของ modal ก่อนแสดงข้อมูลใหม่
+            resetModal();
 
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
 
@@ -1831,12 +1746,31 @@
                 </div>
             `;
 
+            // แสดง modal ด้วย animation
             modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
         }
 
         // ปิด Modal
         function closeModal() {
-            document.getElementById('detailsModal').style.display = 'none';
+            const modal = document.getElementById('detailsModal');
+            modal.classList.remove('show');
+            
+            // รอให้ animation เสร็จก่อนซ่อน modal
+            setTimeout(() => {
+                modal.style.display = 'none';
+                resetModal();
+            }, 300);
+        }
+        
+        // รีเซ็ต Modal
+        function resetModal() {
+            const modalBody = document.getElementById('modalBody');
+            if (modalBody) {
+                modalBody.scrollTop = 0;
+            }
         }
 
         // แสดงข้อความผิดพลาด
