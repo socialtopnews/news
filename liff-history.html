@@ -440,13 +440,6 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(2px); /* เพิ่ม blur effect */
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal.show {
-            opacity: 1;
         }
 
         .modal-content {
@@ -457,16 +450,10 @@
             max-width: 550px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.4s ease-out;
+            animation: modalOpen 0.3s ease-out;
             max-height: 85vh;
             display: flex;
             flex-direction: column;
-            transform: translateY(20px);
-            transition: transform 0.3s ease-out;
-        }
-
-        .modal.show .modal-content {
-            transform: translateY(0);
         }
 
         @keyframes modalOpen {
@@ -482,9 +469,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 5;
         }
 
         .modal-header h2 {
@@ -498,7 +482,7 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var(--transition-normal);
+            transition: var (--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -509,13 +493,11 @@
 
         .close-modal:hover {
             background-color: rgba(255,255,255,0.2);
-            transform: rotate(90deg);
         }
 
         .modal-body {
             padding: 20px;
             overflow-y: auto;
-            scroll-behavior: smooth;
         }
 
         .detail-group {
@@ -572,11 +554,7 @@
             padding: 15px 20px;
             border-top: 1px solid #eee;
             display: flex;
-            justify-content: space-between;
-            position: sticky;
-            bottom: 0;
-            background: white;
-            z-index: 5;
+            justify-content: flex-end;
         }
 
         .modal-btn {
@@ -587,19 +565,10 @@
             border-radius: 5px;
             cursor: pointer;
             transition: var (--transition-normal);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .modal-btn:hover {
             background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-
-        .modal-btn i {
-            font-size: 14px;
         }
 
         /* No Data Message */
@@ -680,47 +649,13 @@
             border: 4px solid rgba(88, 136, 231, 0.2);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
-            animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+            animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(56, 118, 191, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(56, 118, 191, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(56, 118, 191, 0); }
-        }
-
-        /* Back to Top Button */
-        #backToTopBtn {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 99;
-            border: none;
-            outline: none;
-            background-color: var(--primary-color);
-            color: white;
-            cursor: pointer;
-            padding: 12px;
-            border-radius: 50%;
-            font-size: 16px;
-            width: 46px;
-            height: 46px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        #backToTopBtn.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        #backToTopBtn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-5px);
+        #loadingScreen p {
+            color: var(--primary-color);
+            font-weight: 500;
         }
 
         /* Responsive Adjustments */
@@ -749,24 +684,8 @@
             }
 
             .modal-content {
-                margin: 0;
-                max-height: 100vh;
-                height: 100%;
-                width: 100%;
-                border-radius: 0;
-            }
-            
-            .modal-header {
-                border-radius: 0;
-            }
-            
-            #backToTopBtn {
-                bottom: 15px;
-                right: 15px;
-                width: 40px;
-                height: 40px;
-                font-size: 14px;
-                padding: 10px;
+                margin: 5% auto;
+                max-height: 90vh;
             }
         }
     </style>
@@ -851,11 +770,6 @@
             <p>© 2025 Phishing - Detective-X</p>
         </div>
     </div>
-
-    <!-- เพิ่มปุ่ม Back to Top -->
-    <button id="backToTopBtn" title="กลับขึ้นด้านบน">
-        <i class="fas fa-chevron-up"></i>
-    </button>
 
     <script>
         // ตัวแปรหลักสำหรับเก็บข้อมูล
@@ -1176,26 +1090,6 @@
                 if (event.target === document.getElementById('detailsModal')) {
                     closeModal();
                 }
-            });
-
-            // เพิ่ม Back to Top Button
-            const backToTopBtn = document.getElementById('backToTopBtn');
-            
-            // แสดงปุ่มเมื่อเลื่อนลงมาเกิน 300px
-            window.addEventListener('scroll', function() {
-                if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                    backToTopBtn.classList.add('show');
-                } else {
-                    backToTopBtn.classList.remove('show');
-                }
-            });
-            
-            // เลื่อนกลับขึ้นด้านบนเมื่อคลิกปุ่ม
-            backToTopBtn.addEventListener('click', function() {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
             });
 
             // เพิ่มปุ่มทดสอบและเวอร์ชันล่าสุดของโค้ด
@@ -1545,9 +1439,6 @@
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
-            
-            // รีเซ็ต scroll position ของ modal ก่อนแสดงข้อมูลใหม่
-            resetModal();
 
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
 
@@ -1746,31 +1637,12 @@
                 </div>
             `;
 
-            // แสดง modal ด้วย animation
             modal.style.display = 'block';
-            setTimeout(() => {
-                modal.classList.add('show');
-            }, 10);
         }
 
         // ปิด Modal
         function closeModal() {
-            const modal = document.getElementById('detailsModal');
-            modal.classList.remove('show');
-            
-            // รอให้ animation เสร็จก่อนซ่อน modal
-            setTimeout(() => {
-                modal.style.display = 'none';
-                resetModal();
-            }, 300);
-        }
-        
-        // รีเซ็ต Modal
-        function resetModal() {
-            const modalBody = document.getElementById('modalBody');
-            if (modalBody) {
-                modalBody.scrollTop = 0;
-            }
+            document.getElementById('detailsModal').style.display = 'none';
         }
 
         // แสดงข้อความผิดพลาด
