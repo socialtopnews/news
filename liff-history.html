@@ -9,23 +9,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #3876BF;
-            --primary-dark: #192655;
-            --primary-light: #5A96E3;
-            --secondary-color: #A1C2F1;
-            --accent-color: #00AAFF;
+            /* ปรับปรุงโครงสีให้ดูสวยงามและทันสมัย */
+            --primary-color: #4169E1;  /* Royal Blue - เปลี่ยนจากสีน้ำเงินเข้มเป็นสีน้ำเงินกลางที่สว่างกว่า */
+            --primary-dark: #24388E;   /* Navy Blue เข้มกว่า */
+            --primary-light: #6F92F3;  /* Periwinkle - สีฟ้าอ่อนที่สวยงาม */
+            --secondary-color: #B7CEFC; /* สีฟ้าอ่อนที่นุ่มกว่า */
+            --accent-color: #36A2EB;    /* สีฟ้าสดใสเป็นจุดเน้น */
             --success-color: #4CAF50;
             --error-color: #FF5252;
             --warning-color: #FFC107;
-            --text-color: #333333;
-            --text-light: #666666;
+            --text-color: #2A3140;      /* ปรับสีข้อความหลักให้ดูนุ่มนวลกว่าสีดำสนิท */
+            --text-light: #6D7484;      /* สีเทาอมฟ้านิดๆ สำหรับข้อความรอง */
             --text-white: #FFFFFF;
-            --bg-color: #F8F9FA;
+            --bg-color: #F0F5FF;        /* พื้นหลังเป็นสีฟ้าอ่อนๆ */
+            --bg-white: #FFFFFF;
+            --bg-light: #F8FAFF;        /* พื้นหลังสว่างอมฟ้านิดๆ */
             --border-radius: 12px;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+            --border-radius-lg: 16px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 2px 8px rgba(65, 105, 225, 0.08);
+            --shadow-md: 0 4px 12px rgba(65, 105, 225, 0.1);
+            --shadow-lg: 0 6px 18px rgba(65, 105, 225, 0.15);
+            --shadow-xl: 0 8px 24px rgba(65, 105, 225, 0.18);
             --transition-normal: all 0.3s ease;
+            --transition-fast: all 0.2s ease;
             --spacer: 1.5rem;
         }
 
@@ -50,7 +57,7 @@
             margin: 0 auto;
             padding: 0 0 20px 0;
             min-height: 100vh;
-            background-color: #ffffff;
+            background-color: var(--bg-white);
             box-shadow: var(--shadow-md);
             position: relative;
             overflow: hidden;
@@ -66,6 +73,26 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            box-shadow: 0 4px 15px rgba(36, 56, 142, 0.2);  /* เพิ่มเงาให้กับส่วนหัว */
+        }
+
+        /* เพิ่มเอฟเฟกต์ ripple ให้กับส่วนหัว */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            animation: ripple 15s infinite linear;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
         }
 
         .header::after {
@@ -74,7 +101,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 6px;
+            height: 4px;
             background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
             background-size: 200% 200%;
             animation: gradientFlow 3s ease infinite;
@@ -87,10 +114,10 @@
         }
 
         .header .header-icon {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             fill: white;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
             animation: pulse 2s infinite;
         }
 
@@ -108,7 +135,7 @@
             margin: 0;
             font-size: 22px;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             letter-spacing: 0.5px;
         }
 
@@ -122,13 +149,13 @@
 
         .content {
             padding: var(--spacer);
-            background-color: #ffffff;
+            background-color: var(--bg-white);
         }
 
         /* User Info Section */
         .user-info {
-            background-color: #ffffff;
-            border-radius: var(--border-radius);
+            background-color: var(--bg-light);
+            border-radius: var(--border-radius-lg);
             padding: 1.2rem;
             margin-bottom: 1.5rem;
             border: none;
@@ -136,6 +163,7 @@
             transition: var(--transition-normal);
             position: relative;
             overflow: hidden;
+            animation: slideFadeIn 0.5s ease;
         }
 
         .user-info::before {
@@ -146,6 +174,12 @@
             width: 4px;
             height: 100%;
             background-color: var(--primary-color);
+            border-radius: 4px 0 0 4px;
+        }
+
+        .user-info:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
         .user-info .profile {
@@ -162,7 +196,13 @@
             border: 2px solid var(--primary-light);
             padding: 2px;
             background-color: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 10px rgba(65, 105, 225, 0.15);
+            transition: var(--transition-normal);
+        }
+
+        .user-info:hover .profile-img {
+            transform: scale(1.05) rotate(5deg);
+            box-shadow: 0 4px 15px rgba(65, 105, 225, 0.25);
         }
 
         .user-info .user-name {
@@ -207,9 +247,16 @@
             border-left: 4px solid var(--warning-color);
             padding: 15px 20px;
             margin: 1.5rem 0;
-            border-radius: 4px;
+            border-radius: var(--border-radius-sm);
             position: relative;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            animation: slideFadeIn 0.5s ease;
+        }
+
+        @keyframes slideFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message-box:before {
@@ -220,10 +267,11 @@
             top: 15px;
             left: -12px;
             background-color: white;
-            color: var (--warning-color);
+            color: var(--warning-color);
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .message-box p {
@@ -235,7 +283,7 @@
 
         .message-box.error {
             background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var (--error-color);
+            border-left: 4px solid var(--error-color);
         }
 
         .message-box.error p {
@@ -246,22 +294,25 @@
         .search-box {
             margin-bottom: 20px;
             position: relative;
+            animation: slideFadeIn 0.5s ease;
         }
 
         .search-box input {
             width: 100%;
-            padding: 12px 40px 12px 15px;
+            padding: 14px 45px 14px 15px;
             border: 1px solid #E0E0E0;
             border-radius: var(--border-radius);
             font-size: 15px;
             transition: var(--transition-normal);
-            background-color: #FAFAFA;
+            background-color: var(--bg-light);
+            color: var(--text-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .search-box input:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+            box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.15);
             background-color: #FFFFFF;
         }
 
@@ -270,7 +321,9 @@
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            color: var(--primary-color);
+            font-size: 18px;
+            opacity: 0.7;
         }
 
         /* History List */
@@ -279,9 +332,9 @@
         }
 
         .history-item {
-            background-color: white;
+            background-color: var(--bg-light);
             border-radius: var(--border-radius);
-            padding: 18px 15px;
+            padding: 20px;
             margin-bottom: 15px;
             box-shadow: var(--shadow-sm);
             transition: var(--transition-normal);
@@ -289,22 +342,33 @@
             overflow: hidden;
             cursor: pointer;
             border-left: 4px solid var(--primary-light);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .history-item:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             box-shadow: var(--shadow-md);
             border-left: 4px solid var(--primary-color);
+            background-color: #FFFFFF;
         }
 
-        .history-item::before {
-            display: none; /* ลบเส้นด้านซ้าย */
+        .history-item.owner-item {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .history-item.owner-item:hover {
+            border-left: 4px solid var(--success-color);
         }
 
         .history-date {
             color: var(--text-light);
             font-size: 13px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             font-weight: 400;
@@ -318,12 +382,16 @@
         .history-key {
             color: var(--primary-dark);
             font-weight: 500;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-size: 14px;
             word-break: break-all;
             display: flex;
             align-items: center;
             gap: 6px;
+            background-color: rgba(65, 105, 225, 0.05);
+            padding: 5px 10px;
+            border-radius: var(--border-radius-sm);
+            width: fit-content;
         }
 
         .history-key i {
@@ -335,7 +403,7 @@
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 12px;
-            color: var (--text-color);
+            color: var(--text-color);
         }
 
         .history-action {
@@ -346,17 +414,18 @@
         }
 
         .view-details-btn {
-            background-color: var(--primary-light);
+            background: linear-gradient(90deg, var(--primary-light), var(--primary-color));
             color: white;
             border: none;
-            padding: 7px 14px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: var(--border-radius-sm);
             font-size: 13px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             font-weight: 500;
+            box-shadow: 0 2px 5px rgba(65, 105, 225, 0.2);
         }
 
         .view-details-btn i {
@@ -364,7 +433,9 @@
         }
 
         .view-details-btn:hover {
-            background-color: var(--primary-color);
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(65, 105, 225, 0.3);
         }
 
         .history-stats {
@@ -372,15 +443,15 @@
             font-size: 12px;
             color: var(--text-light);
             align-items: center;
+            gap: 8px;
         }
 
         .history-stats div {
-            margin-right: 12px;
             display: flex;
             align-items: center;
-            background-color: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background-color: rgba(65, 105, 225, 0.05);
+            padding: 4px 10px;
+            border-radius: 20px;
         }
 
         .history-stats i {
@@ -394,21 +465,29 @@
             justify-content: center;
             margin-top: 30px;
             align-items: center;
+            padding: 10px 0;
         }
 
         .pagination-btn {
-            background-color: white;
-            border: 1px solid #ddd;
-            padding: 8px 12px;
+            background-color: var(--bg-white);
+            border: 1px solid #E0E0E0;
+            width: 36px;
+            height: 36px;
             margin: 0 5px;
-            border-radius: 4px;
+            border-radius: 50%;
             cursor: pointer;
             transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
             background-color: var(--secondary-color);
             border-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(65, 105, 225, 0.15);
         }
 
         .pagination-btn.active {
@@ -426,7 +505,10 @@
         .pagination-info {
             font-size: 13px;
             color: var(--text-light);
-            margin: 0 10px;
+            margin: 0 15px;
+            background-color: var(--bg-light);
+            padding: 5px 15px;
+            border-radius: 20px;
         }
 
         /* Details Modal */
@@ -440,41 +522,60 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(3px);
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: var(--bg-white);
             margin: 10% auto;
             padding: 0;
             width: 90%;
             max-width: 550px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xl);
+            animation: modalOpen 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .modal-header {
             background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
             color: white;
-            padding: 15px 20px;
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            padding: 18px 20px;
+            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 80%);
+            animation: ripple 10s infinite linear;
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         .modal-header h2 {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         .close-modal {
@@ -482,51 +583,69 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
+            background-color: rgba(255,255,255,0.1);
         }
 
         .close-modal:hover {
             background-color: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
         }
 
         .modal-body {
-            padding: 20px;
+            padding: 25px;
             overflow-y: auto;
         }
 
         .detail-group {
             margin-bottom: 25px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background-color: var(--bg-light);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            border-left: 4px solid var(--primary-light);
+        }
+
+        .detail-group:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-left: 4px solid var(--primary-color);
         }
 
         .detail-group h3 {
             font-size: 16px;
             color: var(--primary-dark);
-            margin-bottom: 12px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(65, 105, 225, 0.1);
+            padding-bottom: 10px;
             display: flex;
             align-items: center;
         }
 
         .detail-group h3 i {
-            margin-right: 8px;
+            margin-right: 10px;
             color: var(--primary-color);
+            font-size: 18px;
         }
 
         .detail-item {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 14px;
+            border-radius: var(--border-radius-sm);
+            padding: 8px 10px;
+            transition: var(--transition-fast);
+        }
+
+        .detail-item:hover {
+            background-color: rgba(65, 105, 225, 0.05);
         }
 
         .detail-label {
@@ -548,6 +667,13 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            font-weight: 500;
+            transition: var(--transition-fast);
+        }
+
+        .detail-value a:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
         }
 
         .modal-footer {
@@ -555,37 +681,45 @@
             border-top: 1px solid #eee;
             display: flex;
             justify-content: flex-end;
+            background-color: var(--bg-light);
         }
 
         .modal-btn {
-            background-color: var(--primary-color);
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 10px 24px;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(65, 105, 225, 0.2);
         }
 
         .modal-btn:hover {
-            background-color: var(--primary-dark);
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary-dark));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(65, 105, 225, 0.3);
         }
 
         /* No Data Message */
         .no-data {
             text-align: center;
-            padding: 40px 20px;
-            color: var (--text-light);
+            padding: 60px 20px;
+            color: var(--text-light);
+            animation: fadeIn 0.5s ease;
         }
 
         .no-data i {
-            font-size: 40px;
-            color: var (--secondary-color);
-            margin-bottom: 15px;
+            font-size: 60px;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
         }
 
         .no-data p {
             font-size: 16px;
+            line-height: 1.6;
         }
 
         /* Loading Spinner */
@@ -594,17 +728,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
+            animation: fadeIn 0.5s ease;
         }
 
         .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(65, 105, 225, 0.2);
             border-radius: 50%;
             border-top: 4px solid var(--primary-color);
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -614,18 +749,31 @@
 
         .loading p {
             color: var(--text-light);
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: 500;
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
-            background-color: #F8F9FA;
+            padding: 25px 20px;
+            background-color: #F0F4FF;
             border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
+            margin-top: 40px;
             font-size: 14px;
             color: var(--text-light);
+            position: relative;
+        }
+
+        .footer:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
         }
 
         /* Loading Screen */
@@ -635,7 +783,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #FFFFFF;
+            background-color: var(--bg-white);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -646,16 +794,38 @@
         #loadingScreen .spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
+            border: 4px solid rgba(65, 105, 225, 0.2);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding-bottom: 8px;
+        }
+
+        #loadingScreen p:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+            animation: loadingBar 1.5s infinite ease-in-out;
+            border-radius: 2px;
+            width: 100%;
+        }
+
+        @keyframes loadingBar {
+            0% { width: 0%; left: 0; }
+            50% { width: 100%; left: 0; }
+            100% { width: 0%; left: 100%; }
         }
 
         /* Responsive Adjustments */
@@ -686,6 +856,32 @@
             .modal-content {
                 margin: 5% auto;
                 max-height: 90vh;
+                width: 95%;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+            }
+            
+            .detail-label {
+                width: 100%;
+                margin-bottom: 4px;
+            }
+            
+            .history-action {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .view-details-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .history-stats {
+                width: 100%;
+                justify-content: space-around;
             }
         }
     </style>
@@ -755,11 +951,12 @@
         <div id="detailsModal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>รายละเอียด Phishing</h2>
+                    <h2><i class="fas fa-info-circle"></i> รายละเอียด Phishing</h2>
                     <span class="close-modal">×</span>
                 </div>
                 <div class="modal-body" id="modalBody">
-                    </div>
+                    <!-- เนื้อหาจะถูกเพิ่มโดย JavaScript -->
+                </div>
                 <div class="modal-footer">
                     <button class="modal-btn" id="closeModalBtn">ปิด</button>
                 </div>
@@ -1355,7 +1552,7 @@
             }
         }
 
-        // แสดงข้อมูลประวัติตาม pagination
+        // แสดงข้อมูลประวัติตาม pagination - ปรับปรุงการสร้าง UI
         function displayHistoryData() {
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = '';
@@ -1380,22 +1577,23 @@
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
 
+            // เพิ่ม delay เล็กน้อยเพื่อสร้าง staggered animation effect
+            let delay = 0;
+            const delayIncrement = 50; // ms
+
             // สร้าง HTML สำหรับแต่ละรายการ
             for (let i = startIndex; i < endIndex; i++) {
                 const item = filteredData[i];
-                // console.log(`กำลังแสดงข้อมูลรายการที่ ${i}:`, item); // ลดการ log ลง
 
                 const listItem = document.createElement('div');
                 listItem.className = 'history-item';
+                listItem.style.animationDelay = `${delay}ms`;
+                delay += delayIncrement;
 
                 // ถ้าเป็นเจ้าของ trackingKey นี้ ให้เพิ่ม class เพื่อแสดงว่าเป็นเจ้าของ
                 if (item.isOwner) {
                     listItem.classList.add('owner-item');
-                    // ไม่ต้องเพิ่มเส้นขอบสีเขียวอีกต่อไป
                 }
-
-                // กำหนดให้ทุกรายการมีเส้นขอบสีน้ำเงิน
-                listItem.style.borderLeft = '4px solid var(--primary-color)';
 
                 const deviceInfo = item.deviceInfo || {};
                 const deviceType = deviceInfo.deviceType || "ไม่ทราบ";
@@ -1412,7 +1610,7 @@
                         <button class="view-details-btn" data-index="${i}"><i class="fas fa-eye"></i> ดูรายละเอียด</button>
                         <div class="history-stats">
                             <div><i class="fas fa-mobile-alt"></i> ${deviceType}</div>
-                            <div><i class="fas fa-link"></i> ${source}</div> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
+                            <div><i class="fas fa-link"></i> ${source}</div>
                         </div>
                     </div>
                 `;
@@ -1421,8 +1619,15 @@
 
                 // เพิ่ม event listener สำหรับปุ่มดูรายละเอียด
                 const detailBtn = listItem.querySelector('.view-details-btn');
-                detailBtn.addEventListener('click', function() {
+                detailBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // ป้องกันการทำงานซ้ำซ้อน
                     const index = this.getAttribute('data-index');
+                    showDetailsModal(filteredData[index]);
+                });
+
+                // เพิ่ม event listener สำหรับคลิกที่รายการ
+                listItem.addEventListener('click', function() {
+                    const index = this.querySelector('.view-details-btn').getAttribute('data-index');
                     showDetailsModal(filteredData[index]);
                 });
             }
@@ -1435,7 +1640,7 @@
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
 
-        // แสดง Modal รายละเอียด
+        // ปรับปรุงการแสดง Modal รายละเอียด
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
@@ -1554,23 +1759,23 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <div class="detail-label">วันเวลา</div>
+                        <div class="detail-label"><i class="far fa-calendar-alt"></i> วันเวลา</div>
                         <div class="detail-value">${formattedDateTime}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-label"><i class="fas fa-key"></i> Tracking Key</div>
                         <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส</div>
+                        <div class="detail-label"><i class="fas fa-tag"></i> ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-label"><i class="fas fa-user"></i> ผู้สร้าง</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
-                    <div class="detail-item"> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
-                        <div class="detail-label">แหล่งที่มา</div>
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-link"></i> แหล่งที่มา</div>
                         <div class="detail-value">${source}</div>
                     </div>
                 </div>
@@ -1578,37 +1783,37 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP Address</div>
+                        <div class="detail-label"><i class="fas fa-network-wired"></i> IP Address</div>
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-label"><i class="fas fa-globe"></i> ประเทศ</div>
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
+                        <div class="detail-label"><i class="fas fa-city"></i> เมือง/ภูมิภาค</div>
                         <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้ให้บริการเน็ต</div>
-                        <div class="detail-value">${isp}</div>
+                        <div class="detail-label"><i class="fas fa-server"></i> ผู้ให้บริการเน็ต</div>
+                                               <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-label"><i class="fas fa-barcode"></i> รหัสเซิร์ฟเวอร์</div>
                         <div class="detail-value">${asn}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
+                        <div class="detail-label"><i class="fas fa-location-arrow"></i> พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
                     ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
                     <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-label"><i class="fas fa-bullseye"></i> ความแม่นยำ</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
+                        <div class="detail-label"><i class="fas fa-map"></i> แผนที่</div>
                         <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                 </div>
@@ -1616,35 +1821,54 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-label"><i class="fas fa-tablet-alt"></i> ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
-                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
+                    <div class="detail-item">
+                        <div class="detail-label"><i class="fas fa-microchip"></i> รุ่นอุปกรณ์</div>
                         <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
+                        <div class="detail-label"><i class="fas fa-cog"></i> ระบบปฏิบัติการ</div>
                         <div class="detail-value">${osName}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> </div>
+                        <div class="detail-label"><i class="fas fa-code-branch"></i> เวอร์ชั่น</div>
+                        <div class="detail-value">${osVersion}</div>
+                    </div>
                     <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-label"><i class="fas fa-window-maximize"></i> เบราว์เซอร์</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
 
             modal.style.display = 'block';
+            
+            // เพิ่ม slide-in animation
+            const modalContent = document.querySelector('.modal-content');
+            modalContent.style.animation = 'modalOpen 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)';
+            
+            // เพิ่ม aria attributes สำหรับ accessibility
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden'; // ล็อคการเลื่อนพื้นหลัง
         }
 
-        // ปิด Modal
+        // ปรับปรุงการปิด Modal
         function closeModal() {
-            document.getElementById('detailsModal').style.display = 'none';
+            const modal = document.getElementById('detailsModal');
+            
+            // เพิ่ม fade-out animation
+            const modalContent = document.querySelector('.modal-content');
+            modalContent.style.animation = 'modalOpen 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) reverse';
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = ''; // คืนค่าการเลื่อน
+            }, 200);
         }
-
+        
         // แสดงข้อความผิดพลาด
         function showErrorMessage(message) {
             const existingError = document.querySelector('.message-box.error');
