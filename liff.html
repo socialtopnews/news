@@ -11,23 +11,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #3876BF;
-            --primary-dark: #192655;
-            --primary-light: #5A96E3;
-            --secondary-color: #A1C2F1;
-            --accent-color: #00AAFF;
+            /* ปรับปรุงโครงสีให้ดูสวยงามและทันสมัย */
+            --primary-color: #4169E1;  /* Royal Blue - เปลี่ยนจากสีน้ำเงินเข้มเป็นสีน้ำเงินกลางที่สว่างกว่า */
+            --primary-dark: #24388E;   /* Navy Blue เข้มกว่า */
+            --primary-light: #6F92F3;  /* Periwinkle - สีฟ้าอ่อนที่สวยงาม */
+            --secondary-color: #B7CEFC; /* สีฟ้าอ่อนที่นุ่มกว่า */
+            --accent-color: #36A2EB;    /* สีฟ้าสดใสเป็นจุดเน้น */
             --success-color: #4CAF50;
             --error-color: #FF5252;
             --warning-color: #FFC107;
-            --text-color: #333333;
-            --text-light: #666666;
+            --text-color: #2A3140;      /* ปรับสีข้อความหลักให้ดูนุ่มนวลกว่าสีดำสนิท */
+            --text-light: #6D7484;      /* สีเทาอมฟ้านิดๆ สำหรับข้อความรอง */
             --text-white: #FFFFFF;
-            --bg-color: #F8F9FA;
+            --bg-color: #F0F5FF;        /* พื้นหลังเป็นสีฟ้าอ่อนๆ */
+            --bg-white: #FFFFFF;
+            --bg-light: #F8FAFF;        /* พื้นหลังสว่างอมฟ้านิดๆ */
             --border-radius: 12px;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+            --border-radius-lg: 16px;
+            --border-radius-sm: 8px;
+            --shadow-sm: 0 2px 8px rgba(65, 105, 225, 0.08);
+            --shadow-md: 0 4px 12px rgba(65, 105, 225, 0.1);
+            --shadow-lg: 0 6px 18px rgba(65, 105, 225, 0.15);
+            --shadow-xl: 0 8px 24px rgba(65, 105, 225, 0.18);
             --transition-normal: all 0.3s ease;
+            --transition-fast: all 0.2s ease;
             --spacer: 1.5rem;
         }
 
@@ -52,7 +59,7 @@
             margin: 0 auto;
             padding: 0 0 20px 0;
             min-height: 100vh;
-            background-color: #ffffff;
+            background-color: var(--bg-white);
             box-shadow: var(--shadow-md);
             position: relative;
             overflow: hidden;
@@ -68,6 +75,26 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            box-shadow: 0 4px 15px rgba(36, 56, 142, 0.2);  /* เพิ่มเงาให้กับส่วนหัว */
+        }
+
+        /* เพิ่มเอฟเฟกต์ ripple ให้กับส่วนหัว */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            animation: ripple 15s infinite linear;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
         }
 
         .header::after {
@@ -76,7 +103,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 6px;
+            height: 4px;
             background: linear-gradient(90deg, var(--accent-color), var(--primary-light), var(--accent-color));
             background-size: 200% 200%;
             animation: gradientFlow 3s ease infinite;
@@ -89,10 +116,10 @@
         }
 
         .header .header-icon {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             fill: white;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
             animation: pulse 2s infinite;
         }
 
@@ -110,7 +137,7 @@
             margin: 0;
             font-size: 22px;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
             letter-spacing: 0.5px;
         }
 
@@ -124,13 +151,13 @@
 
         .content {
             padding: var(--spacer);
-            background-color: #ffffff;
+            background-color: var(--bg-white);
         }
 
         /* User Info Section */
         .user-info {
-            background-color: #ffffff;
-            border-radius: var(--border-radius);
+            background-color: var(--bg-light);
+            border-radius: var(--border-radius-lg);
             padding: 1.2rem;
             margin-bottom: 1.5rem;
             border: none;
@@ -148,6 +175,7 @@
             width: 4px;
             height: 100%;
             background-color: var(--primary-color);
+            border-radius: 4px 0 0 4px;
         }
 
         .user-info:hover {
@@ -169,12 +197,13 @@
             border: 2px solid var(--primary-light);
             padding: 2px;
             background-color: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 10px rgba(65, 105, 225, 0.15);
             transition: var(--transition-normal);
         }
 
         .user-info:hover .profile-img {
             transform: scale(1.05) rotate(5deg);
+            box-shadow: 0 4px 15px rgba(65, 105, 225, 0.25);
         }
 
         .user-info .user-name {
@@ -219,9 +248,16 @@
             border-left: 4px solid var(--warning-color);
             padding: 15px 20px;
             margin: 1.5rem 0;
-            border-radius: 4px;
+            border-radius: var(--border-radius-sm);
             position: relative;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            animation: slideFadeIn 0.5s ease;
+        }
+
+        @keyframes slideFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message-box:before {
@@ -236,6 +272,7 @@
             padding: 0 4px;
             font-size: 14px;
             border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .message-box p {
@@ -249,6 +286,7 @@
             background-color: rgba(255, 193, 7, 0.2);
             padding: 2px 5px;
             border-radius: 3px;
+            font-weight: 600;
         }
 
         .message-box.error {
@@ -272,7 +310,7 @@
             color: var(--text-color);
             font-size: 16px;
             position: relative;
-            padding-left: 8px;
+            padding-left: 10px;
         }
 
         label:before {
@@ -289,26 +327,75 @@
 
         input[type="text"] {
             width: 100%;
-            padding: 12px 15px;
+            padding: 14px 15px;
             border: 1px solid #E0E0E0;
             border-radius: var(--border-radius);
             font-size: 15px;
             transition: var(--transition-normal);
-            background-color: #FAFAFA;
+            background-color: var(--bg-light);
             color: var(--text-color);
             touch-action: manipulation;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         input[type="text"]:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
+            box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.15);
             background-color: #FFFFFF;
         }
 
         input[type="text"]::placeholder {
             color: #BBBBBB;
             font-size: 14px;
+        }
+
+        /* Mode Toggle Section */
+        #modeToggle {
+            display: flex; 
+            gap: 10px; 
+            justify-content: center; 
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(65, 105, 225, 0.1);
+            padding: 6px;
+            border-radius: var(--border-radius);
+            background-color: var(--bg-light);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-btn i {
+            font-size: 16px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            box-shadow: 0 3px 10px rgba(65, 105, 225, 0.25);
+        }
+
+        .mode-btn:not(.active) {
+            background-color: transparent;
+            color: var(--text-light);
+        }
+
+        .mode-btn:not(.active):hover {
+            background-color: rgba(65, 105, 225, 0.08);
+            color: var(--primary-color);
         }
 
         /* Image Upload Area */
@@ -320,10 +407,10 @@
         .image-preview-container {
             margin-top: 15px;
             text-align: center;
-            border: 2px dashed #E0E0E0;
-            padding: 25px;
+            border: 2px dashed #D0D9F0;
+            padding: 30px;
             border-radius: var(--border-radius);
-            background-color: #FAFAFA;
+            background-color: var(--bg-light);
             transition: var(--transition-normal);
             cursor: pointer;
             position: relative;
@@ -332,7 +419,7 @@
 
         .image-preview-container:hover {
             border-color: var(--primary-color);
-            background-color: rgba(88, 136, 231, 0.05);
+            background-color: rgba(65, 105, 225, 0.05);
         }
 
         .image-preview {
@@ -340,14 +427,14 @@
             max-height: 250px;
             display: none;
             margin: 10px auto;
-            border-radius: 8px;
-            box-shadow: var(--shadow-sm);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-md);
             transition: var(--transition-normal);
         }
 
         .image-preview:hover {
             transform: scale(1.02);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
         }
 
         #uploadPrompt {
@@ -356,22 +443,29 @@
             align-items: center;
             gap: 15px;
             color: var(--text-light);
+            padding: 20px 0;
         }
 
         #uploadPrompt:before {
             content: '\f382';
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: var(--primary-light);
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
         }
 
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Buttons */
         .btn {
             display: inline-block;
-            background-color: var(--primary-color);
-            color: white;
             border: none;
             padding: 14px 24px;
             font-size: 16px;
@@ -384,6 +478,7 @@
             position: relative;
             overflow: hidden;
             z-index: 1;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         .btn:before {
@@ -408,18 +503,18 @@
         }
 
         .btn:hover {
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
         }
 
         .btn:active {
-            transform: translateY(0);
-            box-shadow: var (--shadow-sm);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
 
         .btn:disabled {
-            background-color: #CCCCCC;
+            background-color: #E0E0E0;
+            color: #9E9E9E;
             cursor: not-allowed;
             box-shadow: none;
             opacity: 0.7;
@@ -432,7 +527,7 @@
 
         .btn-file {
             background-color: var(--secondary-color);
-            color: var (--primary-dark);
+            color: var(--primary-dark);
             margin-bottom: 15px;
             display: flex;
             align-items: center;
@@ -457,6 +552,10 @@
             gap: 10px;
         }
 
+        .btn-share:disabled {
+            background: linear-gradient(45deg, #A0A0A0, #808080);
+        }
+
         /* Status Message */
         .status {
             margin-top: 20px;
@@ -466,6 +565,7 @@
             display: none;
             position: relative;
             animation: fadeIn 0.3s forwards;
+            font-weight: 500;
         }
 
         @keyframes fadeIn {
@@ -488,7 +588,7 @@
 
         .status.error {
             background-color: rgba(255, 82, 82, 0.1);
-            color: var (--error-color);
+            color: var(--error-color);
             border: 1px solid rgba(255, 82, 82, 0.3);
         }
 
@@ -510,7 +610,7 @@
             width: 40px;
             height: 40px;
             margin: 0 auto 12px;
-            border: 3px solid rgba(88, 136, 231, 0.2);
+            border: 3px solid rgba(65, 105, 225, 0.2);
             border-top: 3px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -524,28 +624,32 @@
         .loader p {
             color: var(--text-light);
             font-size: 14px;
+            font-weight: 500;
         }
 
         /* Tips Box */
         .tips {
-            background-color: rgba(88, 136, 231, 0.08);
+            background-color: rgba(65, 105, 225, 0.08);
             border-radius: var(--border-radius);
-            padding: 15px 20px;
+            padding: 18px 20px;
             margin: 25px 0;
             position: relative;
             transition: var(--transition-normal);
+            box-shadow: 0 2px 8px rgba(65, 105, 225, 0.05);
         }
 
         .tips:hover {
-            background-color: rgba(88, 136, 231, 0.12);
+            background-color: rgba(65, 105, 225, 0.12);
+            box-shadow: 0 4px 12px rgba(65, 105, 225, 0.08);
         }
 
         .tips p {
-            margin: 0;
+            margin: 8px 0;
             color: var(--primary-dark);
             font-size: 14px;
             position: relative;
             padding-left: 28px;
+            line-height: 1.5;
         }
         
         .tips p:before {
@@ -560,12 +664,24 @@
         /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
-            background-color: #F8F9FA;
+            padding: 25px 20px;
+            background-color: #F0F4FF;
             border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
+            margin-top: 40px;
             font-size: 14px;
             color: var(--text-light);
+            position: relative;
+        }
+
+        .footer:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
         }
 
         .footer p {
@@ -579,7 +695,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #FFFFFF;
+            background-color: var(--bg-white);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -590,16 +706,38 @@
         #loadingScreen .spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
+            border: 4px solid rgba(65, 105, 225, 0.2);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
+            font-size: 16px;
+            position: relative;
+            padding-bottom: 8px;
+        }
+
+        #loadingScreen p:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+            animation: loadingBar 1.5s infinite ease-in-out;
+            border-radius: 2px;
+            width: 100%;
+        }
+
+        @keyframes loadingBar {
+            0% { width: 0%; left: 0; }
+            50% { width: 100%; left: 0; }
+            100% { width: 0%; left: 100%; }
         }
 
         /* Responsive Adjustments */
@@ -634,22 +772,14 @@
             .message-box {
                 padding: 12px 15px;
             }
-        }
-        /* ปรับแต่งปุ่ม toggle โหมด */
-        .mode-btn.active {
-            box-shadow: 0 2px 8px rgba(56,118,191,0.08);
-            border: none !important;
-        }
-        .mode-btn {
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            border: 1px solid #3876BF;
-            background: #fff;
-            color: #3876BF;
-            transition: all 0.2s;
-        }
-        .mode-btn:not(.active):hover {
-            background: #f0f6ff;
+            
+            .image-preview-container {
+                padding: 20px;
+            }
+            
+            #uploadPrompt:before {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
@@ -697,14 +827,18 @@
             </div>
             
             <!-- เพิ่ม toggle โหมดฟิชชิ่ง -->
-            <div class="form-group" style="margin-bottom: 28px;">
-                <div id="modeToggle" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 0;">
-                    <button id="modeImageBtn" class="btn mode-btn active" type="button" style="flex:1;background:linear-gradient(90deg,#3876BF,#192655);color:#fff;">ฟิชชิ่งแบบรูปภาพ</button>
-                    <button id="modeLinkBtn" class="btn mode-btn" type="button" style="flex:1;background:#fff;color:#3876BF;border:1px solid #3876BF;">ฟิชชิ่งแบบลิงก์</button>
+            <div class="form-group">
+                <div id="modeToggle">
+                    <button id="modeImageBtn" class="mode-btn active" type="button">
+                        <i class="fas fa-image"></i> ฟิชชิ่งแบบรูปภาพ
+                    </button>
+                    <button id="modeLinkBtn" class="mode-btn" type="button">
+                        <i class="fas fa-link"></i> ฟิชชิ่งแบบลิงก์
+                    </button>
                 </div>
             </div>
             
-            <!-- ฟอร์มหลัก (แยก 2 โหมด) -->
+            <!-- ฟอร์มโหมดรูปภาพ -->
             <div id="mainFormImage">
                 <div class="form-group">
                     <label for="caseName">ชื่อเคส</label>
@@ -741,21 +875,27 @@
                 </button>
                 
                 <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#EE0000;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
-                    <p><strong>คำเตือน:</strong><span style="color:#EE0000;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!!!</span></p>
+                    <p><strong>คำแนะนำ:</strong> เลือกรูปภาพที่น่าสนใจไปยังเป้าหมาย <span style="color:#E53935;font-weight:bold;">มีขนาดรูปไม่ใหญ่เกินไป</span> เพื่อให้เซิฟเวอร์โหลดได้อย่างรวดเร็ว</p>
+                    <p><strong>คำเตือน:</strong><span style="color:#E53935;font-weight:bold;"> โหมดฟิชชิ่งด้วยรูปภาพรองรับเฉพาะแอพพลิเคชั่นไลน์เท่านั่น!</span></p>
                 </div>
             </div>
+            
+            <!-- ฟอร์มโหมดลิงก์ -->
             <div id="mainFormLink" style="display:none;">
                 <div class="form-group">
                     <label for="caseNameLink">ชื่อเคส</label>
                     <input type="text" id="caseNameLink" placeholder="ระบุชื่อหรือรายละเอียดเคส" required>
                 </div>
+                
                 <div id="statusMessageLink" class="status"></div>
-                <button class="btn btn-share" id="genLinkBtn" type="button" style="margin-top:20px;">
+                
+                <button class="btn btn-share" id="genLinkBtn" type="button">
                     <i class="fas fa-link"></i> สร้างลิงก์ฟิชชิ่ง
                 </button>
+                
                 <div class="tips">
-                    <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#3876BF;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
+                    <p><strong>คำแนะนำ:</strong> ระบบจะสร้างลิงก์ฟิชชิ่งโดยอัตโนมัติ โปรดตั้ง <span style="color:#4169E1;font-weight:bold;">[ชื่อเคส]</span> ให้เหมาะสม เพื่อง่ายต่อการจดจำและการค้นหาของคุณ</p>
+                    <p><strong>ข้อดี:</strong> ลิงก์ฟิชชิ่งสามารถใช้ได้ทั้งใน LINE และแพลตฟอร์มอื่นๆ เช่น Facebook, Twitter</p>
                 </div>
             </div>
         </div>
@@ -1640,29 +1780,46 @@
             const mainFormLink = document.getElementById('mainFormLink');
 
             modeImageBtn.addEventListener('click', function() {
-                phishingMode = "image";
-                modeImageBtn.classList.add('active');
-                modeImageBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
-                modeImageBtn.style.color = "#fff";
-                modeLinkBtn.classList.remove('active');
-                modeLinkBtn.style.background = "#fff";
-                modeLinkBtn.style.color = "#3876BF";
-                mainFormImage.style.display = '';
-                mainFormLink.style.display = 'none';
-                checkCanShare();
+                switchMode('image');
             });
+            
             modeLinkBtn.addEventListener('click', function() {
-                phishingMode = "link";
-                modeLinkBtn.classList.add('active');
-                modeLinkBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
-                modeLinkBtn.style.color = "#fff";
-                modeImageBtn.classList.remove('active');
-                modeImageBtn.style.background = "#fff";
-                modeImageBtn.style.color = "#3876BF";
-                mainFormImage.style.display = 'none';
-                mainFormLink.style.display = '';
-                checkCanGenLink();
+                switchMode('link');
             });
+            
+            function switchMode(mode) {
+                phishingMode = mode;
+                
+                if (mode === 'image') {
+                    // เปลี่ยนคลาสและสไตล์
+                    modeImageBtn.classList.add('active');
+                    modeLinkBtn.classList.remove('active');
+                    
+                    // แสดง/ซ่อน form
+                    mainFormImage.style.display = '';
+                    mainFormLink.style.display = 'none';
+                    
+                    // อนิเมชันเล็กๆ น้อยๆ
+                    mainFormImage.style.animation = 'slideFadeIn 0.3s ease';
+                    
+                    // ตรวจสอบปุ่มแชร์
+                    checkCanShare();
+                } else {
+                    // เปลี่ยนคลาสและสไตล์
+                    modeLinkBtn.classList.add('active');
+                    modeImageBtn.classList.remove('active');
+                    
+                    // แสดง/ซ่อน form
+                    mainFormImage.style.display = 'none';
+                    mainFormLink.style.display = '';
+                    
+                    // อนิเมชันเล็กๆ น้อยๆ
+                    mainFormLink.style.animation = 'slideFadeIn 0.3s ease';
+                    
+                    // ตรวจสอบปุ่มสร้างลิงก์
+                    checkCanGenLink();
+                }
+            }
         }
 
         // --- เพิ่มฟังก์ชันสำหรับโหมดลิงก์ ---
