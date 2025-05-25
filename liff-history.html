@@ -440,6 +440,16 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.5);
+            /* เพิ่ม backdrop-filter สำหรับ blur effect */
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+
+        /* ป้องกันการเลื่อนของ body เมื่อ modal เปิด */
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
 
         .modal-content {
@@ -454,11 +464,35 @@
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+            /* เพิ่ม transform สำหรับ center positioning ที่ดีขึ้น */
+            transform: translateY(0);
         }
 
         @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { 
+                opacity: 0; 
+                transform: translateY(-30px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        /* เพิ่ม animation สำหรับการปิด modal */
+        .modal.closing .modal-content {
+            animation: modalClose 0.3s ease-in forwards;
+        }
+
+        @keyframes modalClose {
+            from { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+            to { 
+                opacity: 0; 
+                transform: translateY(-30px) scale(0.95); 
+            }
         }
 
         .modal-header {
@@ -469,6 +503,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            /* เพิ่ม sticky header */
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
         .modal-header h2 {
@@ -482,22 +520,54 @@
             font-size: 22px;
             font-weight: bold;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             justify-content: center;
             width: 28px;
             height: 28px;
             border-radius: 50%;
+            /* เพิ่ม hover effect ที่ดีขึ้น */
+            position: relative;
+            overflow: hidden;
         }
 
         .close-modal:hover {
             background-color: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .close-modal:active {
+            transform: scale(0.95);
         }
 
         .modal-body {
             padding: 20px;
             overflow-y: auto;
+            /* เพิ่ม smooth scrolling */
+            scroll-behavior: smooth;
+            /* เพิ่ม custom scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-light) #f1f1f1;
+        }
+
+        /* Custom scrollbar สำหรับ webkit browsers */
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 3px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
         }
 
         .detail-group {
@@ -506,6 +576,16 @@
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            /* เพิ่ม transition effect */
+            transition: var(--transition-normal);
+            border-left: 3px solid transparent;
+        }
+
+        /* เพิ่ม hover effect สำหรับ detail group */
+        .detail-group:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left-color: var(--primary-light);
+            transform: translateX(2px);
         }
 
         .detail-group h3 {
@@ -516,17 +596,34 @@
             padding-bottom: 8px;
             display: flex;
             align-items: center;
+            /* เพิ่ม gradient text effect */
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .detail-group h3 i {
             margin-right: 8px;
             color: var(--primary-color);
+            /* Override gradient text สำหรับ icon */
+            -webkit-text-fill-color: var(--primary-color);
         }
 
         .detail-item {
             display: flex;
             margin-bottom: 10px;
             font-size: 14px;
+            /* เพิ่ม padding และ border radius */
+            padding: 8px 0;
+            border-radius: 4px;
+            transition: var(--transition-normal);
+        }
+
+        .detail-item:hover {
+            background-color: rgba(88, 136, 231, 0.05);
+            padding-left: 8px;
+            padding-right: 8px;
         }
 
         .detail-label {
@@ -548,6 +645,15 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            /* เพิ่ม hover effect สำหรับ link */
+            transition: var(--transition-normal);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .detail-value a:hover {
+            background-color: rgba(88, 136, 231, 0.1);
+            transform: translateX(2px);
         }
 
         .modal-footer {
@@ -555,6 +661,11 @@
             border-top: 1px solid #eee;
             display: flex;
             justify-content: flex-end;
+            /* เพิ่ม sticky footer */
+            position: sticky;
+            bottom: 0;
+            background-color: white;
+            z-index: 1;
         }
 
         .modal-btn {
@@ -564,98 +675,20 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
+            /* เพิ่ม shadow และ hover effect */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .modal-btn:hover {
             background-color: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
 
-        /* No Data Message */
-        .no-data {
-            text-align: center;
-            padding: 40px 20px;
-            color: var (--text-light);
-        }
-
-        .no-data i {
-            font-size: 40px;
-            color: var (--secondary-color);
-            margin-bottom: 15px;
-        }
-
-        .no-data p {
-            font-size: 16px;
-        }
-
-        /* Loading Spinner */
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-radius: 50%;
-            border-top: 4px solid var(--primary-color);
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading p {
-            color: var(--text-light);
-            font-size: 14px;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 20px;
-            background-color: #F8F9FA;
-            border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
-            font-size: 14px;
-            color: var(--text-light);
-        }
-
-        /* Loading Screen */
-        #loadingScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #FFFFFF;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        #loadingScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        #loadingScreen p {
-            color: var(--primary-color);
-            font-weight: 500;
+        .modal-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         /* Responsive Adjustments */
@@ -686,6 +719,39 @@
             .modal-content {
                 margin: 5% auto;
                 max-height: 90vh;
+                width: 95%;
+            }
+
+            .modal-header {
+                padding: 12px 15px;
+            }
+
+            .modal-header h2 {
+                font-size: 16px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .modal-footer {
+                padding: 12px 15px;
+            }
+
+            .detail-group {
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .detail-label {
+                width: auto;
+                margin-bottom: 4px;
+                font-weight: 600;
             }
         }
     </style>
@@ -1081,14 +1147,33 @@
                 }
             });
 
-            // ปุ่มปิด Modal
-            document.querySelector('.close-modal').addEventListener('click', closeModal);
-            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+            // ปุ่มปิด Modal - ปรับปรุงให้มี animation
+            document.querySelector('.close-modal').addEventListener('click', function(e) {
+                e.preventDefault();
+                closeModal();
+            });
+            
+            document.getElementById('closeModalBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                closeModal();
+            });
 
-            // ปิด Modal เมื่อคลิกที่พื้นหลัง
+            // ปิด Modal เมื่อคลิกที่พื้นหลัง - ปรับปรุงให้รองรับการป้องกันการเลื่อน
             window.addEventListener('click', function(event) {
-                if (event.target === document.getElementById('detailsModal')) {
+                const modal = document.getElementById('detailsModal');
+                if (event.target === modal) {
                     closeModal();
+                }
+            });
+
+            // เพิ่ม keyboard navigation สำหรับ modal
+            document.addEventListener('keydown', function(e) {
+                const modal = document.getElementById('detailsModal');
+                if (modal.style.display === 'block') {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        closeModal();
+                    }
                 }
             });
 
@@ -1442,6 +1527,15 @@
 
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
 
+            // บันทึกตำแหน่งการเลื่อนปัจจุบันของหน้าเว็บ
+            const scrollY = window.scrollY;
+            
+            // ป้องกันการเลื่อนของ body
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
+            document.body.classList.add('modal-open');
+
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
@@ -1460,14 +1554,14 @@
                         mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
 
                         // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
-                        if (item.location.gmapLink &&
-                            (item.location.gmapLink.includes('google.com/maps') ||
-                             item.location.gmapLink.includes('goo.gl/maps') ||
-                             item.location.gmapLink.startsWith('http'))) { // Allow any valid http link
+                        if (item.location.gmapLink && item.location.gmapLink.includes('google.com/maps')) {
                             mapLink = item.location.gmapLink;
                         }
 
-                        gpsAccuracy = item.location.accuracy ? `±${Math.round(item.location.accuracy)} เมตร` : "ไม่มีข้อมูล"; // Round accuracy
+                        // ดึงค่า accuracy ถ้ามี
+                        if (item.location.accuracy !== undefined) {
+                            gpsAccuracy = `${item.location.accuracy} เมตร`;
+                        }
                     }
                 } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล" && item.location !== "ไม่มี") {
                     // กรณีเป็น string
@@ -1475,10 +1569,11 @@
 
                     // พยายามแยกค่า lat, long จาก string
                     if (locationText.includes(",")) {
-                        const coords = locationText.split(",").map(coord => coord.trim());
-                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                            // สร้างลิงก์ Google Maps โดยตรง
-                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                        const coords = locationText.split(",");
+                        if (coords.length === 2) {
+                            const lat = coords[0].trim();
+                            const lng = coords[1].trim();
+                            mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
                         }
                     }
                 }
@@ -1486,7 +1581,7 @@
 
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-            const source = item.source || "ไม่ระบุ"; // Get source for modal
+            const source = item.source || "ไม่ระบุ";
 
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
@@ -1529,22 +1624,22 @@
 
                 // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn; // Ensure AS prefix
+                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn;
             }
 
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
 
-            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2)); // Log structure for modal
+            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2));
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ"; // Keep device model
+            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
 
             // *** ใช้ osName และ osVersion ที่ส่งมาจาก Apps Script โดยตรง ***
             const osName = deviceInfo.osName || "ไม่ระบุ";
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ค่าที่ส่งมาโดยตรง
-            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`); // Log values used in modal
+            const osVersion = deviceInfo.osVersion || "ไม่ระบุ";
+            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`);
 
             const browser = deviceInfo.browser || "ไม่ระบุ";
 
@@ -1554,23 +1649,23 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <div class="detail-label">วันเวลา</div>
+                        <div class="detail-label">วันที่และเวลา:</div>
                         <div class="detail-value">${formattedDateTime}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-label">Tracking Key:</div>
                         <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส</div>
-                        <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
+                        <div class="detail-label">ชื่อเคส:</div>
+                        <div class="detail-value">${item.caseName || "ไม่ระบุชื่อเคส"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
-                        <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
+                        <div class="detail-label">ผู้สร้าง:</div>
+                        <div class="detail-value">${item.creatorFullName || displayName || "ไม่ระบุ"}</div>
                     </div>
-                    <div class="detail-item"> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
-                        <div class="detail-label">แหล่งที่มา</div>
+                    <div class="detail-item">
+                        <div class="detail-label">แหล่งที่มา:</div>
                         <div class="detail-value">${source}</div>
                     </div>
                 </div>
@@ -1578,71 +1673,99 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP Address</div>
+                        <div class="detail-label">IP Address:</div>
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-label">ประเทศ:</div>
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</div>
+                        <div class="detail-label">ภูมิภาค:</div>
+                        <div class="detail-value">${region}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้ให้บริการเน็ต</div>
+                        <div class="detail-label">เมือง:</div>
+                        <div class="detail-value">${city}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้ให้บริการ:</div>
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-label">ASN:</div>
                         <div class="detail-value">${asn}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
-                        <div class="detail-value">${locationText}</div>
                     </div>
                     ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
                     <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-label">ความแม่นยำ GPS:</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-label">ดูใน Google Maps:</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank" rel="noopener">เปิดแผนที่ <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                 </div>
 
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-label">ประเภทอุปกรณ์:</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
-                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
+                    <div class="detail-item">
+                        <div class="detail-label">รุ่นอุปกรณ์:</div>
                         <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${osName}</div>
+                        <div class="detail-label">เวอร์ชันระบบปฏิบัติการ:</div>
+                        <div class="detail-value">${osVersion}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-label">เบราว์เซอร์:</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
 
+            // Reset scroll position ของ modal body ไปที่ด้านบน
+            modalBody.scrollTop = 0;
+
+            // แสดง modal พร้อม animation
             modal.style.display = 'block';
+            modal.classList.remove('closing');
+            
+            // Focus ไปที่ modal สำหรับ accessibility
+            modal.setAttribute('aria-hidden', 'false');
+            modal.focus();
         }
 
-        // ปิด Modal
+        // ปิด Modal - ปรับปรุงให้คืนค่าการเลื่อนและเพิ่ม animation
         function closeModal() {
-            document.getElementById('detailsModal').style.display = 'none';
+            const modal = document.getElementById('detailsModal');
+            
+            // เพิ่ม closing animation
+            modal.classList.add('closing');
+            
+            // รอให้ animation เสร็จแล้วจึงซ่อน modal
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.classList.remove('closing');
+                modal.setAttribute('aria-hidden', 'true');
+                
+                // คืนค่าการเลื่อนของหน้าเว็บ
+                const scrollY = document.body.style.top;
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+                document.body.classList.remove('modal-open');
+                
+                // คืนค่าตำแหน่งการเลื่อน
+                if (scrollY) {
+                    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+                }
+            }, 300); // รอให้ animation เสร็จ (0.3s)
         }
 
         // แสดงข้อความผิดพลาด
