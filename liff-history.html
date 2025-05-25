@@ -1603,23 +1603,23 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <div class="detail-label">Tracking Key:</div>
+                        <div class="detail-label">Tracking Key</div>
                         <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส:</div>
+                        <div class="detail-label">ชื่อเคส</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">วันที่เวลา:</div>
+                        <div class="detail-label">วันที่เวลา</div>
                         <div class="detail-value">${formattedDateTime}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง:</div>
+                        <div class="detail-label">ผู้สร้าง</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">แหล่งที่มา:</div>
+                        <div class="detail-label">แหล่งที่มา</div>
                         <div class="detail-value">${source}</div>
                     </div>
                 </div>
@@ -1627,37 +1627,37 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP Address:</div>
+                        <div class="detail-label">IP Address</div>
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ:</div>
+                        <div class="detail-label">ประเทศ</div>
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง:</div>
+                        <div class="detail-label">เมือง</div>
                         <div class="detail-value">${city}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้ให้บริการ:</div>
+                        <div class="detail-label">ผู้ให้บริการ</div>
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ASN:</div>
+                        <div class="detail-label">ASN</div>
                         <div class="detail-value">${asn}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS:</div>
+                        <div class="detail-label">พิกัด GPS</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
                     ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
                     <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ:</div>
+                        <div class="detail-label">ความแม่นยำ</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">ลิงก์แผนที่:</div>
+                        <div class="detail-label">แผนที่</div>
                         <div class="detail-value"><a href="${mapLink}" target="_blank">เปิดใน Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                     ${hasValidCoordinates ? `
@@ -1665,8 +1665,8 @@
                         <div id="mapDisplay" class="map-display"></div>
                         <div class="map-info">
                             <i class="fas fa-info-circle"></i>
-                            ใช้นิ้วลากเพื่อเลื่อนแผนที่ และหยิกเพื่อซูมเข้า/ออก
-                            ${gpsAccuracy ? ` | วงกลมแสดงความแม่นยำ ${gpsAccuracy}` : ''}
+                            ใช้นิ้วลากเพื่อเลื่อนแผนที่เพื่อซูมเข้า/ออก
+                            ${gpsAccuracy ? ` | รัศมีความแม่นยำ ${gpsAccuracy}` : ''}
                         </div>
                     </div>` : ''}
                 </div>
@@ -1674,19 +1674,19 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์:</div>
+                        <div class="detail-label">ประเภทอุปกรณ์</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์:</div>
+                        <div class="detail-label">รุ่นอุปกรณ์</div>
                         <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ:</div>
+                        <div class="detail-label">ระบบปฏิบัติการ</div>
                         <div class="detail-value">${osName} ${osVersion}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์:</div>
+                        <div class="detail-label">เบราว์เซอร์</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
