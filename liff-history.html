@@ -7,6 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- เพิ่ม Leaflet CSS และ JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
             --primary-color: #3876BF;
@@ -658,6 +661,39 @@
             font-weight: 500;
         }
 
+        /* เพิ่ม CSS สำหรับแผนที่ */
+        .map-container {
+            width: 100%;
+            height: 250px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 2px dashed #ccc;
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .map-placeholder i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #bbb;
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 576px) {
             .app-container {
@@ -686,6 +722,10 @@
             .modal-content {
                 margin: 5% auto;
                 max-height: 90vh;
+            }
+
+            .map-container {
+                height: 200px;
             }
         }
     </style>
@@ -1452,6 +1492,9 @@
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
             let gpsAccuracy = "";
+            let hasValidLocation = false;
+            let latitude = null;
+            let longitude = null;
 
             if (item.location) {
                 console.log("ค่า location สำหรับ Modal:", item.location);
@@ -1460,20 +1503,17 @@
                 if (typeof item.location === "object" && item.location !== null) {
                     // กรณีเป็น object
                     if (item.location.lat !== undefined && item.location.long !== undefined) {
+                        latitude = parseFloat(item.location.lat);
+                        longitude = parseFloat(item.location.long);
                         locationText = `${item.location.lat}, ${item.location.long}`;
-
-                        // สร้างลิงก์ Google Maps โดยตรง
-                        mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
-
-                        // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
-                        if (item.location.gmapLink &&
-                            (item.location.gmapLink.includes('google.com/maps') ||
-                             item.location.gmapLink.includes('goo.gl/maps') ||
-                             item.location.gmapLink.startsWith('http'))) { // Allow any valid http link
-                            mapLink = item.location.gmapLink;
+                        
+                        // ตรวจสอบว่าเป็นค่าพิกัดที่ถูกต้อง
+                        if (!isNaN(latitude) && !isNaN(longitude) && 
+                            latitude >= -90 && latitude <= 90 && 
+                            longitude >= -180 && longitude <= 180) {
+                            hasValidLocation = true;
+                            mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
                         }
-
-                        gpsAccuracy = item.location.accuracy ? `±${Math.round(item.location.accuracy)} เมตร` : "ไม่มีข้อมูล"; // Round accuracy
                     }
                 } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล" && item.location !== "ไม่มี") {
                     // กรณีเป็น string
@@ -1481,10 +1521,17 @@
 
                     // พยายามแยกค่า lat, long จาก string
                     if (locationText.includes(",")) {
-                        const coords = locationText.split(",").map(coord => coord.trim());
-                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                            // สร้างลิงก์ Google Maps โดยตรง
-                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                        const coords = locationText.split(",");
+                        if (coords.length === 2) {
+                            latitude = parseFloat(coords[0].trim());
+                            longitude = parseFloat(coords[1].trim());
+                            
+                            if (!isNaN(latitude) && !isNaN(longitude) && 
+                                latitude >= -90 && latitude <= 90 && 
+                                longitude >= -180 && longitude <= 180) {
+                                hasValidLocation = true;
+                                mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                            }
                         }
                     }
                 }
@@ -1492,7 +1539,7 @@
 
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-            const source = item.source || "ไม่ระบุ"; // Get source for modal
+            const source = item.source || "ไม่ระบุ";
 
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
@@ -1535,22 +1582,22 @@
 
                 // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn; // Ensure AS prefix
+                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn;
             }
 
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
 
-            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2)); // Log structure for modal
+            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2));
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ"; // Keep device model
+            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
 
             // *** ใช้ osName และ osVersion ที่ส่งมาจาก Apps Script โดยตรง ***
             const osName = deviceInfo.osName || "ไม่ระบุ";
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ค่าที่ส่งมาโดยตรง
-            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`); // Log values used in modal
+            const osVersion = deviceInfo.osVersion || "ไม่ระบุ";
+            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`);
 
             const browser = deviceInfo.browser || "ไม่ระบุ";
 
@@ -1560,23 +1607,23 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${formattedDateTime}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-label">Tracking Key:</div>
                         <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส</div>
+                        <div class="detail-label">ชื่อเคส:</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-label">วันที่/เวลา:</div>
+                        <div class="detail-value">${formattedDateTime}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง:</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
-                    <div class="detail-item"> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
-                        <div class="detail-label">แหล่งที่มา</div>
+                    <div class="detail-item">
+                        <div class="detail-label">แหล่งที่มา:</div>
                         <div class="detail-value">${source}</div>
                     </div>
                 </div>
@@ -1584,72 +1631,164 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP Address</div>
+                        <div class="detail-label">IP Address:</div>
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-label">ประเทศ:</div>
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</div>
+                        <div class="detail-label">ภูมิภาค:</div>
+                        <div class="detail-value">${region}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้ให้บริการเน็ต</div>
+                        <div class="detail-label">เมือง:</div>
+                        <div class="detail-value">${city}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้ให้บริการ:</div>
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-label">ASN:</div>
                         <div class="detail-value">${asn}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
-                        <div class="detail-value">${locationText}</div>
                     </div>
                     ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
                     <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-label">ความแม่นยำ GPS:</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-label">ลิงก์แผนที่:</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูใน Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
+                    
+                    <!-- เพิ่มส่วนแผนที่ตัวอย่าง -->
+                    <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
+                        <div class="detail-label" style="margin-bottom: 8px;">แผนที่ตัวอย่าง:</div>
+                        ${hasValidLocation ? 
+                            `<div id="mapContainer" class="map-container"></div>` :
+                            `<div class="map-placeholder">
+                                <i class="fas fa-map-marked-alt"></i>
+                                <div>ไม่มีข้อมูลพิกัดที่ถูกต้อง</div>
+                                <div style="font-size: 12px; margin-top: 5px;">ตำแหน่ง: ${locationText}</div>
+                            </div>`
+                        }
+                    </div>
                 </div>
 
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-label">ประเภทอุปกรณ์:</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
-                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
+                    <div class="detail-item">
+                        <div class="detail-label">รุ่นอุปกรณ์:</div>
                         <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
-                        <div class="detail-value">${osName}</div>
+                        <div class="detail-label">ระบบปฏิบัติการ:</div>
+                        <div class="detail-value">${osName} ${osVersion}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชั่น</div>
-                        <div class="detail-value">${osVersion}</div> </div>
-                    <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-label">เบราว์เซอร์:</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
             `;
 
             modal.style.display = 'block';
+
+            // เริ่มต้นแผนที่หากมีข้อมูลตำแหน่งที่ถูกต้อง
+            if (hasValidLocation) {
+                setTimeout(() => {
+                    initializeMap(latitude, longitude, locationText);
+                }, 100); // รอให้ modal แสดงผลก่อน
+            }
+        }
+
+        // ฟังก์ชันเริ่มต้นแผนที่
+        function initializeMap(lat, lng, locationText) {
+            try {
+                // ตรวจสอบว่า container มีอยู่หรือไม่
+                const mapContainer = document.getElementById('mapContainer');
+                if (!mapContainer) {
+                    console.error('ไม่พบ map container');
+                    return;
+                }
+
+                // ลบแผนที่เก่าถ้ามี
+                mapContainer.innerHTML = '';
+
+                // สร้างแผนที่ใหม่
+                const map = L.map('mapContainer').setView([lat, lng], 15);
+
+                // เพิ่ม tile layer (OpenStreetMap)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 18,
+                }).addTo(map);
+
+                // เพิ่ม marker
+                const marker = L.marker([lat, lng]).addTo(map);
+                
+                // เพิ่ม popup
+                marker.bindPopup(`
+                    <div style="text-align: center;">
+                        <strong>ตำแหน่งที่ตรวจพบ</strong><br>
+                        <small>${locationText}</small><br>
+                        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" style="color: #3876BF;">
+                            ดูใน Google Maps <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                `).openPopup();
+
+                // เพิ่มวงกลมแสดงพื้นที่โดยประมาณ
+                L.circle([lat, lng], {
+                    color: '#3876BF',
+                    fillColor: 'rgba(56, 118, 191, 0.2)',
+                    fillOpacity: 0.3,
+                    radius: 100 // รัศมี 100 เมตร
+                }).addTo(map);
+
+                console.log('แผนที่ถูกสร้างสำเร็จ');
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการสร้างแผนที่:', error);
+                
+                // แสดง error placeholder แทน
+                const mapContainer = document.getElementById('mapContainer');
+                if (mapContainer) {
+                    mapContainer.innerHTML = `
+                        <div class="map-placeholder">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>ไม่สามารถโหลดแผนที่ได้</div>
+                            <div style="font-size: 12px; margin-top: 5px;">ตำแหน่ง: ${locationText}</div>
+                        </div>
+                    `;
+                }
+            }
         }
 
         // ปิด Modal
         function closeModal() {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
+            
+            // ลบแผนที่ก่อนปิด modal เพื่อป้องกัน memory leak
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer && mapContainer._leaflet_id) {
+                try {
+                    const map = mapContainer._leaflet_map;
+                    if (map) {
+                        map.remove();
+                    }
+                } catch (e) {
+                    console.warn('ไม่สามารถลบแผนที่:', e);
+                }
+            }
             
             // รีเซ็ต scroll position
             modalBody.scrollTop = 0;
