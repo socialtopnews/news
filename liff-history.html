@@ -7,8 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- เพิ่ม Leaflet.js สำหรับแผนที่ -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
@@ -661,58 +662,33 @@
             font-weight: 500;
         }
 
-        /* เพิ่ม CSS สำหรับแผนที่ */
+        /* Map Container */
         .map-container {
-            width: 100%;
-            height: 250px;
+            margin-top: 15px;
             border-radius: 8px;
             overflow: hidden;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        #locationMap {
+        .map-display {
             width: 100%;
-            height: 100%;
-        }
-
-        .map-container::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            border-radius: 8px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        /* ปรับแต่ง Leaflet controls */
-        .leaflet-control-zoom {
-            display: none !important; /* ซ่อนปุ่มซูม */
-        }
-
-        .leaflet-control-attribution {
-            font-size: 10px !important;
-            background: rgba(255,255,255,0.8) !important;
-        }
-
-        /* Popup แผนที่ */
-        .leaflet-popup-content {
-            font-family: 'Prompt', sans-serif !important;
-            font-size: 13px !important;
-            line-height: 1.4 !important;
+            height: 300px;
+            border: none;
+            outline: none;
         }
 
         .map-info {
-            background-color: rgba(56, 118, 191, 0.1);
-            padding: 8px 12px;
-            border-radius: 5px;
-            margin-top: 8px;
+            background-color: #f8f9fa;
+            padding: 10px;
             font-size: 12px;
-            color: var(--primary-dark);
+            color: var(--text-light);
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .map-info i {
+            color: var(--primary-color);
+            margin-right: 5px;
         }
 
         /* Responsive Adjustments */
@@ -745,7 +721,7 @@
                 max-height: 90vh;
             }
 
-            .map-container {
+            .map-display {
                 height: 200px;
             }
         }
@@ -1513,8 +1489,9 @@
             let locationText = "ไม่มีข้อมูล";
             let mapLink = "";
             let gpsAccuracy = "";
-            let latitude = null;
-            let longitude = null;
+            let hasValidCoordinates = false;
+            let lat = null;
+            let lng = null;
 
             if (item.location) {
                 console.log("ค่า location สำหรับ Modal:", item.location);
@@ -1523,13 +1500,17 @@
                 if (typeof item.location === "object" && item.location !== null) {
                     // กรณีเป็น object
                     if (item.location.lat !== undefined && item.location.long !== undefined) {
-                        latitude = parseFloat(item.location.lat);
-                        longitude = parseFloat(item.location.long);
-                        locationText = `${latitude}, ${longitude}`;
-                        mapLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        lat = parseFloat(item.location.lat);
+                        lng = parseFloat(item.location.long);
                         
-                        if (item.location.accuracy !== undefined) {
-                            gpsAccuracy = `${item.location.accuracy} เมตร`;
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            hasValidCoordinates = true;
+                            locationText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                            mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+                            
+                            if (item.location.accuracy !== undefined) {
+                                gpsAccuracy = `${item.location.accuracy} เมตร`;
+                            }
                         }
                     }
                 } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล" && item.location !== "ไม่มี") {
@@ -1539,12 +1520,12 @@
                     // พยายามแยกค่า lat, long จาก string
                     if (locationText.includes(",")) {
                         const coords = locationText.split(",");
-                        if (coords.length === 2) {
-                            const lat = parseFloat(coords[0].trim());
-                            const lng = parseFloat(coords[1].trim());
+                        if (coords.length >= 2) {
+                            lat = parseFloat(coords[0].trim());
+                            lng = parseFloat(coords[1].trim());
+                            
                             if (!isNaN(lat) && !isNaN(lng)) {
-                                latitude = lat;
-                                longitude = lng;
+                                hasValidCoordinates = true;
                                 mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
                             }
                         }
@@ -1554,7 +1535,7 @@
 
             // แปลงวันที่เวลาให้เป็นภาษาไทย
             const formattedDateTime = formatThaiDateTime(item.timestamp);
-            const source = item.source || "ไม่ระบุ";
+            const source = item.source || "ไม่ระบุ"; // Get source for modal
 
             // ========== ข้อมูล IP และตำแหน่ง - แก้ไขเพิ่มเติม ==========
             console.log("โครงสร้างข้อมูล IP ที่ได้รับ:", typeof item.ip, JSON.stringify(item.ip, null, 2));
@@ -1597,22 +1578,22 @@
 
                 // ดึงข้อมูล ASN
                 if (item.ip.as) asn = item.ip.as;
-                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn;
+                else if (item.ip.asn) asn = item.ip.asn ? (String(item.ip.asn).startsWith('AS') ? item.ip.asn : `AS${item.ip.asn}`) : asn; // Ensure AS prefix
             }
 
             // ========== ข้อมูลอุปกรณ์ - แก้ไขเพิ่มเติม ==========
             const deviceInfo = item.deviceInfo || {};
 
-            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2));
+            console.log("โครงสร้างข้อมูลอุปกรณ์สำหรับ Modal:", JSON.stringify(deviceInfo, null, 2)); // Log structure for modal
 
             // ดึงข้อมูลประเภทและรุ่นอุปกรณ์
             const deviceType = deviceInfo.deviceType || "ไม่ระบุ";
-            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ";
+            const deviceModel = deviceInfo.deviceModel || "ไม่ระบุ"; // Keep device model
 
             // *** ใช้ osName และ osVersion ที่ส่งมาจาก Apps Script โดยตรง ***
             const osName = deviceInfo.osName || "ไม่ระบุ";
-            const osVersion = deviceInfo.osVersion || "ไม่ระบุ";
-            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`);
+            const osVersion = deviceInfo.osVersion || "ไม่ระบุ"; // ใช้ค่าที่ส่งมาโดยตรง
+            console.log(`Modal - osName: '${osName}', osVersion: '${osVersion}'`); // Log values used in modal
 
             const browser = deviceInfo.browser || "ไม่ระบุ";
 
@@ -1630,7 +1611,7 @@
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวลา:</div>
+                        <div class="detail-label">วันที่เวลา:</div>
                         <div class="detail-value">${formattedDateTime}</div>
                     </div>
                     <div class="detail-item">
@@ -1654,10 +1635,6 @@
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ภูมิภาค:</div>
-                        <div class="detail-value">${region}</div>
-                    </div>
-                    <div class="detail-item">
                         <div class="detail-label">เมือง:</div>
                         <div class="detail-value">${city}</div>
                     </div>
@@ -1669,30 +1646,27 @@
                         <div class="detail-label">ASN:</div>
                         <div class="detail-value">${asn}</div>
                     </div>
-                    ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
-                    <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ GPS:</div>
-                        <div class="detail-value">${gpsAccuracy}</div>
-                    </div>` : ''}
                     <div class="detail-item">
                         <div class="detail-label">พิกัด GPS:</div>
                         <div class="detail-value">${locationText}</div>
                     </div>
+                    ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
+                    <div class="detail-item">
+                        <div class="detail-label">ความแม่นยำ:</div>
+                        <div class="detail-value">${gpsAccuracy}</div>
+                    </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">Google Maps:</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูบน Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-label">ลิงก์แผนที่:</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">เปิดใน Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
-                    
-                    ${latitude !== null && longitude !== null ? `
-                    <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                        <div class="detail-label" style="margin-bottom: 8px;">แผนที่ตัวอย่าง:</div>
-                        <div class="map-container">
-                            <div id="locationMap"></div>
-                        </div>
+                    ${hasValidCoordinates ? `
+                    <div class="map-container">
+                        <div id="mapDisplay" class="map-display"></div>
                         <div class="map-info">
-                            <i class="fas fa-info-circle"></i> ใช้นิ้วสัมผัสเพื่อเลื่อนและซูมแผนที่
-                            ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `<br><i class="fas fa-bullseye"></i> วงกลมแสดงพื้นที่ความแม่นยำ GPS (${gpsAccuracy})` : ''}
+                            <i class="fas fa-info-circle"></i>
+                            ใช้นิ้วลากเพื่อเลื่อนแผนที่ และหยิกเพื่อซูมเข้า/ออก
+                            ${gpsAccuracy ? ` | วงกลมแสดงความแม่นยำ ${gpsAccuracy}` : ''}
                         </div>
                     </div>` : ''}
                 </div>
@@ -1700,11 +1674,11 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภท:</div>
+                        <div class="detail-label">ประเภทอุปกรณ์:</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รุ่น:</div>
+                        <div class="detail-label">รุ่นอุปกรณ์:</div>
                         <div class="detail-value">${deviceModel}</div>
                     </div>
                     <div class="detail-item">
@@ -1720,101 +1694,78 @@
 
             modal.style.display = 'block';
 
-            // สร้างแผนที่หากมีพิกัด GPS
-            if (latitude !== null && longitude !== null) {
-                // รอให้ modal แสดงก่อนสร้างแผนที่
+            // แสดงแผนที่หากมีพิกัดที่ถูกต้อง
+            if (hasValidCoordinates) {
                 setTimeout(() => {
-                    createLocationMap(latitude, longitude, item.location?.accuracy);
+                    initializeMap(lat, lng, item.location?.accuracy);
                 }, 100);
             }
         }
 
-        // ฟังก์ชันสร้างแผนที่
-        function createLocationMap(lat, lng, accuracy) {
+        // ฟังก์ชันสำหรับสร้างแผนที่
+        function initializeMap(lat, lng, accuracy) {
             try {
-                // ลบแผนที่เก่าถ้ามี
+                // ลบแผนที่เดิมถ้ามี
                 if (window.currentMap) {
                     window.currentMap.remove();
+                    window.currentMap = null;
                 }
 
                 // สร้างแผนที่ใหม่
-                const map = L.map('locationMap', {
+                const map = L.map('mapDisplay', {
                     center: [lat, lng],
                     zoom: 15,
-                    zoomControl: false, // ปิดปุ่มซูม
-                    scrollWheelZoom: true, // เปิดการซูมด้วยล้อเมาส์
-                    touchZoom: true, // เปิดการซูมด้วยสัมผัส
-                    doubleClickZoom: true, // เปิดการซูมด้วยดับเบิลคลิก
-                    boxZoom: false, // ปิดการซูมด้วยการลาก
-                    keyboard: false, // ปิดการควบคุมด้วยคีย์บอร์ด
-                    dragging: true, // เปิดการลากแผนที่
-                    tap: true // เปิดการแตะสำหรับมือถือ
+                    zoomControl: false, // ปิดปุ่ม zoom
+                    scrollWheelZoom: true,
+                    doubleClickZoom: true,
+                    touchZoom: true,
+                    dragging: true
                 });
 
-                // เพิ่ม tile layer
+                // เพิ่ม tile layer (OpenStreetMap)
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap contributors',
                     maxZoom: 19
                 }).addTo(map);
 
-                // เพิ่มหมุดสำหรับตำแหน่ง
-                const marker = L.marker([lat, lng])
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="text-align: center;">
-                            <strong>ตำแหน่งที่ตรวจพบ</strong><br>
-                            <small>${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
-                            ${accuracy ? `<br><small>ความแม่นยำ: ${accuracy} เมตร</small>` : ''}
-                        </div>
-                    `);
+                // เพิ่มหมุดปักหมุด
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`<b>ตำแหน่งที่ตรวจพบ</b><br>พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
 
-                // เพิ่มวงกลมแสดงความแม่นยำ GPS ถ้ามีข้อมูล
-                if (accuracy && !isNaN(accuracy)) {
+                // เพิ่มวงกลมแสดงความแม่นยำ GPS (ถ้ามีข้อมูล)
+                if (accuracy && !isNaN(parseFloat(accuracy))) {
                     const accuracyRadius = parseFloat(accuracy);
-                    
-                    L.circle([lat, lng], {
-                        radius: accuracyRadius,
+                    const circle = L.circle([lat, lng], {
                         color: '#3876BF',
                         fillColor: '#3876BF',
-                        fillOpacity: 0.2,
-                        weight: 2,
-                        opacity: 0.6
-                    }).addTo(map).bindPopup(`
-                        <div style="text-align: center;">
-                            <strong>พื้นที่ความแม่นยำ GPS</strong><br>
-                            <small>รัศมี: ${accuracyRadius} เมตร</small><br>
-                            <small>ตำแหน่งจริงอาจอยู่ในบริเวณนี้</small>
-                        </div>
-                    `);
+                        fillOpacity: 0.1,
+                        radius: accuracyRadius,
+                        weight: 2
+                    }).addTo(map);
 
-                    // ปรับ zoom ให้เห็นวงกลมทั้งหมด
-                    const bounds = L.latLngBounds([
-                        [lat - (accuracyRadius / 111320), lng - (accuracyRadius / (111320 * Math.cos(lat * Math.PI / 180)))],
-                        [lat + (accuracyRadius / 111320), lng + (accuracyRadius / (111320 * Math.cos(lat * Math.PI / 180)))]
-                    ]);
-                    map.fitBounds(bounds, { padding: [20, 20] });
+                    // ปรับขนาดแผนที่ให้พอดีกับวงกลม
+                    map.fitBounds(circle.getBounds(), { padding: [20, 20] });
                 } else {
                     // ถ้าไม่มีข้อมูลความแม่นยำ ให้ซูมที่ระดับปกติ
-                    map.setView([lat, lng], 16);
+                    map.setView([lat, lng], 15);
                 }
 
                 // เก็บ reference ของแผนที่
                 window.currentMap = map;
 
-                console.log(`สร้างแผนที่สำเร็จ ตำแหน่ง: ${lat}, ${lng}${accuracy ? ` ความแม่นยำ: ${accuracy}m` : ''}`);
+                console.log(`แผนที่ถูกสร้างที่พิกัด: ${lat}, ${lng} ${accuracy ? `ด้วยความแม่นยำ ${accuracy} เมตร` : ''}`);
 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการสร้างแผนที่:', error);
                 
-                // แสดงข้อความแทนแผนที่ในกรณีเกิดข้อผิดพลาด
-                const mapContainer = document.getElementById('locationMap');
+                // แสดงข้อความแทนแผนที่หากเกิดข้อผิดพลาด
+                const mapContainer = document.getElementById('mapDisplay');
                 if (mapContainer) {
                     mapContainer.innerHTML = `
-                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: #f5f5f5; color: #666; flex-direction: column;">
-                            <i class="fas fa-map-marked-alt" style="font-size: 2rem; margin-bottom: 10px; color: #ccc;"></i>
-                            <div style="text-align: center; font-size: 14px;">
-                                ไม่สามารถโหลดแผนที่ได้<br>
-                                <small>พิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; color: #666;">
+                            <div style="text-align: center;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <div>ไม่สามารถแสดงแผนที่ได้</div>
                             </div>
                         </div>
                     `;
