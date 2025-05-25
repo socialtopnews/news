@@ -26,6 +26,7 @@
             --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
             --transition-normal: all 0.3s ease;
+            --transition-fast: all 0.2s ease;
             --spacer: 1.5rem;
         }
 
@@ -43,6 +44,14 @@
             padding: 0;
             margin: 0;
             min-height: 100vh;
+            /* ป้องกันการเลื่อนพื้นหลังเมื่อเปิด modal */
+            overflow-x: hidden;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
 
         .app-container {
@@ -66,6 +75,8 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            /* เพิ่ม backdrop-filter สำหรับความสวยงาม */
+            backdrop-filter: blur(10px);
         }
 
         .header::after {
@@ -125,11 +136,11 @@
             background-color: #ffffff;
         }
 
-        /* User Info Section */
+        /* User Info Section - ปรับปรุงให้สวยงามขึ้น */
         .user-info {
-            background-color: #ffffff;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             border-radius: var(--border-radius);
-            padding: 1.2rem;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
             border: none;
             box-shadow: var(--shadow-sm);
@@ -145,7 +156,12 @@
             left: 0;
             width: 4px;
             height: 100%;
-            background-color: var(--primary-color);
+            background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+        }
+
+        .user-info:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .user-info .profile {
@@ -159,10 +175,16 @@
             border-radius: 50%;
             object-fit: cover;
             margin-right: 20px;
-            border: 2px solid var(--primary-light);
+            border: 3px solid var(--primary-light);
             padding: 2px;
             background-color: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: var(--transition-normal);
+        }
+
+        .user-info:hover .profile-img {
+            transform: scale(1.05) rotate(3deg);
+            border-color: var(--primary-color);
         }
 
         .user-info .user-name {
@@ -201,15 +223,21 @@
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
-        /* Message Box */
+        /* Message Box - ปรับปรุงให้โดดเด่นขึ้น */
         .message-box {
-            background-color: rgba(255, 193, 7, 0.1);
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
             border-left: 4px solid var(--warning-color);
-            padding: 15px 20px;
+            padding: 18px 25px;
             margin: 1.5rem 0;
-            border-radius: 4px;
+            border-radius: var(--border-radius);
             position: relative;
             transition: var(--transition-normal);
+            backdrop-filter: blur(5px);
+        }
+
+        .message-box:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-sm);
         }
 
         .message-box:before {
@@ -217,13 +245,14 @@
             font-family: 'Font Awesome 6 Free';
             font-weight: 900;
             position: absolute;
-            top: 15px;
-            left: -12px;
+            top: 18px;
+            left: -15px;
             background-color: white;
-            color: var (--warning-color);
-            padding: 0 4px;
+            color: var(--warning-color);
+            padding: 5px 6px;
             font-size: 14px;
             border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .message-box p {
@@ -234,55 +263,73 @@
         }
 
         .message-box.error {
-            background-color: rgba(255, 82, 82, 0.1);
-            border-left: 4px solid var (--error-color);
+            background: linear-gradient(135deg, rgba(255, 82, 82, 0.1), rgba(255, 82, 82, 0.05));
+            border-left: 4px solid var(--error-color);
+        }
+
+        .message-box.error:before {
+            color: var(--error-color);
         }
 
         .message-box.error p {
             color: #721c24;
         }
 
-        /* Search Box */
+        /* Search Box - ปรับปรุงให้ทันสมัยขึ้น */
         .search-box {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             position: relative;
         }
 
         .search-box input {
             width: 100%;
-            padding: 12px 40px 12px 15px;
-            border: 1px solid #E0E0E0;
+            padding: 15px 45px 15px 20px;
+            border: 2px solid #E0E0E0;
             border-radius: var(--border-radius);
             font-size: 15px;
             transition: var(--transition-normal);
-            background-color: #FAFAFA;
+            background: linear-gradient(135deg, #FAFAFA, #FFFFFF);
+            color: var(--text-color);
         }
 
         .search-box input:focus {
             border-color: var(--primary-color);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 136, 231, 0.15);
-            background-color: #FFFFFF;
+            box-shadow: 0 0 0 4px rgba(88, 136, 231, 0.15);
+            background: #FFFFFF;
+            transform: translateY(-1px);
+        }
+
+        .search-box input::placeholder {
+            color: #999;
+            font-style: italic;
         }
 
         .search-box .search-icon {
             position: absolute;
-            right: 15px;
+            right: 18px;
             top: 50%;
             transform: translateY(-50%);
-            color: #999;
+            color: var(--primary-color);
+            font-size: 16px;
+            transition: var(--transition-normal);
         }
 
-        /* History List */
+        .search-box input:focus + .search-icon {
+            transform: translateY(-50%) scale(1.1);
+            color: var(--primary-dark);
+        }
+
+        /* History List - ปรับปรุงให้มีความลึก */
         .history-list {
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .history-item {
-            background-color: white;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             border-radius: var(--border-radius);
-            padding: 18px 15px;
-            margin-bottom: 15px;
+            padding: 20px 18px;
+            margin-bottom: 18px;
             box-shadow: var(--shadow-sm);
             transition: var(--transition-normal);
             position: relative;
@@ -291,80 +338,104 @@
             border-left: 4px solid var(--primary-light);
         }
 
+        .history-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, var(--primary-light), transparent);
+            opacity: 0;
+            transition: var(--transition-normal);
+        }
+
         .history-item:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px) translateX(2px);
             box-shadow: var(--shadow-md);
             border-left: 4px solid var(--primary-color);
         }
 
+        .history-item:hover::after {
+            opacity: 1;
+        }
+
         .history-item::before {
-            display: none; /* ลบเส้นด้านซ้าย */
+            display: none;
         }
 
         .history-date {
             color: var(--text-light);
             font-size: 13px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             font-weight: 400;
         }
 
         .history-date i {
-            margin-right: 8px;
+            margin-right: 10px;
             color: var(--primary-color);
+            font-size: 14px;
         }
 
         .history-key {
             color: var(--primary-dark);
             font-weight: 500;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             font-size: 14px;
             word-break: break-all;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .history-key i {
             color: var(--primary-color);
-            font-size: 12px;
+            font-size: 13px;
         }
 
         .history-case {
             font-weight: 600;
             font-size: 16px;
-            margin-bottom: 12px;
-            color: var (--text-color);
+            margin-bottom: 15px;
+            color: var(--text-color);
         }
 
         .history-action {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 15px;
+            margin-top: 18px;
         }
 
         .view-details-btn {
-            background-color: var(--primary-light);
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
             color: white;
             border: none;
-            padding: 7px 14px;
-            border-radius: 6px;
+            padding: 10px 18px;
+            border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
             display: flex;
             align-items: center;
             font-weight: 500;
+            box-shadow: 0 2px 8px rgba(88, 136, 231, 0.3);
         }
 
         .view-details-btn i {
-            margin-right: 5px;
+            margin-right: 6px;
         }
 
         .view-details-btn:hover {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(88, 136, 231, 0.4);
+        }
+
+        .view-details-btn:active {
+            transform: translateY(0);
         }
 
         .history-stats {
@@ -375,163 +446,231 @@
         }
 
         .history-stats div {
-            margin-right: 12px;
+            margin-right: 15px;
             display: flex;
             align-items: center;
-            background-color: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: var(--transition-fast);
+        }
+
+        .history-stats div:hover {
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
         }
 
         .history-stats i {
-            margin-right: 5px;
+            margin-right: 6px;
             color: var(--primary-color);
         }
 
-        /* Pagination */
+        /* Pagination - ปรับปรุงให้ทันสมัยขึ้น */
         .pagination {
             display: flex;
             justify-content: center;
-            margin-top: 30px;
+            margin-top: 35px;
             align-items: center;
+            gap: 10px;
         }
 
         .pagination-btn {
-            background-color: white;
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            margin: 0 5px;
-            border-radius: 4px;
+            background: linear-gradient(135deg, white, #f8f9fa);
+            border: 2px solid #ddd;
+            padding: 10px 15px;
+            border-radius: 8px;
             cursor: pointer;
             transition: var(--transition-normal);
+            font-weight: 500;
+            min-width: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .pagination-btn:hover:not(.active, .disabled) {
-            background-color: var(--secondary-color);
-            border-color: var(--primary-light);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-light));
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
         }
 
         .pagination-btn.active {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border-color: var(--primary-color);
             cursor: default;
+            box-shadow: 0 4px 12px rgba(88, 136, 231, 0.3);
         }
 
         .pagination-btn.disabled {
             color: #aaa;
             cursor: not-allowed;
+            opacity: 0.5;
         }
 
         .pagination-info {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-light);
-            margin: 0 10px;
+            margin: 0 15px;
+            font-weight: 500;
         }
 
-        /* Details Modal */
+        /* Details Modal - ปรับปรุงใหญ่ */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { 
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+            to { 
+                opacity: 1;
+                backdrop-filter: blur(8px);
+            }
         }
 
         .modal-content {
-            background-color: #fefefe;
-            margin: 10% auto;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            margin: 8% auto;
             padding: 0;
-            width: 90%;
-            max-width: 550px;
+            width: 92%;
+            max-width: 600px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
-            animation: modalOpen 0.3s ease-out;
+            animation: modalSlideIn 0.4s ease-out;
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
-        @keyframes modalOpen {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes modalSlideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-50px) scale(0.9);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
         }
 
         .modal-header {
-            background: linear-gradient(145deg, var(--primary-color), var(--primary-dark));
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
-            padding: 15px 20px;
+            padding: 20px 25px;
             border-radius: var(--border-radius) var(--border-radius) 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .modal-header h2 {
             margin: 0;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-header h2:before {
+            content: '\f05a';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 18px;
         }
 
         .close-modal {
             color: white;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-fast);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .close-modal:hover {
-            background-color: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
         }
 
         .modal-body {
-            padding: 20px;
+            padding: 25px;
             overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* เพิ่ม smooth scrolling สำหรับ modal body */
+        .modal-body {
+            scroll-behavior: smooth;
         }
 
         .detail-group {
-            margin-bottom: 25px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: var(--transition-normal);
+        }
+
+        .detail-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
 
         .detail-group h3 {
-            font-size: 16px;
+            font-size: 18px;
             color: var(--primary-dark);
-            margin-bottom: 12px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
             display: flex;
             align-items: center;
+            font-weight: 600;
         }
 
         .detail-group h3 i {
-            margin-right: 8px;
+            margin-right: 10px;
             color: var(--primary-color);
+            font-size: 16px;
         }
 
         .detail-item {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 14px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
         }
 
         .detail-label {
-            font-weight: 500;
-            width: 140px;
+            font-weight: 600;
+            width: 150px;
             color: var(--text-color);
             flex-shrink: 0;
         }
@@ -547,64 +686,82 @@
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            transition: var(--transition-fast);
+        }
+
+        .detail-value a:hover {
+            color: var(--primary-dark);
+            transform: translateX(3px);
         }
 
         .modal-footer {
-            padding: 15px 20px;
+            padding: 20px 25px;
             border-top: 1px solid #eee;
             display: flex;
             justify-content: flex-end;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
         }
 
         .modal-btn {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 25px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: var (--transition-normal);
+            transition: var(--transition-normal);
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(88, 136, 231, 0.3);
         }
 
         .modal-btn:hover {
-            background-color: var(--primary-dark);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(88, 136, 231, 0.4);
         }
 
         /* No Data Message */
         .no-data {
             text-align: center;
-            padding: 40px 20px;
-            color: var (--text-light);
+            padding: 50px 20px;
+            color: var(--text-light);
         }
 
         .no-data i {
-            font-size: 40px;
-            color: var (--secondary-color);
-            margin-bottom: 15px;
+            font-size: 48px;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
 
         .no-data p {
             font-size: 16px;
+            font-weight: 500;
         }
 
-        /* Loading Spinner */
+        /* Loading Spinner - ปรับปรุงให้สวยงามขึ้น */
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
         }
 
         .loading-spinner {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border: 4px solid rgba(88, 136, 231, 0.2);
             border-radius: 50%;
             border-top: 4px solid var(--primary-color);
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -615,15 +772,16 @@
         .loading p {
             color: var(--text-light);
             font-size: 14px;
+            font-weight: 500;
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            padding: 20px;
-            background-color: #F8F9FA;
+            padding: 25px;
+            background: linear-gradient(135deg, #F8F9FA, #E9ECEF);
             border-top: 1px solid #E9ECEF;
-            margin-top: 30px;
+            margin-top: 35px;
             font-size: 14px;
             color: var(--text-light);
         }
@@ -635,7 +793,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: #FFFFFF;
+            background: linear-gradient(135deg, #FFFFFF, #F8F9FA);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -644,18 +802,19 @@
         }
 
         #loadingScreen .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(88, 136, 231, 0.2);
-            border-top: 4px solid var(--primary-color);
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(88, 136, 231, 0.2);
+            border-top: 5px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
+            font-size: 16px;
         }
 
         /* Responsive Adjustments */
@@ -686,6 +845,33 @@
             .modal-content {
                 margin: 5% auto;
                 max-height: 90vh;
+                width: 95%;
+            }
+
+            .modal-header {
+                padding: 15px 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .detail-label {
+                width: 120px;
+            }
+
+            .pagination-btn {
+                padding: 8px 12px;
+                min-width: 40px;
+            }
+
+            .search-box input {
+                padding: 12px 40px 12px 15px;
+            }
+
+            .view-details-btn {
+                padding: 8px 14px;
+                font-size: 12px;
             }
         }
     </style>
@@ -1435,12 +1621,18 @@
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
 
-        // แสดง Modal รายละเอียด
+        // แสดง Modal รายละเอียด - ปรับปรุงให้มีการ reset modal
         function showDetailsModal(item) {
             const modal = document.getElementById('detailsModal');
             const modalBody = document.getElementById('modalBody');
 
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
+
+            // เพิ่มการป้องกันการเลื่อนพื้นหลัง
+            document.body.classList.add('modal-open');
+
+            // รีเซ็ต scroll position ของ modal body ก่อนแสดงเนื้อหาใหม่
+            modalBody.scrollTop = 0;
 
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
@@ -1460,14 +1652,16 @@
                         mapLink = `https://www.google.com/maps?q=${item.location.lat},${item.location.long}`;
 
                         // ถ้า gmapLink มีค่าและเป็น URL ของ Google Maps ให้ใช้ค่านั้นแทน
-                        if (item.location.gmapLink &&
-                            (item.location.gmapLink.includes('google.com/maps') ||
-                             item.location.gmapLink.includes('goo.gl/maps') ||
-                             item.location.gmapLink.startsWith('http'))) { // Allow any valid http link
+                        if (item.location.gmapLink && 
+                            (item.location.gmapLink.includes('google.com/maps') || 
+                             item.location.gmapLink.includes('goo.gl/maps'))) {
                             mapLink = item.location.gmapLink;
                         }
 
-                        gpsAccuracy = item.location.accuracy ? `±${Math.round(item.location.accuracy)} เมตร` : "ไม่มีข้อมูล"; // Round accuracy
+                        // ถ้ามีข้อมูลความแม่นยำ GPS
+                        if (item.location.accuracy !== undefined) {
+                            gpsAccuracy = `${item.location.accuracy} เมตร`;
+                        }
                     }
                 } else if (typeof item.location === "string" && item.location !== "ไม่มีข้อมูล" && item.location !== "ไม่มี") {
                     // กรณีเป็น string
@@ -1475,10 +1669,13 @@
 
                     // พยายามแยกค่า lat, long จาก string
                     if (locationText.includes(",")) {
-                        const coords = locationText.split(",").map(coord => coord.trim());
-                        if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                            // สร้างลิงก์ Google Maps โดยตรง
-                            mapLink = `https://www.google.com/maps?q=${coords[0]},${coords[1]}`;
+                        const coords = locationText.split(",");
+                        if (coords.length === 2) {
+                            const lat = coords[0].trim();
+                            const lng = coords[1].trim();
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                mapLink = `https://www.google.com/maps?q=${lat},${lng}`;
+                            }
                         }
                     }
                 }
@@ -1554,23 +1751,23 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-info-circle"></i> ข้อมูลพื้นฐาน</h3>
                     <div class="detail-item">
-                        <div class="detail-label">วันเวลา</div>
-                        <div class="detail-value">${formattedDateTime}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Tracking Key</div>
+                        <div class="detail-label">Tracking Key:</div>
                         <div class="detail-value">${item.trackingKey || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ชื่อเคส</div>
+                        <div class="detail-label">ชื่อเคส:</div>
                         <div class="detail-value">${item.caseName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้สร้าง</div>
+                        <div class="detail-label">วันที่เวลา:</div>
+                        <div class="detail-value">${formattedDateTime}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้สร้าง:</div>
                         <div class="detail-value">${item.creatorFullName || "ไม่ระบุ"}</div>
                     </div>
                     <div class="detail-item"> <!-- *** เพิ่มแหล่งที่มาตรงนี้ *** -->
-                        <div class="detail-label">แหล่งที่มา</div>
+                        <div class="detail-label">แหล่งที่มา:</div>
                         <div class="detail-value">${source}</div>
                     </div>
                 </div>
@@ -1578,60 +1775,56 @@
                 <div class="detail-group">
                     <h3><i class="fas fa-map-marker-alt"></i> ข้อมูลตำแหน่ง</h3>
                     <div class="detail-item">
-                        <div class="detail-label">IP Address</div>
+                        <div class="detail-label">IP Address:</div>
                         <div class="detail-value">${ipInfo}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ประเทศ</div>
+                        <div class="detail-label">ประเทศ:</div>
                         <div class="detail-value">${country}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เมือง/ภูมิภาค</div>
-                        <div class="detail-value">${city !== "ไม่ทราบ" ? `${city}, ${region}` : (region !== "ไม่ทราบ" ? region : "ไม่ทราบ")}</div>
+                        <div class="detail-label">ภูมิภาค:</div>
+                        <div class="detail-value">${region}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">ผู้ให้บริการเน็ต</div>
+                        <div class="detail-label">เมือง:</div>
+                        <div class="detail-value">${city}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">ผู้ให้บริการ:</div>
                         <div class="detail-value">${isp}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">รหัสเซิร์ฟเวอร์</div>
+                        <div class="detail-label">ASN:</div>
                         <div class="detail-value">${asn}</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">พิกัด GPS</div>
-                        <div class="detail-value">${locationText}</div>
                     </div>
                     ${gpsAccuracy && gpsAccuracy !== "ไม่มีข้อมูล" ? `
                     <div class="detail-item">
-                        <div class="detail-label">ความแม่นยำ</div>
+                        <div class="detail-label">ความแม่นยำ GPS:</div>
                         <div class="detail-value">${gpsAccuracy}</div>
                     </div>` : ''}
                     ${mapLink && mapLink.startsWith('http') ? `
                     <div class="detail-item">
-                        <div class="detail-label">แผนที่</div>
-                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูในแผนที่ Google Maps <i class="fas fa-external-link-alt"></i></a></div>
+                        <div class="detail-label">แผนที่:</div>
+                        <div class="detail-value"><a href="${mapLink}" target="_blank">ดูบน Google Maps <i class="fas fa-external-link-alt"></i></a></div>
                     </div>` : ''}
                 </div>
 
                 <div class="detail-group">
                     <h3><i class="fas fa-mobile-alt"></i> ข้อมูลอุปกรณ์</h3>
                     <div class="detail-item">
-                        <div class="detail-label">ประเภทอุปกรณ์</div>
+                        <div class="detail-label">ประเภทอุปกรณ์:</div>
                         <div class="detail-value">${deviceType}</div>
                     </div>
-                     <div class="detail-item">
-                        <div class="detail-label">รุ่นอุปกรณ์</div>
-                        <div class="detail-value">${deviceModel}</div>
-                    </div>
                     <div class="detail-item">
-                        <div class="detail-label">ระบบปฏิบัติการ</div>
+                        <div class="detail-label">ระบบปฏิบัติการ:</div>
                         <div class="detail-value">${osName}</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-label">เวอร์ชั่น</div>
+                        <div class="detail-label">เวอร์ชัน OS:</div>
                         <div class="detail-value">${osVersion}</div> </div>
                     <div class="detail-item">
-                        <div class="detail-label">เบราว์เซอร์</div>
+                        <div class="detail-label">เบราว์เซอร์:</div>
                         <div class="detail-value">${browser}</div>
                     </div>
                 </div>
@@ -1640,49 +1833,55 @@
             modal.style.display = 'block';
         }
 
-        // ปิด Modal
+       
+
+        // ปิด Modal - ปรับปรุงให้มีการเอาการป้องกันการเลื่อนออก
         function closeModal() {
-            document.getElementById('detailsModal').style.display = 'none';
-        }
-
-        // แสดงข้อความผิดพลาด
-        function showErrorMessage(message) {
-            const existingError = document.querySelector('.message-box.error');
-            if (existingError) existingError.remove(); // Remove previous error first
-
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'message-box error';
-            errorMessage.innerHTML = `<p>${message}</p>`;
-
-            const content = document.querySelector('.content');
-            // Insert after user info or at the top if user info is hidden
-            const insertBeforeElement = document.getElementById('userInfoSection').style.display !== 'none'
-                ? document.getElementById('userInfoSection').nextSibling
-                : content.firstChild;
-            content.insertBefore(errorMessage, insertBeforeElement);
-
-
-            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
+            const modal = document.getElementById('detailsModal');
+            
+            // เพิ่ม animation เมื่อปิด modal
+            modal.style.animation = 'modalFadeOut 0.3s ease-out';
+            
             setTimeout(() => {
-                // Check if the element still exists before removing
-                if (errorMessage.parentNode) {
-                    errorMessage.remove();
-                }
-            }, 5000);
+                modal.style.display = 'none';
+                modal.style.animation = '';
+                // เอาการป้องกันการเลื่อนพื้นหลังออก
+                document.body.classList.remove('modal-open');
+            }, 300);
         }
 
-        // เพิ่มฟังก์ชันสำหรับตรวจสอบว่า App Script เข้าถึงได้หรือไม่
+        // เพิ่ม CSS animation สำหรับการปิด modal
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes modalFadeOut {
+                from { 
+                    opacity: 1;
+                    backdrop-filter: blur(8px);
+                }
+                to { 
+                    opacity: 0;
+                    backdrop-filter: blur(0px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // ตัวแปรสำหรับเก็บสถานะการเชื่อมต่อ App Script
+        let appScriptConnected = false;
+
+        // ตัวแปรสำหรับเก็บข้อมูลการเชื่อมต่อ
+        let connectionChecked = false;
+
+        // ฟังก์ชันตรวจสอบการเข้าถึง App Script
         function checkAppScriptAccess() {
             console.log("กำลังตรวจสอบการเข้าถึง App Script...");
-
-            // สร้างตัวแปรสำหรับเก็บสถานะการเชื่อมต่อ
-            let connectionChecked = false;
 
             const img = new Image();
             img.onload = function() {
                 if (connectionChecked) return; // Prevent double execution
                 console.log("สามารถเข้าถึง App Script ได้!");
                 connectionChecked = true;
+                appScriptConnected = true; // Set connection status
                 // ไม่แสดงข้อความใดๆ เมื่อเชื่อมต่อสำเร็จ
             };
             img.onerror = function() {
