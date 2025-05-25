@@ -500,6 +500,11 @@
             overflow-y: auto;
         }
 
+        /* เพิ่ม CSS สำหรับป้องกันการเลื่อน background */
+        body.modal-open {
+            overflow: hidden;
+        }
+
         .detail-group {
             margin-bottom: 25px;
             background-color: #ffffff;
@@ -656,13 +661,6 @@
         #loadingScreen p {
             color: var(--primary-color);
             font-weight: 500;
-        }
-
-        /* เพิ่ม CSS สำหรับป้องกันการเลื่อนพื้นหลัง */
-        body.modal-open {
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
         }
 
         /* Responsive Adjustments */
@@ -1099,16 +1097,6 @@
                 }
             });
 
-            // เพิ่ม event listener สำหรับปุ่ม ESC
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape') {
-                    const modal = document.getElementById('detailsModal');
-                    if (modal.style.display === 'block') {
-                        closeModal();
-                    }
-                }
-            });
-
             // เพิ่มปุ่มทดสอบและเวอร์ชันล่าสุดของโค้ด
             if (isLimitedBrowser() || location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
                 addTestOption();
@@ -1169,7 +1157,7 @@
 
                     console.log("ได้รับข้อมูล JSONP:", data);
 
-                    // แสดงข้อมูลเพื่อการแก้ปัญหา
+                    // แสดงข้อมูลเพื่อการแก้ไขปัญหา
                     if (data.history && data.history.length > 0) {
                         console.log("ตัวอย่างข้อมูลตัวแรก:", JSON.stringify(data.history[0], null, 2));
                         // ตรวจสอบค่า isOwner ในข้อมูลตัวแรก
@@ -1459,11 +1447,11 @@
 
             console.log("กำลังแสดงรายละเอียดของข้อมูล:", JSON.stringify(item, null, 2));
 
-            // ป้องกันการเลื่อนพื้นหลัง
-            preventBackgroundScroll();
-
-            // รีเซ็ตการเลื่อนของ modal body ไปด้านบน
+            // รีเซ็ต modal scroll เมื่อเปิดรายละเอียดใหม่
             modalBody.scrollTop = 0;
+
+            // ป้องกันการเลื่อน background
+            document.body.classList.add('modal-open');
 
             // สร้างเนื้อหา Modal
             let locationText = "ไม่มีข้อมูล";
@@ -1666,44 +1654,42 @@
         // ปิด Modal
         function closeModal() {
             document.getElementById('detailsModal').style.display = 'none';
-            
-            // เปิดการเลื่อนพื้นหลังกลับคืน
-            restoreBackgroundScroll();
-        }
-
-        // ฟังก์ชันป้องกันการเลื่อนพื้นหลัง
-        function preventBackgroundScroll() {
-            // เก็บตำแหน่งการเลื่อนปัจจุบัน
-            const scrollY = window.scrollY;
-            
-            // เพิ่ม class และตั้งค่า CSS
-            document.body.classList.add('modal-open');
-            document.body.style.top = `-${scrollY}px`;
-            
-            // เก็บตำแหน่งไว้ใน attribute เพื่อใช้ตอนปิด modal
-            document.body.setAttribute('data-scroll-y', scrollY);
-        }
-
-        // ฟังก์ชันเปิดการเลื่อนพื้นหลังกลับคืน
-        function restoreBackgroundScroll() {
-            // ดึงตำแหน่งการเลื่อนที่เก็บไว้
-            const scrollY = document.body.getAttribute('data-scroll-y') || 0;
-            
-            // ลบ class และ style
+            // อนุญาตให้เลื่อน background ได้อีกครั้ง
             document.body.classList.remove('modal-open');
-            document.body.style.top = '';
-            document.body.removeAttribute('data-scroll-y');
-            
-            // กลับไปยังตำแหน่งเดิม
-            window.scrollTo(0, parseInt(scrollY));
         }
 
-        // ตัวแปรสำหรับเก็บสถานะการเชื่อมต่อ
-        let connectionChecked = false;
+        // แสดงข้อความผิดพลาด
+        function showErrorMessage(message) {
+            const existingError = document.querySelector('.message-box.error');
+            if (existingError) existingError.remove(); // Remove previous error first
+
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'message-box error';
+            errorMessage.innerHTML = `<p>${message}</p>`;
+
+            const content = document.querySelector('.content');
+            // Insert after user info or at the top if user info is hidden
+            const insertBeforeElement = document.getElementById('userInfoSection').style.display !== 'none'
+                ? document.getElementById('userInfoSection').nextSibling
+                : content.firstChild;
+            content.insertBefore(errorMessage, insertBeforeElement);
+
+
+            // ซ่อนข้อความหลังจากผ่านไป 5 วินาที
+            setTimeout(() => {
+                // Check if the element still exists before removing
+                if (errorMessage.parentNode) {
+                    errorMessage.remove();
+                }
+            }, 5000);
+        }
 
         // เพิ่มฟังก์ชันสำหรับตรวจสอบว่า App Script เข้าถึงได้หรือไม่
         function checkAppScriptAccess() {
             console.log("กำลังตรวจสอบการเข้าถึง App Script...");
+
+            // สร้างตัวแปรสำหรับเก็บสถานะการเชื่อมต่อ
+            let connectionChecked = false;
 
             const img = new Image();
             img.onload = function() {
