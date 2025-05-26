@@ -1231,7 +1231,7 @@
                     // - ปรับขนาดให้เหมาะสมกับ Flex message (800x800)
                     // - ตั้งค่า quality 85% เพื่อลดขนาดไฟล์
                     // - ใช้ format auto เพื่อให้ Cloudinary เลือก format ที่ดีที่สุด (WebP หรือ AVIF)
-                    const optimizedUrl = data.secure_url.replace('/upload/', '/upload/q_85,f_auto,w_800,h_800,c_limit/');
+                    const optimizedUrl = data.secure_url.replace('/upload/', '/upload/q_100,f_auto,w_800,h_800,c_limit/');
                     
                     return optimizedUrl;
                 } else {
