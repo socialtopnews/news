@@ -778,8 +778,6 @@
         let userHasPermission = false;
         let expirationStatus = ""; // เพิ่มตัวแปรเก็บวันหมดอายุ
         let phishingMode = "image"; // "image" หรือ "link"
-        let isSaving = false; // ตัวแปรเพื่อติดตามสถานะการบันทึก
-        let canCloseWindow = false; // ตัวแปรควบคุมการปิดหน้าต่าง
         
         // ค่า Config สำคัญ
         const LIFF_ID = '2007231851-0DqwXxQg';
@@ -798,8 +796,6 @@
             initializeLiff();
             setupEventListeners();
             setupModeToggle();
-            setupUnloadProtection(); // เพิ่มการป้องกันการปิดหน้าต่างระหว่างบันทึกข้อมูล
-            checkPendingDataSync(); // ตรวจสอบและซิงค์ข้อมูลที่ค้างอยู่
         });
         
         // ฟังก์ชันเริ่มต้นการทำงาน LIFF
@@ -1331,7 +1327,7 @@
         }
         
         // บันทึกข้อมูล Tracking Key และ Case Name
-        async function saveTrackingCaseMapping(trackKey, caseName, imgUrl = "") {
+        async function saveTrackingCaseMapping(trackKey, caseName) {
             if (!isLiffInitialized || !userId) {
                 console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
                 return false;
@@ -1342,938 +1338,218 @@
                 console.log('ชื่อเคส:', caseName);
                 console.log('ผู้สร้าง ID:', userId);
                 console.log('ชื่อผู้สร้าง:', displayName);
-                console.log('รูปภาพ URL:', imgUrl || imageUrl);
+                console.log('รูปภาพ URL:', imageUrl);
                 
                 // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
                 const requestId = generateUniqueId();
                 
                 // รวบรวมข้อมูลที่จะส่ง
                 const postData = {
-                    action: 'saveTrackingMapping',
-                    trackingKey: trackKey,
-                    caseName: caseName,
-                    creatorId: userId,
-                    creatorName: displayName,
-                    imageUrl: imgUrl || imageUrl,
-                    requestId: requestId,
-                    timestamp: new Date().toISOString()
-                };
-
-                // ทดลองส่งข้อมูลด้วย fetch API (ลดจำนวน retry ลงเหลือ 1 ครั้งเพื่อความเร็ว)
-                let success = await trySendDataWithFetch(postData, 1);
-                
-                // ถ้า fetch ไม่สำเร็จ ให้ลองใช้ JSONP เป็นตัวสำรอง (1 ครั้ง)
-                if (!success) {
-                    console.log('การส่งข้อมูลด้วย fetch ล้มเหลว กำลังลองใช้ JSONP แทน');
-                    success = await trySendDataWithJSONP(postData);
-                }
-                
-                // ถ้าส่งสำเร็จด้วยวิธีใดวิธีหนึ่ง
-                if (success) {
-                    console.log('บันทึก Tracking Key สำเร็จ');
-                    
-                    // อัปเดตสถานะของข้อมูลในที่เก็บข้อมูล
-                    try {
-                        updateTrackingDataStatus(postData.requestId, 'synced');
-                    } catch (storageErr) {
-                        console.error('ไม่สามารถอัปเดตสถานะข้อมูลใน localStorage:', storageErr);
-                    }
-                    
-                    return true;
-                } else {
-                    // ถ้าทุกวิธีล้มเหลว ให้แน่ใจว่าข้อมูลถูกบันทึกใน localStorage แล้ว
-                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว แต่ข้อมูลถูกบันทึกใน localStorage แล้ว');
-                    return true; // ยังคงคืนค่า true เพราะข้อมูลได้ถูกบันทึกใน localStorage แล้ว
-                }
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
-                return false;
-            }
-        }
-        
-        // ฟังก์ชันส่งข้อมูลด้วย fetch API (ปรับปรุงให้เร็วขึ้น)
-        async function trySendDataWithFetch(data, retries = 1) {
-            for (let attempt = 0; attempt <= retries; attempt++) {
-                try {
-                    console.log(`กำลังส่งข้อมูลด้วย fetch (พยายามครั้งที่ ${attempt + 1}/${retries + 1})`);
-                    
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // ลดเวลา timeout เหลือ 5 วินาที
-                    
-                    const response = await fetch(PHISHING_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(data),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (response.ok) {
-                        console.log('บันทึก Tracking Key สำเร็จด้วย fetch API');
-                        return true;
-                    } else {
-                        console.warn(`fetch ไม่สำเร็จ (${response.status}): ${response.statusText}`);
-                        if (attempt < retries) {
-                            await new Promise(resolve => setTimeout(resolve, 500)); // รอแค่ 0.5 วินาทีก่อนลองใหม่
-                        }
-                    }
-                } catch (error) {
-                    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูลด้วย fetch (ครั้งที่ ${attempt + 1}):`, error);
-                    if (attempt < retries) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-            }
-            
-            // หากลองทุกครั้งแล้วไม่สำเร็จ
-            return false;
-        }
-        
-        // ฟังก์ชันส่งข้อมูลด้วย JSONP (ปรับปรุงให้เร็วขึ้น)
-        async function trySendDataWithJSONP(data) {
-            return new Promise((resolve) => {
-                try {
-                    console.log('กำลังส่งข้อมูลด้วย JSONP');
-                    
-                    // สร้าง callback function
-                    const callbackName = 'jsonp_callback_' + new Date().getTime();
-                    
-                    // กำหนด global callback function
-                    window[callbackName] = function(response) {
-                        console.log('ได้รับการตอบกลับจาก JSONP:', response);
-                        
-                        // ลบ script tag และ callback function
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        clearTimeout(timeoutId);
-                        
-                        // ตรวจสอบการตอบกลับ
-                        if (response && response.status === 'success') {
-                            console.log('บันทึกข้อมูลสำเร็จด้วย JSONP');
-                            resolve(true);
-                        } else {
-                            console.warn('JSONP ไม่สำเร็จ:', response);
-                            resolve(false);
-                        }
-                    };
-                    
-                    // สร้าง URL สำหรับ JSONP
-                    let url = new URL(PHISHING_WEBHOOK_URL);
-                    
-                    // เพิ่มพารามิเตอร์
-                    url.searchParams.append('action', data.action);
-                    url.searchParams.append('trackingKey', data.trackingKey);
-                    url.searchParams.append('caseName', data.caseName);
-                    url.searchParams.append('creatorId', data.creatorId);
-                    url.searchParams.append('creatorName', data.creatorName);
-                    url.searchParams.append('requestId', data.requestId);
-                    url.searchParams.append('callback', callbackName);
-                    
-                    if (data.imageUrl) {
-                        url.searchParams.append('imageUrl', data.imageUrl);
-                    }
-                    
-                    // สร้าง script tag
-                    const script = document.createElement('script');
-                    script.src = url.toString();
-                    
-                    // ลดเวลา timeout เหลือ 5 วินาที
-                    const timeoutId = setTimeout(() => {
-                        console.warn('JSONP timeout');
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        resolve(false);
-                    }, 5000);
-                    
-                    // เมื่อโหลดสำเร็จหรือล้มเหลว
-                    script.onerror = function(event) {
-                        clearTimeout(timeoutId);
-                        console.error('เกิดข้อผิดพลาดในการโหลด JSONP script');
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        resolve(false);
-                    };
-                    
-                    // เพิ่ม script ลงใน DOM
-                    document.body.appendChild(script);
-                    
-                } catch (error) {
-                    console.error('เกิดข้อผิดพลาดในการใช้ JSONP:', error);
-                    resolve(false);
-                }
-            });
-        }
-        
-        // เปิดใช้งานฟอร์ม
-        function enableForm() {
-            document.getElementById('caseName').disabled = false;
-            document.getElementById('selectImageBtn').disabled = false;
-            document.getElementById('genLinkBtn').disabled = false; // เพิ่มการเปิดใช้ปุ่มสร้างลิงก์
-            checkCanShare();
-            checkCanGenLink(); // เพิ่มการตรวจสอบปุ่มสร้างลิงก์
-        }
-        
-        // ปิดใช้งานฟอร์ม
-        function disableForm() {
-            document.getElementById('caseName').disabled = true;
-            document.getElementById('selectImageBtn').disabled = true;
-            document.getElementById('shareBtn').disabled = true;
-            document.getElementById('genLinkBtn').disabled = true; // เพิ่มการปิดปุ่มสร้างลิงก์
-        }
-        
-        // ตั้งค่า Event Listeners
-        function setupEventListeners() {
-            // ปุ่มเลือกรูปภาพ
-            document.getElementById('selectImageBtn').addEventListener('click', function() {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                document.getElementById('imageUpload').click();
-            });
-            
-            // การเลือกรูปภาพ
-            document.getElementById('imageUpload').addEventListener('change', handleImageSelect);
-            
-            // ปุ่มแชร์รูปภาพ
-            document.getElementById('shareBtn').addEventListener('click', function() {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                shareImage();
-            });
-            
-            // ตรวจสอบการเปลี่ยนแปลงชื่อเคส
-            document.getElementById('caseName').addEventListener('input', checkCanShare);
-            
-            // ตั้งค่า Drag and Drop สำหรับรูปภาพ
-            const dropArea = document.querySelector('.image-preview-container');
-            
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.addEventListener(eventName, highlight, false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.addEventListener(eventName, unhighlight, false);
-            });
-            
-            function highlight() {
-                if (!userHasPermission) return;
-                dropArea.style.borderColor = '#00B900';
-                dropArea.style.backgroundColor = '#f0f8f0';
-            }
-            
-            function unhighlight() {
-                if (!userHasPermission) return;
-                dropArea.style.borderColor = '#ddd';
-                dropArea.style.backgroundColor = '#fafafa';
-            }
-            
-            dropArea.addEventListener('drop', function(e) {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                if (files.length) {
-                    document.getElementById('imageUpload').files = files;
-                    handleImageSelect({ target: { files: files } });
-                }
-            }, false);
-            
-            // คลิกที่พื้นที่รูปภาพเพื่อเลือกรูปภาพ
-            dropArea.addEventListener('click', function() {
-                if (!userHasPermission) {
-                    showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                    return;
-                }
-                document.getElementById('imageUpload').click();
-            });
-        }
-        
-        // จัดการรูปภาพที่เลือก
-        function handleImageSelect(event) {
-            if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                return;
-            }
-            
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            // ตรวจสอบว่าเป็นรูปภาพหรือไม่
-            if (!file.type.match('image.*')) {
-                showStatus('กรุณาเลือกไฟล์รูปภาพเท่านั้น', false);
-                return;
-            }
-            
-            // ตรวจสอบขนาดรูปภาพ (จำกัดไม่เกิน 10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                showStatus('รูปภาพมีขนาดใหญ่เกินไป (ไม่เกิน 10MB)', false);
-                return;
-            }
-            
-            selectedImage = file;
-            
-            // แสดงตัวอย่างรูปภาพ
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.getElementById('imagePreview');
-                img.src = e.target.result;
-                img.style.display = 'block';
-                document.getElementById('uploadPrompt').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-            
-            // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
-            checkCanShare();
-        }
-        
-        // อัพโหลดรูปภาพไปยัง Cloudinary (แทน ImgBB)
-        async function uploadImage() {
-            if (!selectedImage) {
-                showStatus('กรุณาเลือกรูปภาพก่อน', false);
-                return null;
-            }
-            
-            // แสดง loader
-            document.querySelector('.loader').style.display = 'block';
-            
-            try {
-                // ทำการ optimize รูปภาพก่อนอัพโหลด
-                const optimizedImage = await optimizeImage(selectedImage);
-                
-                // เตรียมข้อมูลสำหรับอัพโหลดไป Cloudinary
-                const formData = new FormData();
-                formData.append('file', optimizedImage);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                
-                // API URL สำหรับอัพโหลดไปยัง Cloudinary
-                const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-                
-                const response = await fetch(cloudinaryUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                // ซ่อน loader
-                document.querySelector('.loader').style.display = 'none';
-                
-                if (data.secure_url) {
-                    console.log('อัพโหลดรูปภาพสำเร็จ:', data.secure_url);
-                    
-                    // สร้าง URL ที่มีการ transform เพื่อให้โหลดเร็วขึ้นใน LINE
-                    // - ปรับขนาดให้เหมาะสมกับ Flex message (800x800)
-                    // - ตั้งค่า quality 85% เพื่อลดขนาดไฟล์
-                    // - ใช้ format auto เพื่อให้ Cloudinary เลือก format ที่ดีที่สุด (WebP หรือ AVIF)
-                    const optimizedUrl = data.secure_url.replace('/upload/', '/upload/q_85,f_auto,w_800,h_800,c_limit/');
-                    
-                    return optimizedUrl;
-                } else {
-                    throw new Error(data.error?.message || 'การอัพโหลดล้มเหลว');
-                }
-            } catch (error) {
-                console.error('Error uploading image:', error);
-                showStatus('เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ: ' + error.message, false);
-                document.querySelector('.loader').style.display = 'none';
-                return null;
-            }
-        }
-        
-        // ฟังก์ชันใหม่: ทำการ optimize รูปภาพก่อนอัพโหลด
-        async function optimizeImage(imageFile) {
-            return new Promise((resolve, reject) => {
-                try {
-                    // สร้าง FileReader เพื่ออ่านไฟล์รูปภาพ
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        // สร้าง Image object
-                        const img = new Image();
-                        img.onload = function() {
-                            // กำหนดขนาดสูงสุดที่ต้องการ
-                            const MAX_WIDTH = 1200;
-                            const MAX_HEIGHT = 1200;
-                            
-                            // คำนวณขนาดใหม่
-                            let width = img.width;
-                            let height = img.height;
-                            
-                            // ปรับขนาดถ้าจำเป็น
-                            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                                if (width > height) {
-                                    if (width > MAX_WIDTH) {
-                                        height *= MAX_WIDTH / width;
-                                        width = MAX_WIDTH;
-                                    }
-                                } else {
-                                    if (height > MAX_HEIGHT) {
-                                        width *= MAX_HEIGHT / height;
-                                        height = MAX_HEIGHT;
-                                    }
-                                }
-                            }
-                            
-                            // สร้าง canvas และวาดรูปภาพที่ปรับขนาดแล้ว
-                            const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            
-                            // แปลง canvas เป็น Blob
-                            canvas.toBlob(function(blob) {
-                                resolve(blob);
-                            }, 'image/jpeg', 0.85); // คุณภาพ 85%
-                        };
-                        
-                        img.onerror = function() {
-                            reject(new Error('ไม่สามารถโหลดรูปภาพได้'));
-                        };
-                        
-                        // กำหนด src ให้กับ Image object
-                        img.src = event.target.result;
-                    };
-                    
-                    reader.onerror = function() {
-                        reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
-                    };
-                    
-                    // อ่านไฟล์รูปภาพเป็น Data URL
-                    reader.readAsDataURL(imageFile);
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        }
-
-        // สร้าง Tracking Key
-        function generateTrackingKey() {
-            // สร้างตามรูปแบบ timestamp-randomChars
-            const now = new Date();
-            const timestamp = now.getTime().toString(36);
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let randomPart = '';
-            for (let i = 0; i < 4; i++) {
-                randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            
-            trackingKey = timestamp + '-' + randomPart;
-            return trackingKey;
-        }
-        
-        // บันทึกข้อมูล Tracking Key และ Case Name
-        async function saveTrackingCaseMapping(trackKey, caseName, imgUrl = "") {
-            if (!isLiffInitialized || !userId) {
-                console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
-                return false;
-            }
-            
-            try {
-                console.log('กำลังบันทึก Tracking Key:', trackKey);
-                console.log('ชื่อเคส:', caseName);
-                console.log('ผู้สร้าง ID:', userId);
-                console.log('ชื่อผู้สร้าง:', displayName);
-                console.log('รูปภาพ URL:', imgUrl || imageUrl);
-                
-                // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
-                const requestId = generateUniqueId();
-                
-                // รวบรวมข้อมูลที่จะส่ง
-                const postData = {
-                    action: 'saveTrackingMapping',
-                    trackingKey: trackKey,
-                    caseName: caseName,
-                    creatorId: userId,
-                    creatorName: displayName,
-                    imageUrl: imgUrl || imageUrl,
-                    requestId: requestId,
-                    timestamp: new Date().toISOString()
-                };
-
-                // ทดลองส่งข้อมูลด้วย fetch API (ลดจำนวน retry ลงเหลือ 1 ครั้งเพื่อความเร็ว)
-                let success = await trySendDataWithFetch(postData, 1);
-                
-                // ถ้า fetch ไม่สำเร็จ ให้ลองใช้ JSONP เป็นตัวสำรอง (1 ครั้ง)
-                if (!success) {
-                    console.log('การส่งข้อมูลด้วย fetch ล้มเหลว กำลังลองใช้ JSONP แทน');
-                    success = await trySendDataWithJSONP(postData);
-                }
-                
-                // ถ้าส่งสำเร็จด้วยวิธีใดวิธีหนึ่ง
-                if (success) {
-                    console.log('บันทึก Tracking Key สำเร็จ');
-                    
-                    // อัปเดตสถานะของข้อมูลในที่เก็บข้อมูล
-                    try {
-                        updateTrackingDataStatus(postData.requestId, 'synced');
-                    } catch (storageErr) {
-                        console.error('ไม่สามารถอัปเดตสถานะข้อมูลใน localStorage:', storageErr);
-                    }
-                    
-                    return true;
-                } else {
-                    // ถ้าทุกวิธีล้มเหลว ให้แน่ใจว่าข้อมูลถูกบันทึกใน localStorage แล้ว
-                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว แต่ข้อมูลถูกบันทึกใน localStorage แล้ว');
-                    return true; // ยังคงคืนค่า true เพราะข้อมูลได้ถูกบันทึกใน localStorage แล้ว
-                }
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
-                return false;
-            }
-        }
-        
-        // ฟังก์ชันส่งข้อมูลด้วย fetch API (ปรับปรุงให้เร็วขึ้น)
-        async function trySendDataWithFetch(data, retries = 1) {
-            for (let attempt = 0; attempt <= retries; attempt++) {
-                try {
-                    console.log(`กำลังส่งข้อมูลด้วย fetch (พยายามครั้งที่ ${attempt + 1}/${retries + 1})`);
-                    
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000); // ลดเวลา timeout เหลือ 5 วินาที
-                    
-                    const response = await fetch(PHISHING_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(data),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (response.ok) {
-                        console.log('บันทึก Tracking Key สำเร็จด้วย fetch API');
-                        return true;
-                    } else {
-                        console.warn(`fetch ไม่สำเร็จ (${response.status}): ${response.statusText}`);
-                        if (attempt < retries) {
-                            await new Promise(resolve => setTimeout(resolve, 500)); // รอแค่ 0.5 วินาทีก่อนลองใหม่
-                        }
-                    }
-                } catch (error) {
-                    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูลด้วย fetch (ครั้งที่ ${attempt + 1}):`, error);
-                    if (attempt < retries) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-            }
-            
-            // หากลองทุกครั้งแล้วไม่สำเร็จ
-            return false;
-        }
-        
-        // ฟังก์ชันส่งข้อมูลด้วย JSONP (ปรับปรุงให้เร็วขึ้น)
-        async function trySendDataWithJSONP(data) {
-            return new Promise((resolve) => {
-                try {
-                    console.log('กำลังส่งข้อมูลด้วย JSONP');
-                    
-                    // สร้าง callback function
-                    const callbackName = 'jsonp_callback_' + new Date().getTime();
-                    
-                    // กำหนด global callback function
-                    window[callbackName] = function(response) {
-                        console.log('ได้รับการตอบกลับจาก JSONP:', response);
-                        
-                        // ลบ script tag และ callback function
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        clearTimeout(timeoutId);
-                        
-                        // ตรวจสอบการตอบกลับ
-                        if (response && response.status === 'success') {
-                            console.log('บันทึกข้อมูลสำเร็จด้วย JSONP');
-                            resolve(true);
-                        } else {
-                            console.warn('JSONP ไม่สำเร็จ:', response);
-                            resolve(false);
-                        }
-                    };
-                    
-                    // สร้าง URL สำหรับ JSONP
-                    let url = new URL(PHISHING_WEBHOOK_URL);
-                    
-                    // เพิ่มพารามิเตอร์
-                    url.searchParams.append('action', data.action);
-                    url.searchParams.append('trackingKey', data.trackingKey);
-                    url.searchParams.append('caseName', data.caseName);
-                    url.searchParams.append('creatorId', data.creatorId);
-                    url.searchParams.append('creatorName', data.creatorName);
-                    url.searchParams.append('requestId', data.requestId);
-                    url.searchParams.append('callback', callbackName);
-                    
-                    if (data.imageUrl) {
-                        url.searchParams.append('imageUrl', data.imageUrl);
-                    }
-                    
-                    // สร้าง script tag
-                    const script = document.createElement('script');
-                    script.src = url.toString();
-                    
-                    // ลดเวลา timeout เหลือ 5 วินาที
-                    const timeoutId = setTimeout(() => {
-                        console.warn('JSONP timeout');
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        resolve(false);
-                    }, 5000);
-                    
-                    // เมื่อโหลดสำเร็จหรือล้มเหลว
-                    script.onerror = function(event) {
-                        clearTimeout(timeoutId);
-                        console.error('เกิดข้อผิดพลาดในการโหลด JSONP script');
-                        if (script.parentNode) script.parentNode.removeChild(script);
-                        delete window[callbackName];
-                        resolve(false);
-                    };
-                    
-                    // เพิ่ม script ลงใน DOM
-                    document.body.appendChild(script);
-                    
-                } catch (error) {
-                    console.error('เกิดข้อผิดพลาดในการใช้ JSONP:', error);
-                    resolve(false);
-                }
-            });
-        }
-        
-        // ฟังก์ชันใหม่: ตั้งค่าการป้องกันการปิดหน้าต่างขณะกำลังบันทึกข้อมูล
-        function setupUnloadProtection() {
-            window.addEventListener('beforeunload', function(e) {
-                if (isSaving && !canCloseWindow) {
-                    // ป้องกันการปิดหน้าต่างระหว่างบันทึกข้อมูล
-                    const message = 'กำลังบันทึกข้อมูล กรุณารอสักครู่...';
-                    e.returnValue = message;
-                    return message;
-                }
-            });
-        }
-        
-        // ฟังก์ชันใหม่: ตรวจสอบและซิงค์ข้อมูลที่ค้างอยู่
-        async function checkPendingDataSync() {
-            try {
-                const pendingData = localStorage.getItem('pendingTrackingData');
-                if (!pendingData) return;
-                
-                const dataArray = JSON.parse(pendingData);
-                if (!dataArray || !Array.isArray(dataArray) || dataArray.length === 0) return;
-                
-                // กรองเฉพาะข้อมูลที่ยังไม่ได้ซิงค์
-                const pendingItems = dataArray.filter(item => item.syncStatus === 'pending');
-                if (pendingItems.length === 0) return;
-                
-                console.log(`พบข้อมูลที่ยังไม่ได้ซิงค์ ${pendingItems.length} รายการ`);
-                
-                // ทยอยซิงค์ข้อมูลที่ค้างอยู่
-                let successCount = 0;
-                for (const item of pendingItems) {
-                    try {
-                        const success = await trySendDataWithFetch(item, 1);
-                        if (success) {
-                            item.syncStatus = 'synced';
-                            successCount++;
-                        }
-                    } catch (e) {
-                        console.error(`ไม่สามารถซิงค์ข้อมูล:`, e);
-                    }
-                }
-                
-                // อัปเดตสถานะในที่เก็บข้อมูล
-                localStorage.setItem('pendingTrackingData', JSON.stringify(dataArray));
-                
-                if (successCount > 0) {
-                    console.log(`ซิงค์ข้อมูลสำเร็จ ${successCount} รายการ`);
-                }
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการตรวจสอบข้อมูลที่ค้าง:', error);
-            }
-        }
-        
-        // ฟังก์ชันแชร์รูปภาพ (ปรับปรุงใหม่)
-        async function shareImage() {
-            // ตรวจสอบเงื่อนไขก่อนแชร์
-            if (!isLiffInitialized) {
-                showStatus('กรุณารอให้ LIFF เริ่มต้นก่อน', false);
-                return;
-            }
-            
-            if (!userHasPermission) {
-                showStatus('คุณไม่มีสิทธิ์ใช้งานระบบนี้', false);
-                return;
-            }
-            
-            const caseName = document.getElementById('caseName').value;
-            if (!caseName) {
-                showStatus('กรุณาระบุชื่อเคส', false);
-                return;
-            }
-            
-            if (!selectedImage) {
-                showStatus('กรุณาเลือกรูปภาพ', false);
-                return;
-            }
-
-            try {
-                // แสดงสถานะกำลังประมวลผล
-                isSaving = true;
-                document.getElementById('shareBtn').disabled = true;
-                showStatus('กำลังประมวลผล...', true);
-
-                // 1. สร้าง Tracking Key
-                const trackKey = generateTrackingKey();
-                
-                // 2. อัพโหลดรูปภาพไปยัง Cloudinary
-                imageUrl = await uploadImage();
-                if (!imageUrl) {
-                    isSaving = false;
-                    document.getElementById('shareBtn').disabled = false;
-                    return;
-                }
-                
-                // 3. บันทึกข้อมูล Tracking Key ก่อนแชร์ภาพ (เปลี่ยนลำดับการทำงาน)
-                // บันทึกข้อมูลลง localStorage ทันทีเพื่อความปลอดภัย
-                const trackingData = {
                     action: 'saveTrackingMapping',
                     trackingKey: trackKey,
                     caseName: caseName,
                     creatorId: userId,
                     creatorName: displayName,
                     imageUrl: imageUrl,
-                    requestId: generateUniqueId(),
-                    timestamp: new Date().toISOString()
-                };
-                
-                // บันทึกลง localStorage ทันที (ป้องกันข้อมูลหาย)
-                await saveTrackingDataToLocalStorage(trackingData);
-                
-                // เริ่มกระบวนการบันทึกข้อมูลแบบ parallel
-                const savePromise = saveTrackingCaseMapping(trackKey, caseName, imageUrl);
-                
-                // 4. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
-                const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
-                
-                // 5. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
-                const message = {
-                    type: 'flex',
-                    altText: `รูปภาพใหม่`,
-                    contents: {
-                        type: 'bubble',
-                        hero: {
-                            type: 'image',
-                            url: imageUrl,
-                            size: 'full',
-                            aspectRatio: '1:1',
-                            aspectMode: 'cover',
-                            action: {
-                                type: 'uri',
-                                uri: clickTrackUrl
-                            }
-                        }
-                    }
-                };
-
-                console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
-
-                // 6. แชร์ผ่าน LINE ShareTargetPicker
-                if (liff.isApiAvailable('shareTargetPicker')) {
-                    try {
-                        const result = await liff.shareTargetPicker([message]);
-                        
-                        if (result) {
-                            showStatus('แชร์รูปภาพสำเร็จ', true);
-                            
-                            // รอให้การบันทึกข้อมูลเสร็จสิ้น (แต่จำกัดเวลารอไม่เกิน 3 วินาที)
-                            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 3000));
-                            const saveResult = await Promise.race([savePromise, timeoutPromise]);
-                            
-                            if (saveResult === 'timeout') {
-                                console.log('การบันทึกข้อมูลใช้เวลานานเกินไป แต่จะดำเนินการต่อ');
-                            } else {
-                                console.log('บันทึกข้อมูล Tracking Key Mapping สำเร็จ');
-                            }
-                            
-                            // รีเซ็ตแบบฟอร์ม
-                            resetForm();
-                            
-                            // อนุญาตให้ปิดหน้าต่างได้
-                            canCloseWindow = true;
-                            isSaving = false;
-                            
-                            // ปิดหน้าต่างหลังจากเสร็จสิ้น
-                            setTimeout(() => {
-                                liff.closeWindow();
-                            }, 1200);
-                        } else {
-                            showStatus('การแชร์ถูกยกเลิก', false);
-                            isSaving = false;
-                            document.getElementById('shareBtn').disabled = false;
-                        }
-                    } catch (shareError) {
-                        console.error('เกิดข้อผิดพลาดในการแชร์:', shareError);
-                        showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (shareError.message || shareError), false);
-                        isSaving = false;
-                        document.getElementById('shareBtn').disabled = false;
-                    }
-                } else {
-                    showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
-                    isSaving = false;
-                    document.getElementById('shareBtn').disabled = false;
-                }
-                
-            } catch (error) {
-                console.error('เกิดข้อผิดพลาดในการแชร์:', error);
-                showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
-                isSaving = false;
-                document.getElementById('shareBtn').disabled = false;
-            }
-        }
-        
-        // บันทึกข้อมูล Tracking Key และ Case Name (ปรับปรุงใหม่)
-        async function saveTrackingCaseMapping(trackKey, caseName, imgUrl = "") {
-            if (!isLiffInitialized || !userId) {
-                console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
-                return false;
-            }
-            
-            try {
-                console.log('กำลังบันทึก Tracking Key:', trackKey);
-                console.log('ชื่อเคส:', caseName);
-                console.log('ผู้สร้าง ID:', userId);
-                console.log('ชื่อผู้สร้าง:', displayName);
-                console.log('รูปภาพ URL:', imgUrl || imageUrl);
-                
-                // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
-                const requestId = generateUniqueId();
-                
-                // รวบรวมข้อมูลที่จะส่ง
-                const postData = {
-                    action: 'saveTrackingMapping',
-                    trackingKey: trackKey,
-                    caseName: caseName,
-                    creatorId: userId,
-                    creatorName: displayName,
-                    imageUrl: imgUrl || imageUrl,
                     requestId: requestId,
                     timestamp: new Date().toISOString()
                 };
 
-                // ทดลองส่งข้อมูลด้วย fetch API (ลดจำนวน retry ลงเหลือ 1 ครั้งเพื่อความเร็ว)
-                let success = await trySendDataWithFetch(postData, 1);
+                // ทำงานพร้อมกันทั้ง fetch และ JSONP เพื่อเพิ่มโอกาสในการบันทึกสำเร็จ
+                const fetchPromise = trySendDataWithFetch(postData, 1);
+                const jsonpPromise = trySendDataWithJSONP(postData);
                 
-                // ถ้า fetch ไม่สำเร็จ ให้ลองใช้ JSONP เป็นตัวสำรอง (1 ครั้ง)
-                if (!success) {
-                    console.log('การส่งข้อมูลด้วย fetch ล้มเหลว กำลังลองใช้ JSONP แทน');
-                    success = await trySendDataWithJSONP(postData);
-                }
+                // รอให้อย่างน้อยหนึ่งวิธีสำเร็จ
+                const results = await Promise.allSettled([fetchPromise, jsonpPromise]);
+                const success = results.some(result => result.status === 'fulfilled' && result.value === true);
                 
-                // ถ้าส่งสำเร็จด้วยวิธีใดวิธีหนึ่ง
                 if (success) {
                     console.log('บันทึก Tracking Key สำเร็จ');
-                    
-                    // อัปเดตสถานะของข้อมูลในที่เก็บข้อมูล
-                    try {
-                        updateTrackingDataStatus(postData.requestId, 'synced');
-                    } catch (storageErr) {
-                        console.error('ไม่สามารถอัปเดตสถานะข้อมูลใน localStorage:', storageErr);
-                    }
-                    
                     return true;
                 } else {
-                    // ถ้าทุกวิธีล้มเหลว ให้แน่ใจว่าข้อมูลถูกบันทึกใน localStorage แล้ว
-                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว แต่ข้อมูลถูกบันทึกใน localStorage แล้ว');
-                    return true; // ยังคงคืนค่า true เพราะข้อมูลได้ถูกบันทึกใน localStorage แล้ว
+                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว เก็บข้อมูลไว้ใน localStorage');
+                    return false;
                 }
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
                 return false;
             }
         }
-        
-        // ฟังก์ชันบันทึกข้อมูลใน localStorage (ปรับปรุงใหม่)
-        async function saveTrackingDataToLocalStorage(data) {
-            return new Promise((resolve, reject) => {
+
+        // ฟังก์ชันส่งข้อมูลด้วย fetch API พร้อมระบบ retry
+        async function trySendDataWithFetch(data, retries = 1) {
+            for (let attempt = 0; attempt <= retries; attempt++) {
                 try {
-                    // ดึงข้อมูลเดิม (ถ้ามี)
-                    const storedData = localStorage.getItem('pendingTrackingData');
-                    let pendingData = storedData ? JSON.parse(storedData) : [];
+                    console.log(`กำลังส่งข้อมูลด้วย fetch (พยายามครั้งที่ ${attempt + 1}/${retries + 1})`);
                     
-                    if (!Array.isArray(pendingData)) {
-                        pendingData = []; // รีเซ็ตถ้าไม่ใช่ array
-                    }
+                    const response = await fetch(PHISHING_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data),
+                        // เพิ่ม timeout
+                        signal: AbortSignal.timeout(10000) // 10 วินาที
+                    });
                     
-                    // ตรวจสอบว่าข้อมูลมีอยู่แล้วหรือไม่ (ป้องกันซ้ำ)
-                    const isDuplicate = pendingData.some(item => item.requestId === data.requestId);
-                    
-                    if (!isDuplicate) {
-                        // เพิ่มข้อมูลใหม่
-                        pendingData.push({
-                            ...data,
-                            savedAt: new Date().toISOString(),
-                            syncStatus: 'pending'
-                        });
-                        
-                        // บันทึกกลับ localStorage
-                        localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
-                        console.log('บันทึกข้อมูลใน localStorage สำเร็จ');
-                        
-                        // จำกัดจำนวนรายการที่เก็บ (เก็บล่าสุด 50 รายการ)
-                        if (pendingData.length > 50) {
-                            pendingData = pendingData.slice(-50); // เก็บ 50 รายการล่าสุด
-                            localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
-                        }
+                    if (response.ok) {
+                        console.log('บันทึก Tracking Key สำเร็จด้วย fetch API');
+                        return true;
                     } else {
-                        console.log('ข้อมูลนี้ถูกบันทึกใน localStorage แล้ว');
+                        console.warn(`fetch ไม่สำเร็จ (${response.status}): ${response.statusText}`);
+                        // ถ้ายังไม่ใช่ครั้งสุดท้าย ให้รอแล้วลองใหม่
+                        if (attempt < retries) {
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // รอ 1 วินาที
+                        }
+                    }
+                } catch (error) {
+                    console.error(`เกิดข้อผิดพลาดในการส่งข้อมูลด้วย fetch (ครั้งที่ ${attempt + 1}):`, error);
+                    // ถ้ายังไม่ใช่ครั้งสุดท้าย ให้รอแล้วลองใหม่
+                    if (attempt < retries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // รอ 1 วินาที
+                    }
+                }
+            }
+            
+            // หากลองทุกครั้งแล้วไม่สำเร็จ
+            return false;
+        }
+        
+        // ฟังก์ชันส่งข้อมูลด้วย JSONP
+        async function trySendDataWithJSONP(data) {
+            return new Promise((resolve) => {
+                try {
+                    console.log('กำลังส่งข้อมูลด้วย JSONP');
+                    
+                    // สร้าง callback function
+                    const callbackName = 'jsonp_callback_' + new Date().getTime();
+                    
+                    // กำหนด global callback function
+                    window[callbackName] = function(response) {
+                        console.log('ได้รับการตอบกลับจาก JSONP:', response);
+                        
+                        // ลบ script tag และ callback function
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                        delete window[callbackName];
+                        
+                        // ตรวจสอบการตอบกลับ
+                        if (response && response.status === 'success') {
+                            console.log('บันทึกข้อมูลสำเร็จด้วย JSONP');
+                            resolve(true);
+                        } else {
+                            console.warn('JSONP ไม่สำเร็จ:', response);
+                            resolve(false);
+                        }
+                    };
+                    
+                    // สร้าง URL สำหรับ JSONP
+                    let url = new URL(PHISHING_WEBHOOK_URL);
+                    
+                    // เพิ่มพารามิเตอร์
+                    url.searchParams.append('action', data.action);
+                    url.searchParams.append('trackingKey', data.trackingKey);
+                    url.searchParams.append('caseName', data.caseName);
+                    url.searchParams.append('creatorId', data.creatorId);
+                    url.searchParams.append('creatorName', data.creatorName);
+                    url.searchParams.append('requestId', data.requestId);
+                    url.searchParams.append('callback', callbackName);
+                    
+                    if (data.imageUrl) {
+                        url.searchParams.append('imageUrl', data.imageUrl);
                     }
                     
-                    resolve(true);
+                    // สร้าง script tag
+                    const script = document.createElement('script');
+                    script.src = url.toString();
+                    
+                    // เพิ่ม timeout
+                    const timeoutId = setTimeout(() => {
+                        console.warn('JSONP timeout');
+                        if (script.parentNode) script.parentNode.removeChild(script);
+                        delete window[callbackName];
+                        resolve(false);
+                    }, 10000); // 10 วินาที
+                    
+                    // เมื่อโหลดสำเร็จหรือล้มเหลว
+                    script.onload = script.onerror = function(event) {
+                        clearTimeout(timeoutId);
+                        if (event && event.type === 'error') {
+                            console.error('เกิดข้อผิดพลาดในการโหลด JSONP script');
+                            if (script.parentNode) script.parentNode.removeChild(script);
+                            delete window[callbackName];
+                            resolve(false);
+                        }
+                    };
+                    
+                    // เพิ่ม script ลงใน DOM
+                    document.body.appendChild(script);
+                    
                 } catch (error) {
-                    console.error('ไม่สามารถบันทึกใน localStorage:', error);
-                    reject(error);
+                    console.error('เกิดข้อผิดพลาดในการใช้ JSONP:', error);
+                    resolve(false);
                 }
             });
         }
         
-        // ฟังก์ชันใหม่: อัปเดตสถานะของข้อมูลใน localStorage
-        function updateTrackingDataStatus(requestId, newStatus) {
+        // ฟังก์ชันบันทึกข้อมูลใน localStorage (สำรอง)
+        function saveTrackingDataToLocalStorage(data) {
             try {
+                // ดึงข้อมูลเดิม (ถ้ามี)
                 const storedData = localStorage.getItem('pendingTrackingData');
-                if (!storedData) return false;
+                let pendingData = storedData ? JSON.parse(storedData) : [];
                 
-                let pendingData = JSON.parse(storedData);
-                if (!Array.isArray(pendingData)) return false;
+                // ตรวจสอบว่าข้อมูลมีอยู่แล้วหรือไม่ (ป้องกันซ้ำ)
+                const isDuplicate = pendingData.some(item => item.requestId === data.requestId);
                 
-                // หาและอัปเดตสถานะของข้อมูล
-                const itemIndex = pendingData.findIndex(item => item.requestId === requestId);
-                if (itemIndex === -1) return false;
+                if (!isDuplicate) {
+                    // เพิ่มข้อมูลใหม่
+                    pendingData.push({
+                        ...data,
+                        savedAt: new Date().toISOString(),
+                        syncStatus: 'pending'
+                    });
+                    
+                    // บันทึกกลับ localStorage
+                    localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
+                    console.log('บันทึกข้อมูลใน localStorage สำเร็จ');
+                    
+                    // จำกัดจำนวนรายการที่เก็บ (เก็บล่าสุด 50 รายการ)
+                    if (pendingData.length > 50) {
+                        pendingData = pendingData.slice(-50); // เก็บ 50 รายการล่าสุด
+                        localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
+                    }
+                } else {
+                    console.log('ข้อมูลนี้ถูกบันทึกใน localStorage แล้ว');
+                }
                 
-                pendingData[itemIndex].syncStatus = newStatus;
-                pendingData[itemIndex].syncedAt = new Date().toISOString();
-                
-                // บันทึกกลับ localStorage
-                localStorage.setItem('pendingTrackingData', JSON.stringify(pendingData));
                 return true;
             } catch (error) {
-                console.error('ไม่สามารถอัปเดตสถานะข้อมูลใน localStorage:', error);
-                return false;
+                console.error('ไม่สามารถบันทึกใน localStorage:', error);
+                throw error;
+            }
+        }
+        
+        // ตรวจสอบว่าสามารถแชร์ได้หรือไม่
+        function checkCanShare() {
+            const caseName = document.getElementById('caseName').value;
+            const shareBtn = document.getElementById('shareBtn');
+            
+            if (selectedImage && caseName && userHasPermission) {
+                shareBtn.disabled = false;
+            } else {
+                shareBtn.disabled = true;
+            }
+        }
+        
+        // เพิ่มฟังก์ชันใหม่: ตรวจสอบว่าสามารถสร้างลิงก์ได้หรือไม่
+        function checkCanGenLink() {
+            const genLinkBtn = document.getElementById('genLinkBtn');
+            
+            if (userHasPermission) {
+                genLinkBtn.disabled = false;
+            } else {
+                genLinkBtn.disabled = true;
             }
         }
         
@@ -2302,40 +1578,49 @@
             }
 
             try {
-                // แสดงสถานะกำลังประมวลผล
-                isSaving = true;
-                document.getElementById('shareBtn').disabled = true;
-                showStatus('กำลังประมวลผล...', true);
-
+                // ล็อคปุ่มแชร์เพื่อป้องกันการกดซ้ำ
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.disabled = true;
+                shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...';
+                
                 // 1. สร้าง Tracking Key
                 const trackKey = generateTrackingKey();
                 
                 // 2. อัพโหลดรูปภาพไปยัง Cloudinary
+                showStatus('กำลังอัพโหลดรูปภาพ...', true);
                 imageUrl = await uploadImage();
                 if (!imageUrl) {
-                    isSaving = false;
-                    document.getElementById('shareBtn').disabled = false;
+                    shareBtn.disabled = false;
+                    shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                     return;
                 }
                 
-                // 3. บันทึกข้อมูล Tracking Key ก่อนแชร์ภาพ (เปลี่ยนลำดับการทำงาน)
-                // บันทึกข้อมูลลง localStorage ทันทีเพื่อความปลอดภัย
+                // 3. บันทึกข้อมูล Tracking ก่อนการแชร์ (เปลี่ยนลำดับจากเดิม)
+                showStatus('กำลังบันทึกข้อมูลเคส...', true);
+                
+                // เก็บข้อมูลเคสใน localStorage ทันที เพื่อเป็นการสำรอง
                 const trackingData = {
-                    action: 'saveTrackingMapping',
                     trackingKey: trackKey,
                     caseName: caseName,
                     creatorId: userId,
                     creatorName: displayName,
                     imageUrl: imageUrl,
-                    requestId: generateUniqueId(),
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    savedLocally: true
                 };
                 
-                // บันทึกลง localStorage ทันที (ป้องกันข้อมูลหาย)
-                await saveTrackingDataToLocalStorage(trackingData);
+                try {
+                    // บันทึกแบบเร็วใน localStorage ก่อน
+                    const pendingTrackingItems = JSON.parse(localStorage.getItem('pendingTrackingItems') || '[]');
+                    pendingTrackingItems.push(trackingData);
+                    localStorage.setItem('pendingTrackingItems', JSON.stringify(pendingTrackingItems));
+                    console.log('บันทึกข้อมูลลง localStorage สำเร็จ:', trackKey);
+                } catch (localErr) {
+                    console.error('ไม่สามารถบันทึกข้อมูลลง localStorage:', localErr);
+                }
                 
-                // เริ่มกระบวนการบันทึกข้อมูลแบบ parallel
-                const savePromise = saveTrackingCaseMapping(trackKey, caseName, imageUrl);
+                // เริ่มบันทึกข้อมูลไปยังเซิร์ฟเวอร์ (ไม่รอให้เสร็จก่อนแชร์)
+                const savePromise = saveTrackingCaseMapping(trackKey, caseName);
                 
                 // 4. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
@@ -2364,163 +1649,181 @@
 
                 // 6. แชร์ผ่าน LINE ShareTargetPicker
                 if (liff.isApiAvailable('shareTargetPicker')) {
-                    try {
-                        const result = await liff.shareTargetPicker([message]);
+                    showStatus('กำลังแชร์รูปภาพ...', true);
+                    const result = await liff.shareTargetPicker([message]);
+                    
+                    if (result) {
+                        showStatus('แชร์รูปภาพสำเร็จ', true);
                         
-                        if (result) {
-                            showStatus('แชร์รูปภาพสำเร็จ', true);
+                        // 7. รอให้การบันทึกข้อมูลเสร็จสิ้น
+                        try {
+                            // รอการบันทึกข้อมูลแต่ไม่เกิน 3 วินาที
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('บันทึกข้อมูลใช้เวลานานเกินไป')), 3000)
+                            );
                             
-                            // รอให้การบันทึกข้อมูลเสร็จสิ้น (แต่จำกัดเวลารอไม่เกิน 3 วินาที)
-                            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 3000));
-                            const saveResult = await Promise.race([savePromise, timeoutPromise]);
-                            
-                            if (saveResult === 'timeout') {
-                                console.log('การบันทึกข้อมูลใช้เวลานานเกินไป แต่จะดำเนินการต่อ');
-                            } else {
-                                console.log('บันทึกข้อมูล Tracking Key Mapping สำเร็จ');
-                            }
-                            
-                            // รีเซ็ตแบบฟอร์ม
-                            resetForm();
-                            
-                            // อนุญาตให้ปิดหน้าต่างได้
-                            canCloseWindow = true;
-                            isSaving = false;
-                            
-                            // ปิดหน้าต่างหลังจากเสร็จสิ้น
-                            setTimeout(() => {
-                                liff.closeWindow();
-                            }, 1200);
-                        } else {
-                            showStatus('การแชร์ถูกยกเลิก', false);
-                            isSaving = false;
-                            document.getElementById('shareBtn').disabled = false;
+                            await Promise.race([savePromise, timeoutPromise])
+                                .then(saved => {
+                                    if (saved) {
+                                        console.log('บันทึก Tracking Key Mapping สำเร็จ');
+                                    }
+                                })
+                                .catch(saveError => {
+                                    console.warn('ไม่สามารถยืนยันการบันทึกข้อมูล:', saveError);
+                                    // ไม่ต้องทำอะไร เพราะมีข้อมูลสำรองใน localStorage แล้ว
+                                });
+                        } catch (saveError) {
+                            console.warn('เกิดข้อผิดพลาดในการรอบันทึกข้อมูล:', saveError);
+                            // ไม่ต้องทำอะไร ข้อมูลยังอยู่ใน localStorage
                         }
-                    } catch (shareError) {
-                        console.error('เกิดข้อผิดพลาดในการแชร์:', shareError);
-                        showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (shareError.message || shareError), false);
-                        isSaving = false;
-                        document.getElementById('shareBtn').disabled = false;
+
+                        // 8. รีเซ็ตแบบฟอร์ม
+                        resetForm();
+                        
+                        // ปิดหน้าต่างหลังจากทำงานเสร็จสิ้น
+                        setTimeout(() => {
+                            liff.closeWindow();
+                        }, 1200);
+                    } else {
+                        showStatus('การแชร์ถูกยกเลิก', false);
+                        // ปลดล็อคปุ่มแชร์เมื่อยกเลิก
+                        shareBtn.disabled = false;
+                        shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                     }
                 } else {
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
-                    isSaving = false;
-                    document.getElementById('shareBtn').disabled = false;
+                    // ปลดล็อคปุ่มแชร์เมื่อเกิดข้อผิดพลาด
+                    shareBtn.disabled = false;
+                    shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                 }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
-                isSaving = false;
-                document.getElementById('shareBtn').disabled = false;
+                
+                // ปลดล็อคปุ่มแชร์เมื่อเกิดข้อผิดพลาด
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.disabled = false;
+                shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
+            }
+        }
+
+        // ฟังก์ชันซิงค์ข้อมูลจาก localStorage ไปยังเซิร์ฟเวอร์
+        async function syncPendingTrackingData() {
+            try {
+                const pendingTrackingItems = JSON.parse(localStorage.getItem('pendingTrackingItems') || '[]');
+                if (pendingTrackingItems.length === 0) return;
+                
+                console.log(`พบข้อมูลที่รอซิงค์ ${pendingTrackingItems.length} รายการ`);
+                
+                let syncCount = 0;
+                const remainingItems = [];
+                
+                for (const item of pendingTrackingItems) {
+                    try {
+                        // สร้าง requestId ใหม่สำหรับการซิงค์
+                        const syncRequestId = generateUniqueId();
+                        
+                        // รวบรวมข้อมูลที่จะส่ง
+                        const postData = {
+                            action: 'saveTrackingMapping',
+                            trackingKey: item.trackingKey,
+                            caseName: item.caseName,
+                            creatorId: item.creatorId,
+                            creatorName: item.creatorName,
+                            imageUrl: item.imageUrl,
+                            requestId: syncRequestId,
+                            timestamp: item.timestamp
+                        };
+
+                        // ทดลองส่งข้อมูล (ลองแค่ครั้งเดียว)
+                        const success = await trySendDataWithFetch(postData, 0);
+                        
+                        if (success) {
+                            syncCount++;
+                            console.log(`ซิงค์ข้อมูล ${item.trackingKey} สำเร็จ`);
+                        } else {
+                            console.log(`ไม่สามารถซิงค์ข้อมูล ${item.trackingKey}`);
+                            remainingItems.push(item);
+                        }
+                    } catch (itemError) {
+                        console.error(`เกิดข้อผิดพลาดในการซิงค์ข้อมูล ${item.trackingKey}:`, itemError);
+                        remainingItems.push(item);
+                    }
+                }
+                
+                // บันทึกรายการที่เหลือกลับไปยัง localStorage
+                localStorage.setItem('pendingTrackingItems', JSON.stringify(remainingItems));
+                console.log(`ซิงค์สำเร็จ ${syncCount} รายการ, เหลือ ${remainingItems.length} รายการ`);
+                
+                return syncCount;
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการซิงค์ข้อมูล:', error);
+                return 0;
             }
         }
         
-        // แสดงสถานะการทำงาน
-        function showStatus(message, isSuccess) {
-            const statusEl = document.getElementById('statusMessage');
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-            
-            if (isSuccess) {
-                statusEl.className = 'status success';
-            } else {
-                statusEl.className = 'status error';
+        // ฟังก์ชันปรับปรุง: บันทึกข้อมูล Tracking Key และ Case Name
+        async function saveTrackingCaseMapping(trackKey, caseName) {
+            if (!isLiffInitialized || !userId) {
+                console.error('LIFF ยังไม่เริ่มต้นหรือไม่มี userId');
+                return false;
             }
             
-            // ซ่อนสถานะหลังจาก 5 วินาที
-            setTimeout(() => {
-                statusEl.style.display = 'none';
-            }, 5000);
-        }
-        
-        // รีเซ็ตแบบฟอร์มหลังแชร์สำเร็จ
-        function resetForm() {
-            document.getElementById('caseName').value = '';
-            document.getElementById('imageUpload').value = '';
-            document.getElementById('imagePreview').style.display = 'none';
-            document.getElementById('uploadPrompt').style.display = 'block';
-            document.getElementById('shareBtn').disabled = true;
-            
-            selectedImage = null;
-            trackingKey = "";
-            imageUrl = "";
-        }
-        
-        // สร้าง ID เฉพาะสำหรับการส่งข้อมูล
-        function generateUniqueId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            try {
+                console.log('กำลังบันทึก Tracking Key:', trackKey);
+                console.log('ชื่อเคส:', caseName);
+                console.log('ผู้สร้าง ID:', userId);
+                console.log('ชื่อผู้สร้าง:', displayName);
+                console.log('รูปภาพ URL:', imageUrl);
+                
+                // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
+                const requestId = generateUniqueId();
+                
+                // รวบรวมข้อมูลที่จะส่ง
+                const postData = {
+                    action: 'saveTrackingMapping',
+                    trackingKey: trackKey,
+                    caseName: caseName,
+                    creatorId: userId,
+                    creatorName: displayName,
+                    imageUrl: imageUrl,
+                    requestId: requestId,
+                    timestamp: new Date().toISOString()
+                };
+
+                // ทำงานพร้อมกันทั้ง fetch และ JSONP เพื่อเพิ่มโอกาสในการบันทึกสำเร็จ
+                const fetchPromise = trySendDataWithFetch(postData, 1);
+                const jsonpPromise = trySendDataWithJSONP(postData);
+                
+                // รอให้อย่างน้อยหนึ่งวิธีสำเร็จ
+                const results = await Promise.allSettled([fetchPromise, jsonpPromise]);
+                const success = results.some(result => result.status === 'fulfilled' && result.value === true);
+                
+                if (success) {
+                    console.log('บันทึก Tracking Key สำเร็จ');
+                    return true;
+                } else {
+                    console.warn('ทุกวิธีการส่งข้อมูลล้มเหลว เก็บข้อมูลไว้ใน localStorage');
+                    return false;
+                }
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
+                return false;
+            }
         }
 
-        // --- เพิ่มฟังก์ชัน toggle โหมด ---
-        function setupModeToggle() {
-            const modeImageBtn = document.getElementById('modeImageBtn');
-            const modeLinkBtn = document.getElementById('modeLinkBtn');
-            const mainFormImage = document.getElementById('mainFormImage');
-            const mainFormLink = document.getElementById('mainFormLink');
-
-            modeImageBtn.addEventListener('click', function() {
-                phishingMode = "image";
-                modeImageBtn.classList.add('active');
-                modeImageBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
-                modeImageBtn.style.color = "#fff";
-                modeLinkBtn.classList.remove('active');
-                modeLinkBtn.style.background = "#fff";
-                modeLinkBtn.style.color = "#3876BF";
-                mainFormImage.style.display = '';
-                mainFormLink.style.display = 'none';
-                checkCanShare();
-            });
-            modeLinkBtn.addEventListener('click', function() {
-                phishingMode = "link";
-                modeLinkBtn.classList.add('active');
-                modeLinkBtn.style.background = "linear-gradient(90deg,#3876BF,#192655)";
-                modeLinkBtn.style.color = "#fff";
-                modeImageBtn.classList.remove('active');
-                modeImageBtn.style.background = "#fff";
-                modeImageBtn.style.color = "#3876BF";
-                mainFormImage.style.display = 'none';
-                mainFormLink.style.display = '';
-                checkCanGenLink();
-            });
-        }
-
-        // --- เพิ่มฟังก์ชันสำหรับโหมดลิงก์ ---
+        // เพิ่มการตรวจสอบและซิงค์ข้อมูลเมื่อโหลดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('genLinkBtn').addEventListener('click', async function() {
-                // ตรวจสอบสิทธิ์ก่อนดำเนินการสร้างลิงก์
-                if (!userHasPermission) {
-                    showStatusLink("คุณไม่มีสิทธิ์ใช้งานหรือสิทธิ์หมดอายุ", false);
-                    return;
-                }
-                const caseName = document.getElementById('caseNameLink').value.trim();
-                if (!caseName) {
-                    showStatusLink('กรุณาระบุชื่อเคส', false);
-                    return;
-                }
-                try {
-                    // ส่งข้อความ #genlink <ชื่อเคส> ไปยังแชทบอทส่วนตัว
-                    await liff.sendMessages([{
-                        type: 'text',
-                        text: `#genlink ${caseName}`
-                    }]);
-                    showStatusLink('ส่งคำสั่งสร้างลิงก์สำเร็จ กรุณารอรับลิงก์ในแชทบอท', true);
-                    setTimeout(() => {
-                        liff.closeWindow();
-                    }, 1200);
-                } catch (err) {
-                    showStatusLink('เกิดข้อผิดพลาดในการส่งคำสั่ง: ' + (err.message || err), false);
-                }
-            });
+            // ตรวจสอบและซิงค์ข้อมูลที่ค้างอยู่
+            setTimeout(() => {
+                syncPendingTrackingData().then(count => {
+                    if (count > 0) {
+                        console.log(`ซิงค์ข้อมูลสำเร็จ ${count} รายการ`);
+                    }
+                });
+            }, 5000); // รอ 5 วินาทีหลังจากโหลดหน้าเว็บเพื่อให้ทำงานหลัก (LIFF init) เสร็จก่อน
         });
-
-        function showStatusLink(message, isSuccess) {
-            const statusEl = document.getElementById('statusMessageLink');
-            statusEl.textContent = message;
-            statusEl.style.display = 'block';
-            statusEl.className = isSuccess ? 'status success' : 'status error';
-            setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
-        }
     </script>
 </body>
 </html>
