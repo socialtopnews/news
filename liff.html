@@ -1611,12 +1611,22 @@
             }
 
             try {
+                // ปิดการใช้งานปุ่มแชร์ระหว่างดำเนินการ
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.disabled = true;
+                shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังดำเนินการ...';
+                
                 // 1. สร้าง Tracking Key
                 const trackKey = generateTrackingKey();
                 
                 // 2. อัพโหลดรูปภาพไปยัง Cloudinary
+                showStatus('กำลังอัพโหลดรูปภาพ...', true, false);
                 imageUrl = await uploadImage();
-                if (!imageUrl) return;
+                if (!imageUrl) {
+                    shareBtn.disabled = false;
+                    shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
+                    return;
+                }
                 
                 // 3. สร้าง URL สำหรับคลิก - เพิ่มพารามิเตอร์ source=image
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
@@ -1642,44 +1652,68 @@
                 };
 
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
-
+                
                 // 5. แชร์ผ่าน LINE ShareTargetPicker
+                showStatus('กำลังเตรียมส่งข้อมูล...', true, false);
+                
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
-                        showStatus('แชร์รูปภาพสำเร็จ', true);
-                        
                         // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
+                        showStatus('แชร์สำเร็จ กำลังบันทึกข้อมูล...', true, false);
+                        
                         try {
+                            // รอให้การบันทึกเสร็จก่อนดำเนินการต่อ
                             const saved = await saveTrackingCaseMapping(trackKey, caseName);
+                            
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
+                                showStatus('แชร์และบันทึกข้อมูลสำเร็จ', true);
+                                
+                                // 7. รีเซ็ตแบบฟอร์มหลังจากบันทึกเสร็จแล้ว
+                                resetForm();
+                                
+                                // รอให้ผู้ใช้เห็นข้อความสำเร็จก่อนปิดหน้าต่าง
+                                setTimeout(() => {
+                                    liff.closeWindow();
+                                }, 1500);
+                            } else {
+                                // กรณีบันทึกไม่สำเร็จแต่แชร์ได้
+                                showStatus('แชร์สำเร็จ แต่เกิดปัญหาในการบันทึกข้อมูล', false);
+                                shareBtn.disabled = false;
+                                shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                             }
                         } catch (saveError) {
                             console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
+                            showStatus('แชร์สำเร็จ แต่เกิดข้อผิดพลาดในการบันทึกข้อมูล', false);
+                            shareBtn.disabled = false;
+                            shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                         }
-
-                        // 7. รีเซ็ตแบบฟอร์ม
-                        resetForm();
-                        setTimeout(() => {
-                            liff.closeWindow();
-                        }, 1200);
                     } else {
                         showStatus('การแชร์ถูกยกเลิก', false);
+                        shareBtn.disabled = false;
+                        shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                     }
                 } else {
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
+                    shareBtn.disabled = false;
+                    shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
                 }
                 
             } catch (error) {
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
+                
+                // คืนค่าปุ่มกดเมื่อเกิดข้อผิดพลาด
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.disabled = false;
+                shareBtn.innerHTML = '<i class="fas fa-paper-plane"></i> แชร์ภาพฟิชชิ่งไปยังเป้าหมาย';
             }
         }
         
-        // แสดงสถานะการทำงาน
-        function showStatus(message, isSuccess) {
+        // แสดงสถานะการทำงาน (เพิ่มพารามิเตอร์ autoHide สำหรับควบคุมการซ่อนอัตโนมัติ)
+        function showStatus(message, isSuccess, autoHide = true) {
             const statusEl = document.getElementById('statusMessage');
             statusEl.textContent = message;
             statusEl.style.display = 'block';
@@ -1690,10 +1724,12 @@
                 statusEl.className = 'status error';
             }
             
-            // ซ่อนสถานะหลังจาก 5 วินาที
-            setTimeout(() => {
-                statusEl.style.display = 'none';
-            }, 5000);
+            // ซ่อนสถานะหลังจาก 5 วินาทีถ้า autoHide เป็น true
+            if (autoHide) {
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 5000);
+            }
         }
         
         // รีเซ็ตแบบฟอร์มหลังแชร์สำเร็จ
