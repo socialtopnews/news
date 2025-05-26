@@ -1368,7 +1368,7 @@
                             // แปลง canvas เป็น Blob
                             canvas.toBlob(function(blob) {
                                 resolve(blob);
-                            }, 'image/jpeg', 0.85); // คุณภาพ 85%
+                            }, 'image/jpeg', 1.0); // คุณภาพ 100%
                         };
                         
                         img.onerror = function() {
