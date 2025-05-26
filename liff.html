@@ -602,94 +602,122 @@
             font-weight: 500;
         }
 
-        /* เพิ่ม CSS สำหรับ Overlay การบันทึก */
-        #savingOverlay {
+        /* Status Overlay */
+        #statusOverlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
+            display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.3s ease;
+            flex-direction: column;
+            z-index: 1010;
         }
-        
-        #savingOverlay.active {
-            visibility: visible;
-            opacity: 1;
+
+        #statusOverlay .status-card {
+            background-color: white;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            max-width: 85%;
+            width: 320px;
         }
-        
-        #savingOverlay .spinner {
-            width: 70px;
-            height: 70px;
-            border: 5px solid rgba(255, 255, 255, 0.2);
-            border-top: 5px solid #3876BF;
+
+        #statusOverlay .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(88, 136, 231, 0.2);
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin: 0 auto 15px;
         }
-        
-        #savingOverlay .message {
-            color: #ffffff;
-            font-size: 18px;
+
+        #statusOverlay .message {
+            color: var(--text-color);
             font-weight: 500;
-            text-align: center;
-            max-width: 80%;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            margin-bottom: 5px;
+            font-size: 18px;
         }
-        
-        #savingOverlay .sub-message {
-            color: #dddddd;
+
+        #statusOverlay .sub-message {
+            color: var(--text-light);
             font-size: 14px;
-            margin-top: 10px;
-            text-align: center;
         }
-        
-        /* เพิ่มเอฟเฟกต์เมื่อประสบความสำเร็จ */
-        #savingOverlay.success .spinner {
-            border: none;
-            animation: none;
+
+        #statusOverlay.success .spinner {
+            display: none;
+        }
+
+        #statusOverlay.success .icon-success {
             display: flex;
-            align-items: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+            color: white;
+            font-size: 30px;
+            margin: 0 auto 15px;
             justify-content: center;
-        }
-        
-        #savingOverlay.success .spinner:after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            font-size: 40px;
-            color: #4CAF50;
-        }
-        
-        /* เพิ่มเอฟเฟกต์เมื่อเกิดข้อผิดพลาด */
-        #savingOverlay.error .spinner {
-            border: none;
-            animation: none;
-            display: flex;
             align-items: center;
-            justify-content: center;
         }
-        
-        #savingOverlay.error .spinner:after {
-            content: '\f00d';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            font-size: 40px;
-            color: #FF5252;
+
+        #statusOverlay .icon-success {
+            display: none;
         }
-        
-        /* ปรับปรุง Loading Screen และเพิ่ม keyframes animation */
-        @keyframes fadeInOut {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+
+        /* Responsive Adjustments */
+        @media (max-width: 576px) {
+            .app-container {
+                max-width: 100%;
+                min-height: 100svh;
+                box-shadow: none;
+            }
+
+            .header {
+                padding: 1.2rem;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+            }
+
+            .user-info .profile-img {
+                width: 50px;
+                height: 50px;
+            }
+
+            .message-box {
+                padding: 12px 15px;
+            }
+        }
+        /* ปรับแต่งปุ่ม toggle โหมด */
+        .mode-btn.active {
+            box-shadow: 0 2px 8px rgba(56,118,191,0.08);
+            border: none !important;
+        }
+        .mode-btn {
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            border: 1px solid #3876BF;
+            background: #fff;
+            color: #3876BF;
+            transition: all 0.2s;
+        }
+        .mode-btn:not(.active):hover {
+            background: #f0f6ff;
         }
     </style>
 </head>
@@ -698,6 +726,18 @@
     <div id="loadingScreen">
         <div class="spinner"></div>
         <p>กำลังเริ่มระบบ...</p>
+    </div>
+
+    <!-- Status Overlay -->
+    <div id="statusOverlay">
+        <div class="status-card">
+            <div class="spinner"></div>
+            <div class="icon-success">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="message">กำลังดำเนินการ...</div>
+            <div class="sub-message">โปรดรอสักครู่</div>
+        </div>
     </div>
 
     <div class="app-container">
@@ -804,13 +844,6 @@
             <p style="color: #d32f2f; font-weight: bold; margin-bottom: 10px;">⚠️ใช้เพื่อสืบสวนติดตามตัวผู้กระทำความผิดเพื่อมาดำเนินคดีตามกฎหมายเท่านั้น ระบบมีการจัดเก็บประวัติการใช้งานและสามารถตรวจสอบได้ทั้งหมด</p>
             <p>&copy; 2025 Phishing - Detective-X</p>
         </div>
-    </div>
-
-    <!-- เพิ่ม Overlay สำหรับแสดงสถานะการบันทึก -->
-    <div id="savingOverlay">
-        <div class="spinner"></div>
-        <div class="message">กำลังบันทึกข้อมูล...</div>
-        <div class="sub-message">โปรดรอสักครู่</div>
     </div>
 
     <script>
@@ -1387,8 +1420,8 @@
                 console.log('ชื่อผู้สร้าง:', displayName);
                 console.log('รูปภาพ URL:', imageUrl);
                 
-                // แสดง overlay การบันทึก
-                showSavingOverlay('กำลังบันทึกข้อมูล...', 'โปรดรอสักครู่');
+                // แสดงสถานะกำลังบันทึก
+                showStatus('กำลังบันทึกข้อมูล...', true);
                 
                 // กำหนด unique request ID เพื่อตรวจสอบการทำงานซ้ำ
                 const requestId = generateUniqueId();
@@ -1410,7 +1443,6 @@
                 
                 // ถ้า fetch ไม่สำเร็จ ให้ลองใช้ JSONP เป็นตัวสำรอง
                 if (!success) {
-                    updateSavingOverlay('กำลังลองวิธีสำรอง...', 'ระบบจะใช้วิธีการส่งข้อมูลอื่นโดยอัตโนมัติ');
                     console.log('การส่งข้อมูลด้วย fetch ล้มเหลว กำลังลองใช้ JSONP แทน');
                     success = await trySendDataWithJSONP(postData);
                 }
@@ -1418,7 +1450,7 @@
                 // ถ้าส่งสำเร็จด้วยวิธีใดวิธีหนึ่ง
                 if (success) {
                     console.log('บันทึก Tracking Key สำเร็จ');
-                    updateSavingOverlay('บันทึกข้อมูลสำเร็จ', 'กำลังเตรียมปิดหน้าต่าง...', 'success');
+                    showStatus('บันทึกข้อมูลสำเร็จ', true);
                     
                     // บันทึกข้อมูลใน localStorage เพื่อเป็นสำรอง
                     try {
@@ -1426,10 +1458,6 @@
                     } catch (storageErr) {
                         console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', storageErr);
                     }
-                    
-                    // รอสักครู่ก่อนที่จะซ่อน overlay
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    hideSavingOverlay();
                     
                     return true;
                 } else {
@@ -1440,22 +1468,13 @@
                         saveTrackingDataToLocalStorage(postData);
                         
                         // แสดงสถานะว่าบันทึกแล้วแต่ไม่ได้ส่งข้อมูลไปยังเซิร์ฟเวอร์
-                        updateSavingOverlay('บันทึกข้อมูลในอุปกรณ์แล้ว', 'ข้อมูลจะถูกซิงค์เมื่อเชื่อมต่ออินเทอร์เน็ต', 'success');
-                        
-                        // รอสักครู่ก่อนที่จะซ่อน overlay
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        hideSavingOverlay();
+                        showStatus('บันทึกข้อมูลในอุปกรณ์แล้ว (รอการซิงค์)', false);
                         
                         // ผู้ใช้ยังคงสามารถใช้งานต่อได้
                         return true;
                     } catch (storageErr) {
                         console.error('ไม่สามารถบันทึกข้อมูลใน localStorage:', storageErr);
-                        updateSavingOverlay('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'แต่สามารถใช้งานต่อได้', 'error');
-                        
-                        // รอสักครู่ก่อนที่จะซ่อน overlay
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        hideSavingOverlay();
-                        
+                        showStatus('เกิดข้อผิดพลาดในการบันทึกข้อมูล แต่สามารถใช้งานต่อได้', false);
                         return true;
                     }
                 }
@@ -1463,11 +1482,7 @@
                 console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key', error);
                 
                 // แสดงข้อความผิดพลาด
-                updateSavingOverlay('เกิดข้อผิดพลาดในการบันทึกข้อมูล', error.message || 'กรุณาลองใหม่อีกครั้ง', 'error');
-                
-                // รอสักครู่ก่อนที่จะซ่อน overlay
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                hideSavingOverlay();
+                showStatus('เกิดข้อผิดพลาดในการบันทึกข้อมูล แต่สามารถใช้งานต่อได้', false);
                 
                 // แม้จะมีข้อผิดพลาด แต่เราต้องให้ผู้ใช้สามารถแชร์ได้
                 return true;
@@ -1680,12 +1695,10 @@
                 const trackKey = generateTrackingKey();
                 
                 // 2. อัพโหลดรูปภาพไปยัง Cloudinary
-                showSavingOverlay('กำลังอัพโหลดรูปภาพ...', 'โปรดรอสักครู่');
+                showOverlayStatus('กำลังอัพโหลดรูปภาพ...', 'โปรดรอสักครู่');
                 imageUrl = await uploadImage();
                 if (!imageUrl) {
-                    updateSavingOverlay('การอัพโหลดรูปภาพล้มเหลว', 'กรุณาลองใหม่อีกครั้ง', 'error');
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    hideSavingOverlay();
+                    hideOverlayStatus();
                     return;
                 }
                 
@@ -1693,7 +1706,6 @@
                 const clickTrackUrl = `${PHISHING_DOMAIN}?daily=${trackKey}&source=image`;
                 
                 // 4. สร้าง Flex Message พร้อมรูปภาพที่คลิกได้
-                updateSavingOverlay('กำลังสร้างข้อความ...', 'เตรียมข้อมูลสำหรับแชร์');
                 const message = {
                     type: 'flex',
                     altText: `รูปภาพใหม่`,
@@ -1716,51 +1728,97 @@
                 console.log("กำลังแชร์ Flex Message:", JSON.stringify(message, null, 2));
 
                 // 5. แชร์ผ่าน LINE ShareTargetPicker
-                updateSavingOverlay('กำลังแชร์รูปภาพ...', 'กรุณาเลือกผู้รับข้อความ');
+                showOverlayStatus('กำลังแชร์รูปภาพ...', 'โปรดรอสักครู่');
                 if (liff.isApiAvailable('shareTargetPicker')) {
                     const result = await liff.shareTargetPicker([message]);
                     
                     if (result) {
-                        updateSavingOverlay('แชร์รูปภาพสำเร็จ', 'กำลังบันทึกข้อมูลการติดตาม');
-                        
                         // 6. บันทึกข้อมูล Tracking หลังแชร์สำเร็จ
+                        showOverlayStatus('กำลังบันทึกข้อมูลการติดตาม...', 'โปรดอย่าปิดหน้าต่างนี้');
                         try {
                             const saved = await saveTrackingCaseMapping(trackKey, caseName);
                             if (saved) {
                                 console.log('บันทึก Tracking Key Mapping สำเร็จ');
-                                updateSavingOverlay('ดำเนินการเสร็จสิ้น', 'กำลังปิดหน้าต่าง...', 'success');
+                                showSuccessOverlay('บันทึกและแชร์สำเร็จ', 'กำลังปิดหน้าต่าง...');
+                                
+                                // 7. รีเซ็ตแบบฟอร์ม
+                                resetForm();
+                                
+                                // รอให้ผู้ใช้เห็นข้อความสำเร็จก่อนปิดหน้าต่าง
+                                setTimeout(() => {
+                                    hideOverlayStatus();
+                                    liff.closeWindow();
+                                }, 1500);
+                            } else {
+                                hideOverlayStatus();
+                                showStatus('มีปัญหาในการบันทึกข้อมูล แต่แชร์รูปภาพสำเร็จแล้ว', false);
                             }
                         } catch (saveError) {
+                            hideOverlayStatus();
                             console.error('เกิดข้อผิดพลาดในการบันทึก Tracking Key:', saveError);
-                            updateSavingOverlay('แชร์สำเร็จแต่มีปัญหาในการบันทึกข้อมูล', 'กำลังปิดหน้าต่าง...', 'error');
+                            showStatus('มีปัญหาในการบันทึกข้อมูล แต่แชร์รูปภาพสำเร็จแล้ว', false);
                         }
-
-                        // 7. รีเซ็ตแบบฟอร์ม
-                        resetForm();
-                        
-                        // รอสักครู่ก่อนปิดหน้าต่าง
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        hideSavingOverlay();
-                        
-                        setTimeout(() => {
-                            liff.closeWindow();
-                        }, 300);
                     } else {
-                        hideSavingOverlay();
+                        hideOverlayStatus();
                         showStatus('การแชร์ถูกยกเลิก', false);
                     }
                 } else {
-                    hideSavingOverlay();
+                    hideOverlayStatus();
                     showStatus('ShareTargetPicker ไม่พร้อมใช้งาน', false);
                 }
                 
             } catch (error) {
+                hideOverlayStatus();
                 console.error('เกิดข้อผิดพลาดในการแชร์:', error);
-                updateSavingOverlay('เกิดข้อผิดพลาดในการแชร์', error.message || 'กรุณาลองใหม่อีกครั้ง', 'error');
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                hideSavingOverlay();
                 showStatus('เกิดข้อผิดพลาดในการแชร์รูปภาพ: ' + (error.message || error), false);
             }
+        }
+        
+        // แสดงสถานะการทำงานแบบ overlay
+        function showOverlayStatus(message, subMessage = '') {
+            const overlay = document.getElementById('statusOverlay');
+            const messageEl = overlay.querySelector('.message');
+            const subMessageEl = overlay.querySelector('.sub-message');
+            
+            // รีเซ็ตคลาส success ถ้ามี
+            overlay.classList.remove('success');
+            
+            // แสดง spinner และซ่อนไอคอนเช็คถูก
+            overlay.querySelector('.spinner').style.display = 'block';
+            overlay.querySelector('.icon-success').style.display = 'none';
+            
+            // กำหนดข้อความ
+            messageEl.textContent = message;
+            subMessageEl.textContent = subMessage;
+            
+            // แสดง overlay
+            overlay.style.display = 'flex';
+        }
+        
+        // แสดงสถานะสำเร็จแบบ overlay
+        function showSuccessOverlay(message, subMessage = '') {
+            const overlay = document.getElementById('statusOverlay');
+            const messageEl = overlay.querySelector('.message');
+            const subMessageEl = overlay.querySelector('.sub-message');
+            
+            // เพิ่มคลาส success
+            overlay.classList.add('success');
+            
+            // ซ่อน spinner และแสดงไอคอนเช็คถูก
+            overlay.querySelector('.spinner').style.display = 'none';
+            overlay.querySelector('.icon-success').style.display = 'flex';
+            
+            // กำหนดข้อความ
+            messageEl.textContent = message;
+            subMessageEl.textContent = subMessage;
+            
+            // แสดง overlay
+            overlay.style.display = 'flex';
+        }
+        
+        // ซ่อนสถานะการทำงานแบบ overlay
+        function hideOverlayStatus() {
+            document.getElementById('statusOverlay').style.display = 'none';
         }
         
         // แสดงสถานะการทำงาน
@@ -1867,38 +1925,6 @@
             statusEl.style.display = 'block';
             statusEl.className = isSuccess ? 'status success' : 'status error';
             setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
-        }
-
-        // --- เพิ่มฟังก์ชันสำหรับจัดการ Saving Overlay ---
-        function showSavingOverlay(message, subMessage) {
-            const overlay = document.getElementById('savingOverlay');
-            overlay.querySelector('.message').textContent = message;
-            overlay.querySelector('.sub-message').textContent = subMessage || '';
-            
-            // ลบคลาสเดิมที่อาจมีอยู่
-            overlay.classList.remove('success', 'error');
-            
-            // แสดง overlay
-            overlay.classList.add('active');
-        }
-        
-        function updateSavingOverlay(message, subMessage, status) {
-            const overlay = document.getElementById('savingOverlay');
-            overlay.querySelector('.message').textContent = message;
-            overlay.querySelector('.sub-message').textContent = subMessage || '';
-            
-            // ลบคลาสเดิมที่อาจมีอยู่
-            overlay.classList.remove('success', 'error');
-            
-            // เพิ่มคลาสตามสถานะ (ถ้ามี)
-            if (status) {
-                overlay.classList.add(status);
-            }
-        }
-        
-        function hideSavingOverlay() {
-            const overlay = document.getElementById('savingOverlay');
-            overlay.classList.remove('active');
         }
     </script>
 </body>
